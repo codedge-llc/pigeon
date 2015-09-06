@@ -1,9 +1,6 @@
 defmodule Pigeon do
   def apple_production_gateway_uri, do: 'gateway.push.apple.com'
-  def apple_production_feedback_uri, do: 'feedback.push.apple.com:2196'
-
   def apple_development_gateway_uri, do: 'gateway.sandbox.push.apple.com'
-  def apple_development_feedback_uri, do: 'apn://feedback.sandbox.push.apple.com:2196'
   
   def push(notification, uri, cert, key) do
     case Pigeon.Connection.open(uri, cert, key) do
