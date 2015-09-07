@@ -1,4 +1,8 @@
 defmodule Pigeon do
+  @moduledoc """
+  Pigeon is a wrapper for sending iOS push notifications.
+  """
+
   def apple_production_gateway_uri, do: 'gateway.push.apple.com'
   def apple_development_gateway_uri, do: 'gateway.sandbox.push.apple.com'
   
