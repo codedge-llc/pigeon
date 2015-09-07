@@ -13,12 +13,11 @@ iOS push notifications for Elixir
 2. Export the certificate as `cert.p12`
 3. Click the dropdown arrow next to the certificate, right-click the private key and select _"Export..."_
 4. Export the private key as `key.p12`
-
 5. From a shell, convert the certificate.
    ```
    openssl pkcs12 -clcerts -nokeys -out cert.pem -in cert.p12`
    ```
-
+   
 6. Convert the key.
    ```
    pkcs12 -nocerts -out key.pem -in key.p12
