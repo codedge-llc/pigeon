@@ -20,7 +20,7 @@ iOS push notifications for Elixir
    
 6. Convert the key.
    ```
-   pkcs12 -nocerts -out key.pem -in key.p12
+   openssl pkcs12 -nocerts -out key.pem -in key.p12
    ```
 
 7. Remove the password from the key.
