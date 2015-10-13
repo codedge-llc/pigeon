@@ -3,15 +3,27 @@ defmodule Pigeon.Mixfile do
 
   def project do
     [app: :pigeon,
-     version: "0.1.0",
+     name: "Pigeon",
+     version: "0.2.0-b",
      elixir: "~> 1.0",
+     source_url: "https://github.com/codedge-llc/pigeon",
      description: description,
-     package: package]
+     package: package,
+     deps: deps]
+  end
+
+  def application do
+    [applications: [:logger, :httpoison]]
+  end
+
+  defp deps do
+    [{:poison, "~> 1.5"},
+    {:httpoison, "~> 0.7.2"}]
   end
 
   defp description do
     """
-    Pigeon is a wrapper for sending iOS push notifications.
+    A wrapper for sending iOS and Android push notifications.
     """
   end
 
