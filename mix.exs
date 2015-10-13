@@ -4,7 +4,7 @@ defmodule Pigeon.Mixfile do
   def project do
     [app: :pigeon,
      name: "Pigeon",
-     version: "0.2.0-b",
+     version: "0.2.0",
      elixir: "~> 1.0",
      source_url: "https://github.com/codedge-llc/pigeon",
      description: description,
@@ -30,7 +30,7 @@ defmodule Pigeon.Mixfile do
   defp package do
     [
        files: ["lib", "mix.exs", "README*", "LICENSE*"],
-       contributors: ["Henry Popp"],
+       maintainers: ["Henry Popp"],
        licenses: ["MIT"],
        links: %{"GitHub" => "https://github.com/codedge-llc/pigeon"}
     ]
