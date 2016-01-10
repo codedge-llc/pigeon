@@ -1,13 +1,18 @@
 defmodule Pigeon do
+  use Application
   require Logger
 
   @moduledoc """
-  Pigeon is a wrapper for sending iOS push notifications.
+  A wrapper for sending iOS and Android push notifications.
   """
 
+  def start(_type, _args) do
+    Pigeon.Server.start_link
+  end
+
   defmodule APNS do
-    def push(notification, connection) do
-      :ssl.send(connection.ssl_socket, notification)
+    def push(notification) do
+      Pigeon.Server.push(:apns, notification)
     end
   end
 

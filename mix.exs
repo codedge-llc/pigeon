@@ -9,11 +9,14 @@ defmodule Pigeon.Mixfile do
      source_url: "https://github.com/codedge-llc/pigeon",
      description: description,
      package: package,
+     build_embedded: Mix.env == :prod,
+     start_permanent: Mix.env == :prod,
      deps: deps]
   end
 
   def application do
-    [applications: [:logger, :httpoison]]
+    [applications: [:logger, :httpoison],
+    mod: {Pigeon, []}]
   end
 
   defp deps do
