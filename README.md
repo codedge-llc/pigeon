@@ -15,12 +15,12 @@ Add pigeon as a `mix.exs` dependency:
 1. Create a notification packet. 
   ```
   data = %{ key1: "value1", key2: "value2" }
-  n = Pigeon.GCM.Notification.new(data, "your device token")
+  n = Pigeon.GCM.Notification.new(data, "your device token (A.K.A. registration ID)")
   ```
-  
+ 
 2. Send the packet.
   ```
-  Pigeon.GCM.push(n, "your GCM api key")
+  Pigeon.GCM.push(n)
   ```
 
 ## APNS (Apple iOS)

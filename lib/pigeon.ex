@@ -19,11 +19,13 @@ defmodule Pigeon do
   defmodule GCM do
     import HTTPoison
 
-    def push(notification, auth_key) do
+    def push(notification) do
       url = 'https://gcm-http.googleapis.com/gcm/send'
-      headers =  [{ "Authorization", "key=#{auth_key}" },
+      headers =  [{ "Authorization", "key=#{Application.get_env(:pigeon, :gcm_key)}" },
                   { "Content-Type", "application/json" },
                   { "Accept", "application/json" }]
+
+      HTTPoison.post!(url, notification, headers)
     end
   end
 end
