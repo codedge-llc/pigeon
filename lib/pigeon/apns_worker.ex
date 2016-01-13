@@ -5,8 +5,7 @@ defmodule Pigeon.APNSWorker do
   @doc "Starts the worker"
   def start_link(name, mode, cert, key) do
     Logger.debug("Starting worker #{name}\n\t mode: #{mode}, cert: #{cert}, key: #{key}")
-    c = Pigeon.APNS.Connection.new(mode, cert, key)
-    GenServer.start_link(__MODULE__, {:ok, c}, name: name)
+    GenServer.start_link(__MODULE__, {:ok, mode, cert, key}, name: name)
   end
 
   @doc "Stops the server"
@@ -15,19 +14,65 @@ defmodule Pigeon.APNSWorker do
   end
 
   @doc "Initialize our server"
-  def init(:ok, connection) do
-    {:ok, connection}
+  def init(args) do
+   {:ok, mode, cert, key} = args
+    Logger.debug("Doing the init...")
+    c = Pigeon.APNS.Connection.new(mode, cert, key)
+    state = %{
+      apns_socket: c,
+      mode: mode,
+      cert: cert,
+      key: key
+    }
+    {:ok, state}
+  end
+
+  def handle_call({:start_connection, mode, cert, key}, from, state) do
+    c = Pigeon.APNS.Connection.new(mode, cert, key)
+    state = %{
+      apns_socket: c,
+      mode: mode,
+      cert: cert,
+      key: key
+    }
+    {:noreply, state}
   end
 
   @doc "Implement this multiple times with a different pattern to deal
   with sync messages"
   def handle_call({:push, :apns, notification}, from, state) do 
-    {:ok, connection} = state
-    case :ssl.send(connection.ssl_socket, notification) do
-      :ok -> Logger.debug "Sent ok..."
+    %{apns_socket: c, mode: mode, cert: cert, key: key} = state
+
+    case :ssl.send(c, notification) do
+      :ok -> 
+        Logger.debug "Sent ok..."
+				# receive do
+				# 	{:ssl, socket, data} ->
+        #     {status, identifier} = Pigeon.APNS.Connection.parse_response(data)
+        #     IO.inspect Pigeon.APNS.Connection.parse_status(status)
+        #     IO.inspect identifier
+
+        #     c = Pigeon.APNS.Connection.new(mode, cert, key)
+        #     state = %{
+        #       apns_socket: c,
+        #       mode: mode,
+        #       cert: cert,
+        #       key: key
+        #     }
+        #     { :reply, :ok, state }
+				# 	after 0 ->
+        #     Logger.debug("Timeout...")
+				# end
       error -> Logger.error(error)
     end
     { :reply, :ok, state }
+  end
+
+  def handle_info({:ssl_closed, socket}, %{apns_socket: socket, mode: mode, cert: cert, key: key} = state) do
+    Logger.debug("Got connection close...")
+    c = Pigeon.APNS.Connection.new(mode, cert, key)
+
+    {:noreply, %{state | apns_socket: c}}
   end
 
   def handle_call(message, from, state) do
@@ -48,6 +93,7 @@ defmodule Pigeon.APNSWorker do
   @doc "Implement this to handle out of band messages (messages not
   sent using a gen_server call)"
   def handle_info(message, state) do
-    {:reply, {:error, :bad_message}, state}
+    #{:reply, {:error, :bad_message}, state}
+    { :noreply, state }
   end
 end

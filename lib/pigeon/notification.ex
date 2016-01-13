@@ -26,6 +26,7 @@ defmodule Pigeon.Notification do
 end
 
 defmodule Pigeon.APNS.Notification do
+
   def new(msg, token) do
     new(msg, token, %{}, %{})
   end

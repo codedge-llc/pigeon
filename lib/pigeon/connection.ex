@@ -1,7 +1,6 @@
 defmodule Pigeon.APNS.Connection do
   import Logger
   require :crypto
-  defstruct certfile: nil, keyfile: nil, password: nil, ssl_socket: nil
 
   def apple_production_gateway_uri, do: 'gateway.push.apple.com'
   def apple_development_gateway_uri, do: 'gateway.sandbox.push.apple.com'
@@ -11,73 +10,52 @@ defmodule Pigeon.APNS.Connection do
 
   def new(mode, cert, key) do
     :ssl.start()
-    options = [{:certfile, cert}, {:keyfile, key}, {:mode, :binary}, {:active, false}]
-    connection = %Pigeon.APNS.Connection{certfile: cert, keyfile: key}
-    open(mode, options, connection)
+    options = [{:certfile, cert}, {:keyfile, key}, {:reuse_sessions, false}, {:mode, :binary}]
+    open(mode, options)
   end
 
-  def new_listener(mode, cert, key) do
+  def new_feedback(mode, cert, key) do
     :ssl.start()
-    options = [{:certfile, cert}, {:keyfile, key}, {:mode, :binary}, {:active, false}]
-    connection = %Pigeon.APNS.Connection{certfile: cert, keyfile: key}
-    open_listener(mode, options, connection)
+    options = [{:certfile, cert}, {:keyfile, key}, {:reuse_sessions, false}, {:mode, :binary}]
+    open_feedback(mode, options)
   end
 
   def new(mode, cert, key, passphrase) do
     :ssl.start()
+    :application.start(:inets)
     options = [{:certfile, cert}, {:keyfile, key}, {:password, passphrase}, 
       {:mode, :binary}, {:active, false}]
-    connection = %Pigeon.APNS.Connection{certfile: cert, keyfile: key, password: passphrase}
-    open(mode, options, connection)
+    open(mode, options)
   end
 
-  defp open(mode, options, connection) do
+  defp open(mode, options) do
     case mode do
       :dev ->
-        connect(apple_development_gateway_uri, options, connection)
+        connect(apple_development_gateway_uri, 2195, options)
       :prod ->
-        connect(apple_production_gateway_uri, options, connection)
+        connect(apple_production_gateway_uri, 2195, options)
       _ ->
         {:error, "Mode is invalid."}
     end
   end
 
-  defp open_listener(mode, options, connection) do
+  defp open_feedback(mode, options) do
     case mode do
       :dev ->
-        connect_listener(apple_development_feedback_uri, options, connection)
+        connect(apple_development_feedback_uri, 2196, options)
       :prod ->
-        connect_listener(apple_production_feedback_uri, options, connection)
+        connect(apple_production_feedback_uri, 2196, options)
       _ ->
         {:error, "Mode is invalid."}
     end
   end
 
-  defp connect(uri, options, connection) do
-    case :ssl.connect(uri, 2195, options, 1000) do
+  defp connect(uri, port, options) do
+    case :ssl.connect(uri, port, options, 1000) do
       {:ok, ssl_socket} ->
-        %{connection | ssl_socket: ssl_socket}
+        ssl_socket
       {:error, reason} ->
         IO.inspect {:error, reason}
-    end
-  end
-
-  defp connect_listener(uri, options, connection) do
-    case :ssl.connect(uri, 2196, options, :infinity) do
-      {:ok, ssl_socket} ->
-        %{connection | ssl_socket: ssl_socket}
-      {:error, reason} ->
-        IO.inspect {:error, reason}
-    end
-  end
-
-  def listen(connection) do
-    response = :ssl.recv(connection, 0)
-    case response do
-      {:ok, data} ->
-        Logger.debug parse_response(data)
-      {:error, error} ->
-        Logger.error "Error: #{error}"
     end
   end
   

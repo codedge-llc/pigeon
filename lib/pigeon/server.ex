@@ -24,10 +24,8 @@ defmodule Pigeon.Server do
     apns_cert = Application.get_env(:pigeon, :apns_cert)
     apns_key = Application.get_env(:pigeon, :apns_key)
     apns = worker(Pigeon.APNSWorker, [:apns_worker, apns_mode, apns_cert, apns_key], id: :apns_worker)
-
-    apns_feedback = worker(Pigeon.APNSFeedback, [:apns_feedback, apns_mode, apns_cert, apns_key], id: :apns_feedback)
     
-    supervise([apns, gcm, apns_feedback], strategy: :one_for_one)
+    supervise([apns, gcm], strategy: :one_for_one)
   end
 
   @doc "Implement this multiple times with a different pattern to deal
@@ -35,7 +33,6 @@ defmodule Pigeon.Server do
   def push(service, notification) do 
     case service do
       :apns ->
-        GenServer.cast(:apns_feedback, :listen)
         GenServer.call(:apns_worker, {:push, :apns, notification})
       _ ->
         Logger.debug "Unknown service #{service}"
@@ -54,6 +51,15 @@ defmodule Pigeon.Server do
   @doc "Handle the server stop message"
   def handle_cast(:stop , state) do
     { :noreply, state }
+  end
+  
+  def handle_cast(message, from, state) do
+    IO.inspect message
+    { :noreply, state }
+  end
+
+  def handle_info({:ssl, socket, data}, state) do
+    Logger.debug("Got something back...")
   end
 
   @doc "Implement this to handle out of band messages (messages not
