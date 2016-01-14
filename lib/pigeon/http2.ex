@@ -31,12 +31,12 @@ defmodule Pigeon.HTTP2 do
     end
   end
 
-	def send_connection_preface(socket) do
+  def send_connection_preface(socket) do
     :ssl.send(socket, connection_preface)
     do_receive_once(socket)
   end
 
-	def establish_connection(socket) do
+  def establish_connection(socket) do
     {:ok, data} = send_settings(socket)
     if data = build_frame(0x04, 0x01, 0, <<>>) do
       send_ack(socket)
@@ -45,7 +45,7 @@ defmodule Pigeon.HTTP2 do
     end
   end
 
-	defp send_settings sock do
+  defp send_settings sock do
     :ssl.send(sock, settings_frame)
     do_receive_once sock
   end
@@ -134,7 +134,7 @@ defmodule Pigeon.HTTP2 do
     build_frame(0x0, 0x1, 1, payload)
   end
 
-	def build_frame(frame_type, flags, stream_id, payload) do
+  def build_frame(frame_type, flags, stream_id, payload) do
     header = <<byte_size(payload)::24, frame_type::8, flags::8, 0::1, stream_id::31>>
     <<header::binary, payload::binary>>
   end
