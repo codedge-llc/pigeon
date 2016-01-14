@@ -6,26 +6,13 @@ defmodule Pigeon do
   A wrapper for sending iOS and Android push notifications.
   """
 
-  def start(_type, _args) do
-    Pigeon.Supervisor.start_link
-  end
+  def start(_type, _args), do: Pigeon.Supervisor.start_link
 
   defmodule APNS do
-    def push(notification) do
-      Pigeon.Supervisor.push(:apns, notification)
-    end
+    def push(notification), do: Pigeon.Supervisor.push(:apns, notification)
   end
 
   defmodule GCM do
-    import HTTPoison
-
-    def push(notification) do
-      url = 'https://gcm-http.googleapis.com/gcm/send'
-      headers =  [{ "Authorization", "key=#{Application.get_env(:pigeon, :gcm_key)}" },
-                  { "Content-Type", "application/json" },
-                  { "Accept", "application/json" }]
-
-      HTTPoison.post!(url, notification, headers)
-    end
+    def push(notification), do: Pigeon.Supervisor.push(:gcm, notification)
   end
 end

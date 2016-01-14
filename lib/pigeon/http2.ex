@@ -12,7 +12,7 @@ defmodule Pigeon.HTTP2 do
                {:packet, 0},
                {:reuseaddr, true},
                {:active, true},
-               :binary] |> IO.inspect
+               :binary]
     :ssl.start
     case :ssl.connect(uri, 443, options) do
       {:ok, ssl_socket} ->
@@ -32,15 +32,12 @@ defmodule Pigeon.HTTP2 do
   end
 
 	def send_connection_preface(socket) do
-    Logger.debug "Sending connection preface"
     :ssl.send(socket, connection_preface)
     do_receive_once(socket)
   end
 
 	def establish_connection(socket) do
     {:ok, data} = send_settings(socket)
-    IO.puts "Settings response..."
-    IO.inspect data
     if data = build_frame(0x04, 0x01, 0, <<>>) do
       send_ack(socket)
     else
@@ -49,19 +46,15 @@ defmodule Pigeon.HTTP2 do
   end
 
 	defp send_settings sock do
-    IO.puts "Sending SETTINGS"
-    IO.inspect sock
     :ssl.send(sock, settings_frame)
     do_receive_once sock
   end
 
   defp send_ack sock do
-    Logger.debug "Sending ACK"
     :ssl.send(sock, settings_ack_frame)
   end
 
   defp send_goaway sock do
-    Logger.debug "Sending GOAWAY"
     :ssl.send sock, goaway_frame
     :ssl.close sock
   end
@@ -69,8 +62,7 @@ defmodule Pigeon.HTTP2 do
   defp do_receive_once socket do
     receive do
       {:ssl, socket, bin} ->
-        frame = bin |> to_string |> parse_frame
-        IO.inspect frame
+        frame = bin |> parse_frame
         parse_frame_type(frame, bin)
       {:ssl_closed, socket} ->
         {:error, "closed."}
@@ -127,7 +119,6 @@ defmodule Pigeon.HTTP2 do
   def push_header_frame(mode, device_token, topic, payload) do
     uri = push_uri(mode) |> to_string
     end_headers = 0x4
-    #device_token = "08418eecba28cbe9e5b7179c3bac78c6e6877e9009ba6043943fd8c5f1e5b658"
     payload_size = "#{byte_size(payload)}"
     build_frame(0x1, end_headers, 1, <<
       <<0::1, 0::1, 0::1, 1::1, 0::4, 0::1, byte_size(":method")::7, ":method", 0::1, byte_size("POST")::7, "POST">>,
@@ -145,7 +136,6 @@ defmodule Pigeon.HTTP2 do
 
 	def build_frame(frame_type, flags, stream_id, payload) do
     header = <<byte_size(payload)::24, frame_type::8, flags::8, 0::1, stream_id::31>>
-    <<header::binary, payload::binary>> |> Base.encode16 |> IO.inspect
     <<header::binary, payload::binary>>
   end
 end

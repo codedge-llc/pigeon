@@ -6,38 +6,48 @@ iOS and Android push notifications for Elixir
 Add pigeon as a `mix.exs` dependency:
   ```
   def deps do
-    [{:pigeon, "~> 0.2.0"}]
+    [{:pigeon, "~> 0.3.0"}]
   end
   ```
   
 ## GCM (Android)
 ### Usage
-1. Create a notification packet. 
+1. Set your environment variables.
+  ```
+  config :pigeon, 
+    gcm_key: "your_gcm_key_here"
+  ```
+  
+2. Create a notification packet. 
   ```
   data = %{ key1: "value1", key2: "value2" }
-  n = Pigeon.GCM.Notification.new(data, "your device token (A.K.A. registration ID)")
+  n = Pigeon.GCM.Notification.new(data, "your device token (registration ID)")
   ```
  
-2. Send the packet.
+3. Send the packet.
   ```
   Pigeon.GCM.push(n)
   ```
 
 ## APNS (Apple iOS)
 ### Usage
-1. Create a notification packet.
+1. Set your environment environment variables. See below for setting up your certificate and key.
   ```
-  n = Pigeon.APNS.Notification.new("your message", "your device token")
+  config :pigeon, 
+    apns_mode: :dev,
+    apns_cert: "cert.pem",
+    apns_key: "key_unencrypted.pem"
+  ```
+
+2. Create a notification packet. **Note: Your push topic is generally the app's bundle identifier.**
+  ```
+  n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic")
   ```
   
-2. Create an APNS connection, where `mode` can be either `:dev` or `:prod`
-  ```
-  c = Pigeon.APNS.Connection.new(mode, "your_push_cert.pem", "your_push_key.pem")
-  ``` 
   
 3. Send the packet.
   ```
-  Pigeon.APNS.push(n, c)
+  Pigeon.APNS.push(n)
   ```
   
 ### Generating Your Certificate and Key .pem
@@ -60,12 +70,12 @@ Add pigeon as a `mix.exs` dependency:
    openssl rsa -in key.pem -out key_unencrypted.pem
    ```
    
-8. `cert.pem` and `key_unencrypted.pem` can now be used as the cert and key in `Pigeon.push`, respectively.
+8. `cert.pem` and `key_unencrypted.pem` can now be used as the cert and key in `Pigeon.push`, respectively. Set them in your `config.exs`
 
 ### Notifications with Custom Data
 Notifications can contain additional information for the `aps` key with a map passed as an optional 3rd parameter (e.g. setting badge counters or defining custom sounds)
   ```
-  n = Pigeon.APNS.Notification.new("your message", "your device token", %{
+  n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic", %{
     badge: 5,
     sound: "default"
   })
@@ -73,7 +83,7 @@ Notifications can contain additional information for the `aps` key with a map pa
   
 Or define custom payload data with an optional 4th parameter:
   ```
-  n = Pigeon.APNS.Notification.new("your message", "your device token", %{}, %{
+  n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic", %{}, %{
     your-custom-key: %{
       custom-value: 500
     }
