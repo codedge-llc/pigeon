@@ -17,13 +17,16 @@ defmodule Pigeon.APNSWorker do
   def init(args) do
    {:ok, mode, cert, key} = args
     Logger.debug("Doing the init...")
-    c = Pigeon.APNS.Connection.new(mode, cert, key)
+    #c = Pigeon.APNS.Connection.new(mode, cert, key)
+    {:ok, socket} = Pigeon.HTTP2.connect(mode, cert, key)
     state = %{
-      apns_socket: c,
+      apns_socket: socket,
       mode: mode,
       cert: cert,
       key: key
     }
+    {:ok, data} = Pigeon.HTTP2.send_connection_preface(socket)
+    response = Pigeon.HTTP2.establish_connection(socket)
     {:ok, state}
   end
 
@@ -42,29 +45,40 @@ defmodule Pigeon.APNSWorker do
   with sync messages"
   def handle_call({:push, :apns, notification}, from, state) do 
     %{apns_socket: c, mode: mode, cert: cert, key: key} = state
+    %{device_token: device_token, topic: topic, payload: payload} = notification
+    push_header = Pigeon.HTTP2.push_header_frame(mode, device_token, topic, payload)
+    push_data = Pigeon.HTTP2.push_data_frame(payload)
 
-    case :ssl.send(c, notification) do
-      :ok -> 
-        Logger.debug "Sent ok..."
-				# receive do
-				# 	{:ssl, socket, data} ->
-        #     {status, identifier} = Pigeon.APNS.Connection.parse_response(data)
-        #     IO.inspect Pigeon.APNS.Connection.parse_status(status)
-        #     IO.inspect identifier
+    :ssl.send(c, push_header)
+    :ssl.send(c, push_data)
 
-        #     c = Pigeon.APNS.Connection.new(mode, cert, key)
-        #     state = %{
-        #       apns_socket: c,
-        #       mode: mode,
-        #       cert: cert,
-        #       key: key
-        #     }
-        #     { :reply, :ok, state }
-				# 	after 0 ->
-        #     Logger.debug("Timeout...")
-				# end
-      error -> Logger.error(error)
-    end
+    #case :ssl.send(c, notification) do
+    #  :ok -> 
+    #    Logger.debug "Sent ok..."
+		#		# receive do
+		#		# 	{:ssl, socket, data} ->
+    #    #     {status, identifier} = Pigeon.APNS.Connection.parse_response(data)
+    #    #     IO.inspect Pigeon.APNS.Connection.parse_status(status)
+    #    #     IO.inspect identifier
+
+    #    #     c = Pigeon.APNS.Connection.new(mode, cert, key)
+    #    #     state = %{
+    #    #       apns_socket: c,
+    #    #       mode: mode,
+    #    #       cert: cert,
+    #    #       key: key
+    #    #     }
+    #    #     { :reply, :ok, state }
+		#		# 	after 0 ->
+    #    #     Logger.debug("Timeout...")
+		#		# end
+    #  error -> Logger.error(error)
+    #end
+    { :reply, :ok, state }
+  end
+
+  def handle_info({:ssl, socket, bin}, %{apns_socket: socket} = state) do
+    Logger.debug "Got data!"
     { :reply, :ok, state }
   end
 

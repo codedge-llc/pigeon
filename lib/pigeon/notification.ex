@@ -27,27 +27,30 @@ end
 
 defmodule Pigeon.APNS.Notification do
 
-  def new(msg, token) do
-    new(msg, token, %{}, %{})
+  def new(msg, token, topic) do
+    new(msg, token, topic, %{}, %{})
   end
-  def new(msg, token, options) do
-    new(msg, token, options, %{})
+  def new(msg, token, topic, options) do
+    new(msg, token, topic, options, %{})
   end
-  def new(msg, token, options, custom) do
+  def new(msg, token, topic, options, custom) do
     new_options = Map.put(options, :alert, msg)
-    b_payload = Map.merge(%{aps: new_options}, custom)
+    payload = Map.merge(%{aps: new_options}, custom)
       |> Pigeon.Notification.json_payload
+      |> to_string
+      |> IO.inspect
+    %{device_token: token, topic: topic, payload: payload}
 
-    payload_len = :erlang.size(b_payload)
+    #payload_len = :erlang.size(b_payload)
 
-    b_token = to_char_list(token) |> Pigeon.Notification.hexstr_to_bin
-    b_token_length = :erlang.byte_size(b_token)
+    #b_token = to_char_list(token) |> Pigeon.Notification.hexstr_to_bin
+    #b_token_length = :erlang.byte_size(b_token)
 
-    id = 15
-    {mseconds, seconds, _} = :erlang.timestamp()
-    expiry = mseconds * 1000000 + seconds + 3600*1
+    #id = 15
+    #{mseconds, seconds, _} = :erlang.timestamp()
+    #expiry = mseconds * 1000000 + seconds + 3600*1
 
-    push_packet(id, expiry, b_token_length, b_token, payload_len, b_payload)
+    #push_packet(id, expiry, b_token_length, b_token, payload_len, b_payload)
   end
 
   defp push_packet(id, expiry, b_token_length, b_token, payload_len, b_payload) do

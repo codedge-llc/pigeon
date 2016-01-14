@@ -29,4 +29,8 @@ use Mix.Config
 #
 #     import_config "#{Mix.env}.exs"
 
-config :pigeon, gcm_key: :"Insert your server API key here"
+config :pigeon, 
+  apns_mode: :dev,
+  apns_cert: "cert.pem",
+  apns_key: "key_unencrypted.pem",
+  gcm_key: "Insert your server API key here"

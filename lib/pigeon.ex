@@ -7,12 +7,12 @@ defmodule Pigeon do
   """
 
   def start(_type, _args) do
-    Pigeon.Server.start_link
+    Pigeon.Supervisor.start_link
   end
 
   defmodule APNS do
     def push(notification) do
-      Pigeon.Server.push(:apns, notification)
+      Pigeon.Supervisor.push(:apns, notification)
     end
   end
 

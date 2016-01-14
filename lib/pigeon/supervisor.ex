@@ -1,4 +1,4 @@
-defmodule Pigeon.Server do  
+defmodule Pigeon.Supervisor do  
   use Supervisor
   require Logger
 
