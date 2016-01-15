@@ -73,7 +73,7 @@ Add pigeon as a `mix.exs` dependency:
 8. `cert.pem` and `key_unencrypted.pem` can now be used as the cert and key in `Pigeon.push`, respectively. Set them in your `config.exs`
 
 ### Notifications with Custom Data
-Notifications can contain additional information for the `aps` key with a map passed as an optional 3rd parameter (e.g. setting badge counters or defining custom sounds)
+Notifications can contain additional information for the `aps` key with a map passed as an optional 4th parameter (e.g. setting badge counters or defining custom sounds)
   ```
   n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic", %{
     badge: 5,
@@ -81,7 +81,7 @@ Notifications can contain additional information for the `aps` key with a map pa
   })
   ```
   
-Or define custom payload data with an optional 4th parameter:
+Or define custom payload data with an optional 5th parameter:
   ```
   n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic", %{}, %{
     your-custom-key: %{
