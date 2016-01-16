@@ -10,6 +10,13 @@ Add pigeon as a `mix.exs` dependency:
   end
   ```
   
+After running `mix deps.get`, configure `mix.exs` to start the application automatically.
+  ```
+  def application do
+    [applications: [:pigeon]
+  end
+  ```
+  
 ## GCM (Android)
 ### Usage
 1. Set your environment variables.
