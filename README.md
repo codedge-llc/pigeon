@@ -13,7 +13,7 @@ Add pigeon as a `mix.exs` dependency:
 After running `mix deps.get`, configure `mix.exs` to start the application automatically.
   ```
   def application do
-    [applications: [:pigeon]
+    [applications: [:pigeon]]
   end
   ```
   
