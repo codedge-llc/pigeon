@@ -11,7 +11,7 @@ defmodule Pigeon.GCMWorker do
   end
 
   def start_link(name, gcm_key) do
-    Logger.debug("Starting worker #{name} with key #{gcm_key}...")
+    Logger.debug("Starting #{name}, key: #{gcm_key}")
     GenServer.start_link(__MODULE__, %{gcm_key: gcm_key}, name: name)
   end
 
@@ -23,9 +23,15 @@ defmodule Pigeon.GCMWorker do
     {:ok, args}
   end
 
-  def handle_call({:push, :gcm, notification}, from, state) do 
+  def handle_cast({:push, :gcm, notification}, from, state) do 
     HTTPoison.post!(gcm_uri, notification, gcm_headers(state[:gcm_key]))
-    { :reply, :ok, state }
+    { :noreply, state }
+  end
+
+  def handle_cast({:push, :gcm, notification, on_response}, from, state) do 
+    HTTPoison.post!(gcm_uri, notification, gcm_headers(state[:gcm_key]))
+    |> on_response.()
+    { :noreply, state }
   end
 
   def handle_cast(:stop , state) do

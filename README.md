@@ -89,3 +89,31 @@ Or define custom payload data with an optional 4th parameter:
     }
   })
   ```
+
+## Handling Push Responses
+### APNS
+1. Pass an optional anonymous function as your second parameter.
+  ```
+  n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic")
+  Pigeon.APNS.push(n, fn(x) -> IO.inspect(x) end)
+  ```
+
+2. Responses return a tuple of either `{:ok, notification}` or `{:error, reason, notification}`. You could handle responses like so:
+  ```
+  on_response = fn(x) ->
+    case x do
+      {:ok, notification} ->
+        Logger.debug "Push successful!"
+      {:error, :BadDeviceToken, notification} ->
+        Logger.error "Bad device token!"
+      {:error, reason, notification} ->
+        Logger.error "Some other error happened."
+    end
+  end
+
+  n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic")
+  Pigeon.APNS.push(n, on_response)
+  ```
+
+
+
