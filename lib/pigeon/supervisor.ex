@@ -45,9 +45,20 @@ defmodule Pigeon.Supervisor do
   def push(service, notification) do 
     case service do
       :apns ->
-        GenServer.call(:apns_worker, {:push, :apns, notification})
+        GenServer.cast(:apns_worker, {:push, :apns, notification})
       :gcm ->
-        GenServer.call(:gcm_worker, {:push, :gcm, notification})
+        GenServer.cast(:gcm_worker, {:push, :gcm, notification})
+      _ ->
+        Logger.error "Unknown service #{service}"
+    end
+  end
+
+  def push(service, notification, on_response) do 
+    case service do
+      :apns ->
+        GenServer.cast(:apns_worker, {:push, :apns, notification, on_response})
+      :gcm ->
+        GenServer.cast(:gcm_worker, {:push, :gcm, notification, on_response})
       _ ->
         Logger.error "Unknown service #{service}"
     end
