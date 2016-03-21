@@ -71,7 +71,7 @@ defmodule Pigeon.APNSWorker do
   end
 
   defp log_error(reason, notification) do
-    Logger.error("#{reason}: #{error_msg(reason)}\n\n#{inspect(notification)}")
+    Logger.error("#{reason}: #{error_msg(reason)}\n#{inspect(notification)}")
   end
 
   def error_msg(error) do

@@ -24,14 +24,39 @@ defmodule Pigeon.GCMWorker do
   end
 
   def handle_cast({:push, :gcm, notification}, %{gcm_key: gcm_key} = state) do 
-    HTTPoison.post!(gcm_uri, notification, gcm_headers(gcm_key))
+    {:ok, %HTTPoison.Response{body: body}} = HTTPoison.post(gcm_uri, notification, gcm_headers(gcm_key))
+
+    case parse_response(body) do
+      {:error, reason} ->
+        Logger.error("#{reason}\n#{notification}")
+      _ ->
+        :ok
+    end
     { :noreply, state }
   end
 
   def handle_cast({:push, :gcm, notification, on_response}, %{gcm_key: gcm_key} = state) do 
-    HTTPoison.post!(gcm_uri, notification, gcm_headers(gcm_key))
-    |> on_response.()
+    {:ok, %HTTPoison.Response{body: body}} = HTTPoison.post(gcm_uri, notification, gcm_headers(gcm_key))
+
+    case parse_response(body) do
+      :ok ->
+        on_response.({:ok, notification})
+      {:error, reason} ->
+        Logger.error("#{reason}\n\n#{notification}")
+        on_response.({:error, reason, notification})
+    end
     { :noreply, state }
+  end
+
+  def parse_response(body) do
+    {:ok, json} = Poison.decode(body)
+    if json["success"] == 1 do
+      :ok
+    else
+      [result|[]] = json["results"]
+      error = result["error"]
+      {:error, String.to_atom(error)}
+    end
   end
 
   def handle_cast(:stop, state) do
