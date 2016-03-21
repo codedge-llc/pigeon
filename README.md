@@ -6,7 +6,7 @@ iOS and Android push notifications for Elixir
 Add pigeon as a `mix.exs` dependency:
   ```
   def deps do
-    [{:pigeon, "~> 0.3.0"}]
+    [{:pigeon, "~> 0.4.0"}]
   end
   ```
   
