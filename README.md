@@ -1,6 +1,6 @@
 [![Hex.pm](http://img.shields.io/hexpm/v/pigeon.svg)](https://hex.pm/packages/pigeon) [![Hex.pm](http://img.shields.io/hexpm/dt/pigeon.svg)](https://hex.pm/packages/pigeon)
 # Pigeon
-iOS and Android push notifications for Elixir
+HTTP2-compliant wrapper for sending iOS and Android push notifications.
 
 ## Installation
 Add pigeon as a `mix.exs` dependency:

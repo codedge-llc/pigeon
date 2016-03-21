@@ -28,7 +28,7 @@ defmodule Pigeon.Mixfile do
 
   defp description do
     """
-    A wrapper for sending iOS and Android push notifications.
+    HTTP2-compliant wrapper for sending iOS and Android push notifications.
     """
   end
 
