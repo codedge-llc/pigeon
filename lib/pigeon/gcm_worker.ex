@@ -24,20 +24,30 @@ defmodule Pigeon.GCMWorker do
   end
 
   def handle_cast({:push, :gcm, notification}, %{gcm_key: gcm_key} = state) do 
-    {:ok, %HTTPoison.Response{body: body}} = HTTPoison.post(gcm_uri, notification, gcm_headers(gcm_key))
-
-    case parse_response(body) do
-      {:error, reason} ->
-        Logger.error("#{reason}\n#{notification}")
-      _ ->
-        :ok
-    end
+    HTTPoison.post(gcm_uri, notification, gcm_headers(gcm_key))
     { :noreply, state }
   end
 
   def handle_cast({:push, :gcm, notification, on_response}, %{gcm_key: gcm_key} = state) do 
-    {:ok, %HTTPoison.Response{body: body}} = HTTPoison.post(gcm_uri, notification, gcm_headers(gcm_key))
+    {:ok, %HTTPoison.Response{status_code: status, body: body}} = HTTPoison.post(gcm_uri, notification, gcm_headers(gcm_key))
 
+    case status do
+      200 -> 
+        handle_200_status(body, notification, on_response)
+      400 ->
+        handle_error_status_code(:InvalidJSON, notification, on_response)
+      401 ->
+        handle_error_status_code(:AuthenticationError, notification, on_response)
+      500 ->
+        handle_error_status_code(:InternalServerError, notification, on_response)
+      _ ->
+        handle_error_status_code(:UnknownError, notification, on_response)
+    end
+
+    { :noreply, state }
+  end
+
+  def handle_200_status(body, notification, on_response) do
     case parse_response(body) do
       :ok ->
         on_response.({:ok, notification})
@@ -45,7 +55,11 @@ defmodule Pigeon.GCMWorker do
         Logger.error("#{reason}\n\n#{notification}")
         on_response.({:error, reason, notification})
     end
-    { :noreply, state }
+  end
+
+  def handle_error_status_code(reason, notification, on_response) do
+    Logger.error("#{reason}\n\n#{notification}")
+    on_response.({:error, reason, notification})
   end
 
   def parse_response(body) do
