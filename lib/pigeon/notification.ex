@@ -1,6 +1,4 @@
 defmodule Pigeon.Notification do
-  import Logger
-
   def json_payload(payload) do
     response = Poison.encode(payload)
     case response do
@@ -10,19 +8,6 @@ defmodule Pigeon.Notification do
       Logger.error error
     end
   end
-
-  #def hexstr_to_bin(s) do
-  #  hexstr_to_bin(s, [])
-  #end
-
-  #def hexstr_to_bin([], acc) do
-  #  :erlang.list_to_binary(:lists.reverse(acc))
-  #end
-
-  #def hexstr_to_bin([x, y|t], acc) do
-  #  {:ok, [v], []} = :io_lib.fread('~16u', [x, y])
-  #  hexstr_to_bin(t, [v|acc])
-  #end
 end
 
 defmodule Pigeon.APNS.Notification do
@@ -48,6 +33,7 @@ defmodule Pigeon.APNS.Notification do
 end
 
 defmodule Pigeon.GCM.Notification do
+  @spec new(String.t, String.t) :: %{to: String.t, data: String.t}
   def new(data, token) do
     Pigeon.Notification.json_payload(%{to: token, data: data})
   end

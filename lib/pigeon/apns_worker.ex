@@ -1,5 +1,5 @@
 defmodule Pigeon.APNSWorker do  
-  alias Pigeon.{HTTP2}
+  alias Pigeon.{APNS, HTTP2}
   use GenServer
   require Logger
 
@@ -13,7 +13,7 @@ defmodule Pigeon.APNSWorker do
   end
 
   def init({:ok, mode, cert, key} = args) do
-    {:ok, socket} = Pigeon.HTTP2.connect(mode, cert, key)
+    {:ok, socket} = HTTP2.connect(mode, cert, key)
     state = %{
       apns_socket: socket,
       mode: mode,
@@ -21,20 +21,9 @@ defmodule Pigeon.APNSWorker do
       key: key,
       stream_id: 1
     }
-    {:ok, data} = Pigeon.HTTP2.send_connection_preface(socket)
-    response = Pigeon.HTTP2.establish_connection(socket)
+    HTTP2.send_connection_preface(socket)
+    HTTP2.establish_connection(socket)
     {:ok, state}
-  end
-
-  def handle_call({:start_connection, mode, cert, key}, from, state) do
-    c = Pigeon.APNS.Connection.new(mode, cert, key)
-    state = %{
-      apns_socket: c,
-      mode: mode,
-      cert: cert,
-      key: key
-    }
-    {:noreply, state}
   end
 
   def handle_cast(:stop, state) do
@@ -57,14 +46,13 @@ defmodule Pigeon.APNSWorker do
     %{apns_socket: socket, mode: mode, cert: cert, key: key, stream_id: stream_id} = state
     %{device_token: device_token, topic: topic, payload: payload} = notification
 
-    push_header = Pigeon.HTTP2.push_header_frame(stream_id, mode, device_token, topic, payload)
-    push_data = Pigeon.HTTP2.push_data_frame(stream_id, payload)
+    push_header = HTTP2.push_header_frame(stream_id, mode, device_token, topic, payload)
+    push_data = HTTP2.push_data_frame(stream_id, payload)
 
     :ssl.send(socket, push_header)
     :ssl.send(socket, push_data)
 
     {:ok, headers, payload} = HTTP2.wait_response socket
-    headers |> HTTP2.parse_frame |> IO.inspect
 
     case HTTP2.status_code(payload) do
       200 ->
@@ -140,9 +128,9 @@ defmodule Pigeon.APNSWorker do
   def handle_info({:ssl_closed, socket}, %{apns_socket: socket, mode: mode, cert: cert, key: key} = state) do
     Logger.debug("Got connection close...")
 
-    {:ok, sock} = Pigeon.HTTP2.connect(mode, cert, key)
-    {:ok, data} = Pigeon.HTTP2.send_connection_preface(sock)
-    response = Pigeon.HTTP2.establish_connection(sock)
+    {:ok, sock} = HTTP2.connect(mode, cert, key)
+    {:ok, data} = HTTP2.send_connection_preface(sock)
+    response = HTTP2.establish_connection(sock)
 
     {:noreply, %{state | apns_socket: sock}}
   end
