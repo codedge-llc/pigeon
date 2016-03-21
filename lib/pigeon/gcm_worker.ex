@@ -23,12 +23,12 @@ defmodule Pigeon.GCMWorker do
     {:ok, args}
   end
 
-  def handle_cast({:push, :gcm, notification}, from, %{gcm_key: gcm_key} = state) do 
+  def handle_cast({:push, :gcm, notification}, %{gcm_key: gcm_key} = state) do 
     HTTPoison.post!(gcm_uri, notification, gcm_headers(gcm_key))
     { :noreply, state }
   end
 
-  def handle_cast({:push, :gcm, notification, on_response}, from, %{gcm_key: gcm_key} = state) do 
+  def handle_cast({:push, :gcm, notification, on_response}, %{gcm_key: gcm_key} = state) do 
     HTTPoison.post!(gcm_uri, notification, gcm_headers(gcm_key))
     |> on_response.()
     { :noreply, state }

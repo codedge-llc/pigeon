@@ -1,4 +1,6 @@
 defmodule Pigeon.Notification do
+  require Logger
+
   def json_payload(payload) do
     response = Poison.encode(payload)
     case response do
