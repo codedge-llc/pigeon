@@ -45,8 +45,10 @@ defmodule Pigeon.HTTP2 do
       12 -> 400
       13 -> 404
       14 -> 500
+      _ -> status
     end
   end
+  def status_code(payload), do: payload
 
 	def establish_connection(socket) do
     {:ok, data} = send_settings(socket)
