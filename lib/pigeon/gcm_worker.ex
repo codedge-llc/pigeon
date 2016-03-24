@@ -23,6 +23,10 @@ defmodule Pigeon.GCMWorker do
     {:ok, args}
   end
 
+  def handle_cast(:stop, state) do
+    { :noreply, state }
+  end
+
   def handle_cast({:push, :gcm, notification}, %{gcm_key: gcm_key} = state) do 
     HTTPoison.post(gcm_uri, notification, gcm_headers(gcm_key))
     { :noreply, state }
@@ -71,9 +75,5 @@ defmodule Pigeon.GCMWorker do
       error = result["error"]
       {:error, String.to_atom(error)}
     end
-  end
-
-  def handle_cast(:stop, state) do
-    { :noreply, state }
   end
 end

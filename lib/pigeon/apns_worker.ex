@@ -1,5 +1,5 @@
 defmodule Pigeon.APNSWorker do  
-  alias Pigeon.{APNS, HTTP2}
+  alias Pigeon.{HTTP2}
   use GenServer
   require Logger
 
@@ -12,7 +12,7 @@ defmodule Pigeon.APNSWorker do
     :gen_server.cast(self, :stop)
   end
 
-  def init({:ok, mode, cert, key} = args) do
+  def init({:ok, mode, cert, key}) do
     {:ok, socket} = HTTP2.connect(mode, cert, key)
     state = %{
       apns_socket: socket,
@@ -31,19 +31,19 @@ defmodule Pigeon.APNSWorker do
   end
 
   def handle_cast({:push, :apns, notification}, state) do 
-    %{apns_socket: socket, mode: mode, cert: cert, key: key, stream_id: stream_id} = state
+    %{stream_id: stream_id} = state
     send_push(state, notification, nil)
     { :noreply, %{state | stream_id: stream_id + 2 } }
   end
 
   def handle_cast({:push, :apns, notification, on_response}, state) do 
-    %{apns_socket: socket, mode: mode, cert: cert, key: key, stream_id: stream_id} = state
+    %{stream_id: stream_id} = state
     send_push(state, notification, on_response)
     { :noreply, %{state | stream_id: stream_id + 2 } }
   end
 
   def send_push(state, notification, on_response) do
-    %{apns_socket: socket, mode: mode, cert: cert, key: key, stream_id: stream_id} = state
+    %{apns_socket: socket, mode: mode, stream_id: stream_id} = state
     %{device_token: device_token, topic: topic, payload: payload} = notification
 
     push_header = HTTP2.push_header_frame(stream_id, mode, device_token, topic, payload)
@@ -52,12 +52,12 @@ defmodule Pigeon.APNSWorker do
     :ssl.send(socket, push_header)
     :ssl.send(socket, push_data)
 
-    {:ok, headers, payload} = HTTP2.wait_response socket
+    {:ok, _headers, payload} = HTTP2.wait_response socket
 
     case HTTP2.status_code(payload) do
       200 ->
         unless on_response == nil do on_response.({:ok, notification}) end
-      error ->
+      _error ->
         {:ok, data_headers, data_payload} = HTTP2.wait_response socket
         reason = parse_error(data_payload)
         log_error(reason, notification)
@@ -129,8 +129,8 @@ defmodule Pigeon.APNSWorker do
     Logger.debug("Got connection close...")
 
     {:ok, sock} = HTTP2.connect(mode, cert, key)
-    {:ok, data} = HTTP2.send_connection_preface(sock)
-    response = HTTP2.establish_connection(sock)
+    {:ok, _data} = HTTP2.send_connection_preface(sock)
+    HTTP2.establish_connection(sock)
 
     {:noreply, %{state | apns_socket: sock}}
   end
