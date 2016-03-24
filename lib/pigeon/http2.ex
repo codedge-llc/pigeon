@@ -10,7 +10,7 @@ defmodule Pigeon.HTTP2 do
                {:keyfile, key},
                {:password, ''},
                {:packet, 0},
-               {:reuseaddr, true},
+               {:reuseaddr, false},
                {:active, true},
                :binary]
     :ssl.start
@@ -36,7 +36,7 @@ defmodule Pigeon.HTTP2 do
     do_receive_once(socket)
   end
 
-  def status_code(<<1::1, status::7, rest::binary>>) do
+  def status_code(<<1::1, status::7, _rest::binary>>) do
     case status do
       8 -> 200
       9 -> 204
@@ -52,7 +52,7 @@ defmodule Pigeon.HTTP2 do
 
 	def establish_connection(socket) do
     {:ok, data} = send_settings(socket)
-    if data = build_frame(0x04, 0x01, 0, <<>>) do
+    if data == build_frame(0x04, 0x01, 0, <<>>) do
       send_ack(socket)
     else
       {:error, "Can't establish a connection."}
@@ -68,19 +68,14 @@ defmodule Pigeon.HTTP2 do
     :ssl.send(sock, settings_ack_frame)
   end
 
-  defp send_goaway sock do
-    :ssl.send sock, goaway_frame
-    :ssl.close sock
-  end
-
-  defp do_receive_once socket do
+  defp do_receive_once _socket do
     receive do
-      {:ssl, socket, bin} ->
+      {:ssl, _socket, bin} ->
         frame = bin |> parse_frame
         parse_frame_type(frame, bin)
-      {:ssl_closed, socket} ->
+      {:ssl_closed, _socket} ->
         {:error, "closed."}
-      {:ssl_error, socket, reason} ->
+      {:ssl_error, _socket, reason} ->
         {:error, reason}
     after
       5000 ->
@@ -88,7 +83,7 @@ defmodule Pigeon.HTTP2 do
     end
   end
 
-  def wait_response socket do
+  def wait_response _socket do
     receive do
       {:ssl, socket, bin} ->
         case wait_payload(socket) do
@@ -97,9 +92,9 @@ defmodule Pigeon.HTTP2 do
           error ->
             error
         end
-      {:ssl_closed, socket} ->
+      {:ssl_closed, _socket} ->
         {:error, "closed."}
-      {:ssl_error, socket, reason} ->
+      {:ssl_error, _socket, reason} ->
         {:error, reason}
     after
       5000 ->
@@ -107,13 +102,13 @@ defmodule Pigeon.HTTP2 do
     end
   end
 
-  defp wait_payload socket do
+  defp wait_payload _socket do
     receive do
-      {:ssl, socket, bin} ->
+      {:ssl, _socket, bin} ->
         {:ok, bin}
-      {:ssl_closed, socket} ->
+      {:ssl_closed, _socket} ->
         {:error, "closed."}
-      {:ssl_error, socket, reason} ->
+      {:ssl_error, _socket, reason} ->
         {:error, reason}
     after
       5000 ->
@@ -153,10 +148,7 @@ defmodule Pigeon.HTTP2 do
       payload: payload
     }
   end
-
-  def parse_frame(bin) do
-    bin 
-  end
+  def parse_frame(bin), do: bin 
 
 	def connection_preface, do: "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
   def settings_frame, do: build_frame(0x4, 0, 0, <<>>)
@@ -173,14 +165,20 @@ defmodule Pigeon.HTTP2 do
     uri = push_uri(mode) |> to_string
     end_headers = 0x4
     payload_size = "#{byte_size(payload)}"
-    build_frame(0x1, end_headers, stream, <<
-      <<1::1, 0::1, 0::1, 0::1, 0::1, 0::1, 1::1, 1::1>>, # method POST
-      <<1::1, 0::1, 0::1, 0::1, 0::1, 1::1, 1::1, 1::1>>, # scheme HTTPS
-      <<0::1, 0::1, 0::1, 1::1, 0::4, 0::1, byte_size(":path")::7, ":path", 0::1, byte_size("/3/device/#{device_token}")::7, "/3/device/#{device_token}">>,
-      <<0::1, 0::1, 0::1, 1::1, 0::4, 0::1, byte_size("host")::7, "host", 0::1, byte_size(uri)::7, "#{uri}">>,
-      <<0::1, 0::1, 0::1, 1::1, 0::4, 0::1, byte_size("apns-topic")::7, "apns-topic", 0::1, byte_size(topic)::7, "#{topic}">>,
-      <<0::1, 0::1, 0::1, 1::1, 0::4, 0::1, byte_size("content-length")::7, "content-length", 0::1, byte_size(payload_size)::7, "#{payload_size}">>
-    >>)
+    build_frame(0x1, end_headers, stream, 
+      post_header
+      <> https_header
+      <> encode_header(":path", "/3/device/#{device_token}")
+      <> encode_header("host", uri)
+      <> encode_header("apns-topic", topic)
+      <> encode_header("content-length", payload_size))
+  end
+
+  def post_header, do: <<1::1, 0::1, 0::1, 0::1, 0::1, 0::1, 1::1, 1::1>>
+  def https_header, do: <<1::1, 0::1, 0::1, 0::1, 0::1, 1::1, 1::1, 1::1>>
+
+  def encode_header(header, value) do
+    <<0::1, 0::1, 0::1, 1::1, 0::4, 0::1, byte_size("#{header}")::7, "#{header}", 0::1, byte_size("#{value}")::7, "#{value}">>
   end
 
   def push_data_frame(stream, payload) do
