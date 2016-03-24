@@ -11,7 +11,7 @@ defmodule Pigeon.GCMWorker do
   end
 
   def start_link(name, gcm_key) do
-    Logger.debug("Starting #{name}, key: #{gcm_key}")
+    Logger.debug("Starting #{name}")
     GenServer.start_link(__MODULE__, %{gcm_key: gcm_key}, name: name)
   end
 
