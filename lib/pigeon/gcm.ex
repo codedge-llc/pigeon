@@ -15,11 +15,12 @@ defmodule Pigeon.GCM do
   @spec push(Pigeon.GCM.Notification) :: none
   def push(notification) do
     gcm_key = Application.get_env(:pigeon, :gcm_key)
-    requests = encode_requests(notification.registration_id, notification.data)
-    response = fn(request) -> 
-      HTTPoison.post(gcm_uri, request, gcm_headers(gcm_key))
-    end
-    for r <- requests, do: response.(r)
+    requests =
+      chunk_registration_ids(notification.registration_id)
+      |> encode_requests(notification.data)
+
+    response = fn({reg_ids, payload} = request) -> HTTPoison.post(gcm_uri, payload, gcm_headers(gcm_key)) end
+    for r <- requests, do: Task.async(fn -> response.(r) end)
     :ok
   end
 
@@ -29,20 +30,27 @@ defmodule Pigeon.GCM do
   @spec push(Pigeon.GCM.Notification, (() -> none)) :: none
   def push(notification, on_response) do
     gcm_key = Application.get_env(:pigeon, :gcm_key)
-    requests = encode_requests(notification.registration_id, notification.data)
-    response = fn(request) -> 
-      {:ok, %HTTPoison.Response{status_code: status, body: body}} = HTTPoison.post(gcm_uri, request, gcm_headers(gcm_key))
+    requests =
+      chunk_registration_ids(notification.registration_id)
+      |> encode_requests(notification.data)
+
+    response = fn({reg_ids, payload} = request) -> 
+      {:ok, %HTTPoison.Response{status_code: status, body: body}} = HTTPoison.post(gcm_uri, payload, gcm_headers(gcm_key))
+      notification = %{ notification | registration_id: reg_ids }
       process_response(status, body, notification, on_response)
     end
-    for r <- requests, do: response.(r)
+    for r <- requests, do: Task.async(fn -> response.(r) end)
+    :ok
   end
 
-  def encode_requests(registration_ids, data) when is_list(registration_ids) do
-    chunks = Enum.chunk(registration_ids, 1000, 1000, [])
-    Enum.map(chunks, fn(x) -> Poison.encode!(%{registration_ids: x, data: data}) end)
+  def chunk_registration_ids(reg_ids) when is_binary(reg_ids), do: [[reg_ids]]
+  def chunk_registration_ids(reg_ids), do: Enum.chunk(reg_ids, 1000, 1000, [])
+
+  def encode_requests([[reg_id]|_rest] = registration_ids, data) do
+    [{reg_id, Poison.encode!(%{to: reg_id, data: data})}]
   end
-  def encode_requests(registration_id, data) do
-    [Poison.encode!(%{to: registration_id, data: data})]
+  def encode_requests(registration_ids, data) do
+    Enum.map(registration_ids, fn(x) -> {x, Poison.encode!(%{registration_ids: x, data: data})} end)
   end
 
   def process_response(status, body, notification, on_response) do
@@ -60,9 +68,7 @@ defmodule Pigeon.GCM do
     end
   end
 
-  def handle_error_status_code(reason, notification, on_response) do
-    on_response.({:error, reason, notification})
-  end
+  def handle_error_status_code(reason, notification, on_response), do: on_response.({:error, reason, notification})
 
   def handle_200_status(body, %{registration_id: reg_ids} = notification, on_response) when is_list(reg_ids) do
     {:ok, json} = Poison.decode(body)
