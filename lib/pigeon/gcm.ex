@@ -1,5 +1,4 @@
-defmodule Pigeon.GCMWorker do  
-  use GenServer
+defmodule Pigeon.GCM do
   require Logger
 
   defp gcm_uri, do: 'https://gcm-http.googleapis.com/gcm/send'
@@ -10,43 +9,40 @@ defmodule Pigeon.GCMWorker do
      { "Accept", "application/json" }]
   end
 
-  def start_link(name, gcm_key) do
-    Logger.debug("Starting #{name}")
-    GenServer.start_link(__MODULE__, %{gcm_key: gcm_key}, name: name)
+  @doc """
+    Sends a push over GCM
+  """
+  @spec push(Pigeon.GCM.Notification) :: none
+  def push(notification) do
+    gcm_key = Application.get_env(:pigeon, :gcm_key)
+    requests = encode_requests(notification.registration_id, notification.data)
+    response = fn(request) -> 
+      HTTPoison.post(gcm_uri, request, gcm_headers(gcm_key))
+    end
+    for r <- requests, do: response.(r)
+    :ok
   end
 
-  def stop() do
-    :gen_server.cast(self, :stop)
+  @doc """
+    Sends a push over GCM and executes function on success/failure.
+  """
+  @spec push(Pigeon.GCM.Notification, (() -> none)) :: none
+  def push(notification, on_response) do
+    gcm_key = Application.get_env(:pigeon, :gcm_key)
+    requests = encode_requests(notification.registration_id, notification.data)
+    response = fn(request) -> 
+      {:ok, %HTTPoison.Response{status_code: status, body: body}} = HTTPoison.post(gcm_uri, request, gcm_headers(gcm_key))
+      process_response(status, body, notification, on_response)
+    end
+    for r <- requests, do: response.(r)
   end
 
-  def init(args) do
-    {:ok, args}
+  def encode_requests(registration_ids, data) when is_list(registration_ids) do
+    chunks = Enum.chunk(registration_ids, 1000, 1000, [])
+    Enum.map(chunks, fn(x) -> Poison.encode!(%{registration_ids: x, data: data}) end)
   end
-
-  def handle_cast(:stop, state) do
-    { :noreply, state }
-  end
-
-  def handle_cast({:push, :gcm, notification}, %{gcm_key: gcm_key} = state) do 
-    request = encode_request(notification)
-    HTTPoison.post(gcm_uri, request, gcm_headers(gcm_key))
-    { :noreply, state }
-  end
-
-  def handle_cast({:push, :gcm, notification, on_response}, %{gcm_key: gcm_key} = state) do 
-    request = encode_request(notification)
-    {:ok, %HTTPoison.Response{status_code: status, body: body}} = HTTPoison.post(gcm_uri, request, gcm_headers(gcm_key))
-    Logger.debug inspect(body)
-    process_response(status, body, notification, on_response)
-
-    { :noreply, state }
-  end
-
-  def encode_request(%Pigeon.GCM.Notification{registration_id: reg_ids, data: data} = notification) when is_list(reg_ids) do
-    Poison.encode!(%{registration_ids: reg_ids, data: data, dry_run: true})
-  end
-  def encode_request(%Pigeon.GCM.Notification{registration_id: reg_id, data: data} = notification) do
-    Poison.encode!(%{to: reg_id, data: data, dry_run: true})
+  def encode_requests(registration_id, data) do
+    [Poison.encode!(%{to: registration_id, data: data})]
   end
 
   def process_response(status, body, notification, on_response) do
@@ -80,8 +76,7 @@ defmodule Pigeon.GCMWorker do
   end
 
   def process_callback({reg_id, response} = result, notification, on_response) do
-    thing = parse_result(response)
-    case thing do
+    case parse_result(response) do
       {:ok, message_id} ->
         notification = %{ notification | registration_id: reg_id, message_id: message_id }
         on_response.({:ok, notification})
@@ -97,15 +92,19 @@ defmodule Pigeon.GCMWorker do
   def parse_result(result) do
     error = result["error"]
     if is_nil(error) do
-      message_id = result["message_id"]
-      registration_id = result["registration_id"]
-      if is_nil(registration_id) do
-        {:ok, message_id}
-      else
-        {:ok, message_id, registration_id}
-      end
+      parse_success(result)
     else
       {:error, String.to_atom(error)}
+    end
+  end
+
+  def parse_success(result) do
+    message_id = result["message_id"]
+    registration_id = result["registration_id"]
+    if is_nil(registration_id) do
+      {:ok, message_id}
+    else
+      {:ok, message_id, registration_id}
     end
   end
 end

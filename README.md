@@ -1,12 +1,15 @@
+[![Build Status](https://travis-ci.org/codedge-llc/pigeon.svg?branch=master)](https://travis-ci.org/codedge-llc/pigeon)
 [![Hex.pm](http://img.shields.io/hexpm/v/pigeon.svg)](https://hex.pm/packages/pigeon) [![Hex.pm](http://img.shields.io/hexpm/dt/pigeon.svg)](https://hex.pm/packages/pigeon)
 # Pigeon
 HTTP2-compliant wrapper for sending iOS and Android push notifications.
 
 ## Installation
 Add pigeon as a `mix.exs` dependency:
+
+**Note: Pigeon's API will likely change until v1.0**
   ```elixir
   def deps do
-    [{:pigeon, "~> 0.4.0"}]
+    [{:pigeon, "~> 0.5.0"}]
   end
   ```
   
@@ -27,18 +30,37 @@ After running `mix deps.get`, configure `mix.exs` to start the application autom
   
 2. Create a notification packet. 
   ```elixir
-  data = %{ key1: "value1", key2: "value2" }
-  n = Pigeon.GCM.Notification.new(data, "your device token (registration ID)")
+  data = %{ message: "your message" }
+  n = Pigeon.GCM.Notification.new(data, "your device registration ID")
   ```
  
 3. Send the packet.
   ```elixir
   Pigeon.GCM.push(n)
   ```
+  
+### Sending to Multiple Registration IDs
+Pass in a list of registration IDs, as many as you want. IDs will automatically be chunked into sets of 1000 before sending the push (as per GCM guidelines).
+  ```elixir
+  data = %{ message: "your message" }
+  n = Pigeon.GCM.Notification.new(data, ["first ID", "second ID"])
+  ```
+
+
+### Notification Struct
+When using `Pigeon.GCM.Notification.new/2`, `message_id` and `updated_registration` will always be `nil`. These keys are set in the response callback. `registration_id` can either be a single string or a list of strings.
+```elixir
+%Pigeon.GCM.Notification{
+    data: nil,
+    message_id: nil,
+    registration_id: nil,
+    updated_registration_id: nil
+}
+```
 
 ## APNS (Apple iOS)
 ### Usage
-1. Set your environment environment variables. See below for setting up your certificate and key.
+1. Set your environment variables. See below for setting up your certificate and key.
   ```elixir
   config :pigeon, 
     apns_mode: :dev,
@@ -99,10 +121,10 @@ Or define custom payload data with an optional 5th parameter:
 
 ## Handling Push Responses
 ### GCM
-1. Pass an optional anonymous function as your second parameter.
+1. Pass an optional anonymous function as your second parameter. This function will get called on each registration ID assuming some of them were successful.
   ```elixir
   data = %{ message: "your message" }
-  n = Pigeon.GCM.Notification.new(data, "your device token")
+  n = Pigeon.GCM.Notification.new(data, "device registration ID")
   Pigeon.GCM.push(n, fn(x) -> IO.inspect(x) end)
   ```
   
@@ -111,11 +133,14 @@ Or define custom payload data with an optional 5th parameter:
   on_response = fn(x) ->
     case x do
       {:ok, notification} ->
-        Logger.debug "Push successful!"
+        # Push successful, check to see if the registration ID changed
+        if !is_nil(notification.updated_registration_id) do
+          # Update the registration ID in the database
+        end
       {:error, :InvalidRegistration, notification} ->
-        Logger.error "Bad device token!"
+        # Remove the bad ID from the database
       {:error, reason, notification} ->
-        Logger.error "Some other error happened."
+        # Handle other errors
     end
   end
   
@@ -123,6 +148,10 @@ Or define custom payload data with an optional 5th parameter:
   n = Pigeon.GCM.Notification.new(data, "your device token")
   Pigeon.GCM.push(n, on_response)
   ```
+  
+Notification structs returned as `{:ok, notification}` will always contain exactly one registration ID for the `registration_id` key. 
+
+For `{:error, reason, notification}` tuples, this key can be one or many IDs depending on the error. `:InvalidRegistration` will return exactly one, whereas `:AuthenticationError` and `:InternalServerError` will return up to 1000 IDs (and the callback called for each failed 1000-chunked request).
   
 #### Error Responses
 *Slightly modified from [GCM Server Reference](https://developers.google.com/cloud-messaging/http-server-ref#error-codes)*

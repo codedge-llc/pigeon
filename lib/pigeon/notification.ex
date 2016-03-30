@@ -35,8 +35,13 @@ defmodule Pigeon.APNS.Notification do
 end
 
 defmodule Pigeon.GCM.Notification do
-  @spec new(String.t, String.t) :: %{to: String.t, data: String.t}
-  def new(data, token) do
-    Pigeon.Notification.json_payload(%{to: token, data: data})
+  defstruct registration_id: nil, data: nil, message_id: nil, updated_registration_id: nil
+
+  def new(data, registration_ids) when is_list(registration_ids) do
+    %Pigeon.GCM.Notification{registration_id: registration_ids, data: data}
+  end
+
+  def new(data, registration_id) do
+    %Pigeon.GCM.Notification{registration_id: registration_id, data: data}
   end
 end

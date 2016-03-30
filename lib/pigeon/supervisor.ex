@@ -12,27 +12,16 @@ defmodule Pigeon.Supervisor do
 
   def init(:ok) do
     children = []
-
-    if valid_gcm_config? do
-      gcm_key = Application.get_env(:pigeon, :gcm_key)
-      gcm = worker(Pigeon.GCMWorker, [:gcm_worker, gcm_key], id: :gcm_worker)
-      children = [gcm | children]
-    end
     
     if valid_apns_config? do
       apns_mode = Application.get_env(:pigeon, :apns_mode)
       apns_cert = Application.get_env(:pigeon, :apns_cert)
       apns_key = Application.get_env(:pigeon, :apns_key)
       apns = worker(Pigeon.APNSWorker, [:apns_worker, apns_mode, apns_cert, apns_key], id: :apns_worker)
-      children = [apns | children]
+      children = [apns]
     end
 
     supervise(children, strategy: :one_for_one)
-  end
-
-  def valid_gcm_config? do
-    gcm_key = Application.get_env(:pigeon, :gcm_key) |> is_nil
-    !gcm_key
   end
   
   def valid_apns_config? do
@@ -46,8 +35,6 @@ defmodule Pigeon.Supervisor do
     case service do
       :apns ->
         GenServer.cast(:apns_worker, {:push, :apns, notification})
-      :gcm ->
-        GenServer.cast(:gcm_worker, {:push, :gcm, notification})
       _ ->
         Logger.error "Unknown service #{service}"
     end
@@ -57,8 +44,6 @@ defmodule Pigeon.Supervisor do
     case service do
       :apns ->
         GenServer.cast(:apns_worker, {:push, :apns, notification, on_response})
-      :gcm ->
-        GenServer.cast(:gcm_worker, {:push, :gcm, notification, on_response})
       _ ->
         Logger.error "Unknown service #{service}"
     end

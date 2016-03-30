@@ -4,7 +4,7 @@ defmodule Pigeon.Mixfile do
   def project do
     [app: :pigeon,
      name: "Pigeon",
-     version: "0.4.1",
+     version: "0.5.0",
      elixir: "~> 1.2",
      source_url: "https://github.com/codedge-llc/pigeon",
      description: description,
@@ -28,7 +28,7 @@ defmodule Pigeon.Mixfile do
 
   defp description do
     """
-    HTTP2-compliant wrapper for sending iOS and Android push notifications.
+    HTTP2-compliant wrapper for sending iOS (APNS) and Android (GCM) push notifications.
     """
   end
 
