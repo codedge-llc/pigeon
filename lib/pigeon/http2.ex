@@ -14,26 +14,22 @@ defmodule Pigeon.HTTP2 do
                {:active, true},
                :binary]
     :ssl.start
-    case :ssl.connect(uri, 443, options) do
-      {:ok, ssl_socket} ->
-        {:ok, ssl_socket}
-      {:error, reason} ->
-        IO.inspect {:error, reason}
+    case :ssl.connect(uri, 443, options, 3000) do
+      {:ok, ssl_socket} -> {:ok, ssl_socket}
+      {:error, reason} -> {:error, reason}
     end
   end
 
   def push_uri(mode) do
     case mode do
-      :dev ->
-        apns_development_api_uri
-      :prod ->
-        apns_production_api_uri
+      :dev -> apns_development_api_uri
+      :prod -> apns_production_api_uri
     end
   end
 
   def send_connection_preface(socket) do
     :ssl.send(socket, connection_preface)
-    do_receive_once(socket)
+    do_receive_once socket
   end
 
   def status_code(<<1::1, status::7, _rest::binary>>) do
@@ -74,8 +70,10 @@ defmodule Pigeon.HTTP2 do
         frame = bin |> parse_frame
         parse_frame_type(frame, bin)
       {:ssl_closed, _socket} ->
+        Logger.error "SSL closed"
         {:error, "closed."}
       {:ssl_error, _socket, reason} ->
+        Logger.error "SSL error: #{inspect(reason)}"
         {:error, reason}
     after
       5000 ->
@@ -166,12 +164,12 @@ defmodule Pigeon.HTTP2 do
     end_headers = 0x4
     payload_size = "#{byte_size(payload)}"
     build_frame(0x1, end_headers, stream, 
-      post_header
-      <> https_header
-      <> encode_header(":path", "/3/device/#{device_token}")
-      <> encode_header("host", uri)
-      <> encode_header("apns-topic", topic)
-      <> encode_header("content-length", payload_size))
+      <<post_header::bitstring,
+      https_header::bitstring,
+      encode_header(":path", "/3/device/#{device_token}")::bitstring,
+      encode_header("host", uri)::bitstring,
+      encode_header("apns-topic", topic)::bitstring,
+      encode_header("content-length", payload_size)::bitstring>>)
   end
 
   def post_header, do: <<1::1, 0::1, 0::1, 0::1, 0::1, 0::1, 1::1, 1::1>>
@@ -187,6 +185,6 @@ defmodule Pigeon.HTTP2 do
 
   def build_frame(frame_type, flags, stream_id, payload) do
     header = <<byte_size(payload)::24, frame_type::8, flags::8, 0::1, stream_id::31>>
-    <<header::binary, payload::binary>>
+    <<header::bitstring, payload::bitstring>>
   end
 end

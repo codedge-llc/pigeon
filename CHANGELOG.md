@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.5.2
+* Fixed bug where APNSWorker would hang up if SSL connection failed. Now retries the connection twice more before gracefully shutting down. 
+
 ## v0.5.1
 * GCM error responses return proper chunk of regstration IDs
 

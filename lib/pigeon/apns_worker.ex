@@ -8,12 +8,31 @@ defmodule Pigeon.APNSWorker do
     GenServer.start_link(__MODULE__, {:ok, mode, cert, key}, name: name)
   end
 
-  def stop() do
+  def stop do
     :gen_server.cast(self, :stop)
   end
 
   def init({:ok, mode, cert, key}) do
-    {:ok, socket} = HTTP2.connect(mode, cert, key)
+    case connect_socket(mode, cert, key, 0) do
+      {:ok, socket} ->
+        establish_connection(mode, cert, key, socket)
+      {:error, :timeout} ->
+        Logger.error "Failed to establish SSL connection. Is the certificate signed for :#{mode} mode?"
+        {:stop, {:error, :timeout}}
+    end
+  end
+
+  def connect_socket(_mode, _cert, _key, 3), do: {:error, :timeout}
+  def connect_socket(mode, cert, key, tries) do
+    case HTTP2.connect(mode, cert, key) do
+      {:ok, socket} ->
+        {:ok, socket}
+      {:error, :timeout} ->
+        connect_socket(mode, cert, key, tries + 1)
+    end
+  end
+
+  def establish_connection(mode, cert, key, socket) do
     state = %{
       apns_socket: socket,
       mode: mode,
