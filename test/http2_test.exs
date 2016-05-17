@@ -7,6 +7,10 @@ defmodule Pigeon.HTTP2Test do
     assert HTTP2.push_uri(:dev) == 'api.development.push.apple.com'
   end
 
+  test "push_port" do
+    assert HTTP2.push_port == 2195
+  end
+
   test "connection_preface" do
     assert HTTP2.connection_preface == "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
   end

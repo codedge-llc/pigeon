@@ -14,7 +14,7 @@ defmodule Pigeon.HTTP2 do
                {:active, true},
                :binary]
     :ssl.start
-    case :ssl.connect(uri, 443, options, 3000) do
+    case :ssl.connect(uri, push_port, options, 3000) do
       {:ok, ssl_socket} -> {:ok, ssl_socket}
       {:error, reason} -> {:error, reason}
     end
@@ -26,6 +26,8 @@ defmodule Pigeon.HTTP2 do
       :prod -> apns_production_api_uri
     end
   end
+
+  def push_port, do: Application.get_env(:pigeon, :apns_port) || 443
 
   def send_connection_preface(socket) do
     :ssl.send(socket, connection_preface)
