@@ -27,7 +27,12 @@ defmodule Pigeon.HTTP2 do
     end
   end
 
-  def push_port, do: Application.get_env(:pigeon, :apns_port) || 443
+  def push_port do
+    case Application.get_env(:pigeon, :apns_2197) do
+      true -> 2197
+      _ -> 443
+    end
+  end
 
   def send_connection_preface(socket) do
     :ssl.send(socket, connection_preface)

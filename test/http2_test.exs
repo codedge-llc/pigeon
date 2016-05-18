@@ -8,7 +8,7 @@ defmodule Pigeon.HTTP2Test do
   end
 
   test "push_port" do
-    assert HTTP2.push_port == 2195
+    assert HTTP2.push_port == 2197
   end
 
   test "connection_preface" do
