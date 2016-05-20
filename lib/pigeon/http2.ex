@@ -1,5 +1,6 @@
 defmodule Pigeon.HTTP2 do
   require Logger
+  import Pigeon.Notification
 
   defp apns_production_api_uri, do: 'api.push.apple.com'
   defp apns_development_api_uri, do: 'api.development.push.apple.com'
@@ -166,17 +167,22 @@ defmodule Pigeon.HTTP2 do
     build_frame(0x7, 0x0, 0, <<0::31, 1::1, no_error::32>>)
   end
 
-  def push_header_frame(stream, mode, device_token, topic, payload) do
+  def push_header_frame(stream, mode, notification) do
     uri = push_uri(mode) |> to_string
     end_headers = 0x4
-    payload_size = "#{byte_size(payload)}"
-    build_frame(0x1, end_headers, stream, 
-      <<post_header::bitstring,
+    payload_size = "#{byte_size(json_payload(notification.payload))}"
+    headers = <<post_header::bitstring,
       https_header::bitstring,
-      encode_header(":path", "/3/device/#{device_token}")::bitstring,
+      encode_header(":path", "/3/device/#{notification.device_token}")::bitstring,
       encode_header("host", uri)::bitstring,
-      encode_header("apns-topic", topic)::bitstring,
-      encode_header("content-length", payload_size)::bitstring>>)
+      encode_header("apns-topic", notification.topic)::bitstring,
+      encode_header("content-length", payload_size)::bitstring>>
+
+    unless notification.expiration == nil do
+      headers = headers <> encode_header("apns-expiration", notification.expiration)
+    end
+
+    build_frame(0x1, end_headers, stream, headers)
   end
 
   def post_header, do: <<1::1, 0::1, 0::1, 0::1, 0::1, 0::1, 1::1, 1::1>>

@@ -58,13 +58,13 @@ defmodule Pigeon.GCM do
       200 -> 
         handle_200_status(body, notification, on_response)
       400 ->
-        handle_error_status_code(:InvalidJSON, notification, on_response)
+        handle_error_status_code(:invalid_jSON, notification, on_response)
       401 ->
-        handle_error_status_code(:AuthenticationError, notification, on_response)
+        handle_error_status_code(:authentication_error, notification, on_response)
       500 ->
-        handle_error_status_code(:InternalServerError, notification, on_response)
+        handle_error_status_code(:internal_server_error, notification, on_response)
       _ ->
-        handle_error_status_code(:UnknownError, notification, on_response)
+        handle_error_status_code(:unknown_error, notification, on_response)
     end
   end
 
@@ -100,7 +100,8 @@ defmodule Pigeon.GCM do
     if is_nil(error) do
       parse_success(result)
     else
-      {:error, String.to_atom(error)}
+      error_atom = error |> Mix.Utils.underscore |> String.to_atom
+      {:error, error_atom}
     end
   end
 

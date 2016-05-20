@@ -13,24 +13,32 @@ defmodule Pigeon.Notification do
 end
 
 defmodule Pigeon.APNS.Notification do
+  defstruct device_token: nil, payload: %{"aps" => %{}}, expiration: nil, topic: nil
 
-  @spec new(String.t, String.t, String.t) :: %{device_token: String.t, topic: String.t, payload: String.t}
+  @spec new(String.t, String.t, String.t) :: %{msg: String.t, device_token: String.t, topic: String.t}
   def new(msg, token, topic) do
-    new(msg, token, topic, %{}, %{})
+    %Pigeon.APNS.Notification{device_token: token, topic: topic, payload: %{"aps" => %{"alert" => msg}}}
   end
 
-  @spec new(String.t, String.t, String.t, %{}) :: %{device_token: String.t, topic: String.t, payload: String.t}
-  def new(msg, token, topic, options) do
-    new(msg, token, topic, options, %{})
+  def put_alert(notification, alert), do: update_payload(notification, "alert", alert)
+
+  def put_badge(notification, badge), do: update_payload(notification, "badge", badge)
+
+  def put_sound(notification, sound), do: update_payload(notification, "sound", sound)
+
+  def put_content_available(notification), do: update_payload(notification, "content-available", 1)
+
+  def put_category(notification, category), do: update_payload(notification, "category", category)
+
+  defp update_payload(notification, key, value) do
+    new_aps = Map.get(notification.payload, "aps") |> Map.put(key, value)
+    new_payload = notification.payload |> Map.put("aps", new_aps)
+    %{notification | payload: new_payload}
   end
-
-  @spec new(String.t, String.t, String.t, %{}, %{}) :: %{device_token: String.t, topic: String.t, payload: String.t}
-  def new(msg, token, topic, options, custom) do
-    new_options = Map.put(options, :alert, msg)
-    payload = Map.merge(%{aps: new_options}, custom)
-      |> Pigeon.Notification.json_payload
-
-    %{device_token: token, topic: topic, payload: payload}
+  
+  def put_custom(notification, data) do
+    new_payload = Map.merge(notification.payload, data)
+    %{notification | payload: new_payload}
   end
 end
 

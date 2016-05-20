@@ -9,7 +9,7 @@ Add pigeon as a `mix.exs` dependency:
 **Note: Pigeon's API will likely change until v1.0**
   ```elixir
   def deps do
-    [{:pigeon, "~> 0.5.0"}]
+    [{:pigeon, "~> 0.6.0"}]
   end
   ```
   
@@ -66,6 +66,7 @@ When using `Pigeon.GCM.Notification.new/2`, `message_id` and `updated_registrati
     apns_mode: :dev,
     apns_cert: "cert.pem",
     apns_key: "key_unencrypted.pem"
+    apns_2197: true (optional)
   ```
 
 2. Create a notification packet. **Note: Your push topic is generally the app's bundle identifier.**
@@ -78,6 +79,17 @@ When using `Pigeon.GCM.Notification.new/2`, `message_id` and `updated_registrati
   ```elixir
   Pigeon.APNS.push(n)
   ```
+  
+### Notification Struct
+The contents of `payload` is what will be received on the iOS device. If updating this field directly, use strings for your keys. It is recommended to use the convenience functions defined in *Notifications with Custom Data*. `expiration` is a UNIX epoch date in seconds (UTC). Passing a value of `0` expires the notification immediately and Apple will not attempt to redeliver it.
+```elixir
+%Pigeon.APNS.Notification{
+    device_token: nil,
+    topic: nil,
+    expiration: nil,
+    payload: nil
+}
+```
   
 ### Generating Your Certificate and Key .pem
 1. In Keychain Access, right-click your push certificate and select _"Export..."_
@@ -102,21 +114,31 @@ When using `Pigeon.GCM.Notification.new/2`, `message_id` and `updated_registrati
 8. `cert.pem` and `key_unencrypted.pem` can now be used as the cert and key in `Pigeon.push`, respectively. Set them in your `config.exs`
 
 ### Notifications with Custom Data
-Notifications can contain additional information for the `aps` key with a map passed as an optional 4th parameter (e.g. setting badge counters or defining custom sounds)
+Notifications can contain additional information in `payload`. (e.g. setting badge counters or defining custom sounds)
   ```elixir
-  n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic", %{
-    badge: 5,
-    sound: "default"
+  import Pigeon.APNS.Notification
+  n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic")
+  |> put_badge(5)
+  |> put_sound("default")
+  |> put_content_available
+  |> put_category("category")
+  ```
+  
+Using a more complex `alert` dictionary?
+  ```elixir
+  n
+  |> put_alert(%{
+    "title" => "alert title",
+    "body" => "alert body"
   })
   ```
   
-Or define custom payload data with an optional 5th parameter:
+Define custom payload data like so:
   ```elixir
-  n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic", %{}, %{
-    your-custom-key: %{
-      custom-value: 500
-    }
-  })
+  n
+  |> put_custom("your-custom-key" => %{
+      "custom-value" => 500
+    })
   ```
 
 ## Handling Push Responses
@@ -137,7 +159,7 @@ Or define custom payload data with an optional 5th parameter:
         if !is_nil(notification.updated_registration_id) do
           # Update the registration ID in the database
         end
-      {:error, :InvalidRegistration, notification} ->
+      {:error, :invalid_registration, notification} ->
         # Remove the bad ID from the database
       {:error, reason, notification} ->
         # Handle other errors
@@ -156,23 +178,23 @@ For `{:error, reason, notification}` tuples, this key can be one or many IDs dep
 #### Error Responses
 *Slightly modified from [GCM Server Reference](https://developers.google.com/cloud-messaging/http-server-ref#error-codes)*
 
-|Reason                     |Description                  |
-|---------------------------|-----------------------------|
-|:MissingRegistration       |Missing Registration Token   |
-|:InvalidRegistration       |Invalid Registration Token   |
-|:NotRegistered             |Unregistered Device          |
-|:InvalidPackageName        |Invalid Package Name         |
-|:AuthenticationError       |Authentication Error         |
-|:MismatchSenderId          |Mismatched Sender            |
-|:InvalidJSON               |Invalid JSON                 |
-|:MessageTooBig             |Message Too Big              |
-|:InvalidDataKey            |Invalid Data Key             |
-|:InvalidTtl                |Invalid Time to Live         |
-|:Unavailable               |Timeout                      |
-|:InternalServerError       |Internal Server Error        |
-|:DeviceMessageRateExceeded |Message Rate Exceeded        |
-|:TopicsMessageRateExceeded |Topics Message Rate Exceeded |
-|:UnknownError              |Unknown Error                |
+|Reason                           |Description                  |
+|---------------------------------|-----------------------------|
+|`:missing_registration`          |Missing Registration Token   |
+|`:invalid_registration`          |Invalid Registration Token   |
+|`:not_registered`                |Unregistered Device          |
+|`:invalid_package_name`          |Invalid Package Name         |
+|`:authentication_error`          |Authentication Error         |
+|`:mismatch_sender_id`            |Mismatched Sender            |
+|`:invalid_jSON`                  |Invalid JSON                 |
+|`:message_too_big`               |Message Too Big              |
+|`:invalid_data_key`              |Invalid Data Key             |
+|`:invalid_ttl`                   |Invalid Time to Live         |
+|`:unavailable`                   |Timeout                      |
+|`:internal_server_error`         |Internal Server Error        |
+|`:device_message_rate_exceeded`  |Message Rate Exceeded        |
+|`:topics_message_rate_exceeded`  |Topics Message Rate Exceeded |
+|`:unknown_error`                 |Unknown Error                |
 
 ### APNS
 1. Pass an optional anonymous function as your second parameter.
@@ -187,7 +209,7 @@ For `{:error, reason, notification}` tuples, this key can be one or many IDs dep
     case x do
       {:ok, notification} ->
         Logger.debug "Push successful!"
-      {:error, :BadDeviceToken, notification} ->
+      {:error, :bad_device_token, notification} ->
         Logger.error "Bad device token!"
       {:error, reason, notification} ->
         Logger.error "Some other error happened."
@@ -201,28 +223,28 @@ For `{:error, reason, notification}` tuples, this key can be one or many IDs dep
 #### Error Responses
 *Taken from [APNS Provider API](https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/APNsProviderAPI.html#//apple_ref/doc/uid/TP40008194-CH101-SW3)*
 
-|Reason                     |Description                   |
-|---------------------------|------------------------------|
-|:PayloadEmpty              |The message payload was empty.|
-|:PayloadTooLarge           |The message payload was too large. The maximum payload size is 4096 bytes.|
-|:BadTopic                  |The apns-topic was invalid.|
-|:TopicDisallowed           |Pushing to this topic is not allowed.|
-|:BadMessageId              |The apns-id value is bad.|
-|:BadExpirationDate         |The apns-expiration value is bad.|
-|:BadPriority               |The apns-priority value is bad.|
-|:MissingDeviceToken        |The device token is not specified in the request :path. Verify that the :path header contains the device token.|
-|:BadDeviceToken            |The specified device token was bad. Verify that the request contains a valid token and that the token matches the environment.|
-|:DeviceTokenNotForTopic    |The device token does not match the specified topic.|
-|:Unregistered              |The device token is inactive for the specified topic.|
-|:DuplicateHeaders          |One or more headers were repeated.|
-|:BadCertificateEnvironment |The client certificate was for the wrong environment.|
-|:BadCertificate            |The certificate was bad.|
-|:Forbidden                 |The specified action is not allowed.|
-|:BadPath                   |The request contained a bad :path value.|
-|:MethodNotAllowed          |The specified :method was not POST.|
-|:TooManyRequests           |Too many requests were made consecutively to the same device token.|
-|:IdleTimeout               |Idle time out.|
-|:Shutdown                  |The server is shutting down.|
-|:InternalServerError       |An internal server error occurred.|
-|:ServiceUnavailable        |The service is unavailable.|
-|:MissingTopic              |The apns-topic header of the request was not specified and was required. The apns-topic header is mandatory when the client is connected using a certificate that supports multiple topics.|
+|Reason                         |Description                   |
+|-------------------------------|------------------------------|
+|`:payload_empty`                 |The message payload was empty.|
+|`:payload_too_large`             |The message payload was too large. The maximum payload size is 4096 bytes.|
+|`:bad_topic`                     |The apns-topic was invalid.|
+|`:topic_disallowed`              |Pushing to this topic is not allowed.|
+|`:bad_message_id`                |The apns-id value is bad.|
+|`:bad_expiration_date`           |The apns-expiration value is bad.|
+|`:bad_priority`                  |The apns-priority value is bad.|
+|`:missing_device_token`          |The device token is not specified in the request :path. Verify that the :path header contains the device token.|
+|`:bad_device_token`              |The specified device token was bad. Verify that the request contains a valid token and that the token matches the environment.|
+|`:device_token_not_for_topic`    |The device token does not match the specified topic.|
+|`:unregistered`                  |The device token is inactive for the specified topic.|
+|`:duplicate_headers`             |One or more headers were repeated.|
+|`:bad_certificate_environment`   |The client certificate was for the wrong environment.|
+|`:bad_certificate`               |The certificate was bad.|
+|`:forbidden`                     |The specified action is not allowed.|
+|`:bad_path`                      |The request contained a bad :path value.|
+|`:method_not_allowed`            |The specified :method was not POST.|
+|`:too_many_requests`             |Too many requests were made consecutively to the same device token.|
+|`:idle_timeout`                  |Idle time out.|
+|`:shutdown`                      |The server is shutting down.|
+|`:internal_server_error`         |An internal server error occurred.|
+|`:service_unavailable`           |The service is unavailable.|
+|`:missing_topic`                 |The apns-topic header of the request was not specified and was required. The apns-topic header is mandatory when the client is connected using a certificate that supports multiple topics.|

@@ -29,7 +29,7 @@ defmodule Pigeon.GCMTest do
 
     Pigeon.GCM.push(n, fn(x) -> send self, x end)
 
-    assert_receive {_ref, [{:error, :InvalidRegistration, n}]}, 5000
+    assert_receive {_ref, [{:error, :invalid_registration, n}]}, 5000
     assert n.registration_id == reg_id
     assert n.data == data
   end
@@ -43,7 +43,7 @@ defmodule Pigeon.GCMTest do
   end
 
   test "parse_result with error unavailable" do
-    assert Pigeon.GCM.parse_result(%{ "error" => "Unavailable" }) == {:error, :Unavailable}
+    assert Pigeon.GCM.parse_result(%{ "error" => "Unavailable" }) == {:error, :unavailable}
   end
 
   test "encode_requests with one registration_id" do

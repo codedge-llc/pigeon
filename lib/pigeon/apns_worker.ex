@@ -63,10 +63,10 @@ defmodule Pigeon.APNSWorker do
 
   def send_push(state, notification, on_response) do
     %{apns_socket: socket, mode: mode, stream_id: stream_id} = state
-    %{device_token: device_token, topic: topic, payload: payload} = notification
 
-    push_header = HTTP2.push_header_frame(stream_id, mode, device_token, topic, payload)
-    push_data = HTTP2.push_data_frame(stream_id, payload)
+    json = Pigeon.Notification.json_payload(notification.payload)
+    push_header = HTTP2.push_header_frame(stream_id, mode, notification)
+    push_data = HTTP2.push_data_frame(stream_id, json)
 
     :ssl.send(socket, push_header)
     :ssl.send(socket, push_data)
@@ -86,7 +86,7 @@ defmodule Pigeon.APNSWorker do
 
   defp parse_error(data) do
     {:ok, response} = Poison.decode(data)
-    response["reason"] |> String.to_atom
+    response["reason"] |> Mix.Utils.underscore |> String.to_atom
   end
 
   defp log_error(reason, notification) do
@@ -95,51 +95,51 @@ defmodule Pigeon.APNSWorker do
 
   def error_msg(error) do
 		case error do
-			:PayloadEmpty ->
+			:payload_empty ->
 				"The message payload was empty."
-			:PayloadTooLarge ->
+			:payload_too_large ->
 			 "The message payload was too large. The maximum payload size is 4096 bytes."
-			:BadTopic ->
+			:bad_topic ->
 			 "The apns-topic was invalid."
-			:TopicDisallowed ->
+			:topic_disallowed ->
 			 "Pushing to this topic is not allowed."
-			:BadMessageId ->
+			:bad_message_id ->
 			 "The apns-id value is bad."
-			:BadExpirationDate ->
+			:bad_expiration_date ->
 			 "The apns-expiration value is bad."
-			:BadPriority ->
+			:bad_priority ->
 			 "The apns-priority value is bad."
-			:MissingDeviceToken ->
+			:missing_device_token ->
 			 "The device token is not specified in the request :path. Verify that the :path header contains the device token."
-			:BadDeviceToken ->
+			:bad_device_token ->
 			 "The specified device token was bad. Verify that the request contains a valid token and that the token matches the environment."
-			:DeviceTokenNotForTopic ->
+			:device_token_not_for_topic ->
 			 "The device token does not match the specified topic."
-			:Unregistered ->
+			:unregistered ->
 			 "The device token is inactive for the specified topic."
-			:DuplicateHeaders ->
+			:duplicate_headers ->
 			 "One or more headers were repeated."
-			:BadCertificateEnvironment ->
+			:bad_certificate_environment ->
 			 "The client certificate was for the wrong environment."
-			:BadCertificate ->
+			:bad_certificate ->
 			 "The certificate was bad."
-			:Forbidden ->
+			:forbidden ->
 			 "The specified action is not allowed."
-			:BadPath ->
+			:bad_path ->
 			 "The request contained a bad :path value."
-			:MethodNotAllowed ->
+			:method_not_allowed ->
 			 "The specified :method was not POST."
-			:TooManyRequests ->
+			:too_many_requests ->
 			 "Too many requests were made consecutively to the same device token."
-			:IdleTimeout ->
+			:idle_timeout ->
 			 "Idle time out."
-			:Shutdown ->
+			:shutdown ->
 			 "The server is shutting down."
-			:InternalServerError ->
+			:internal_server_error ->
 			 "An internal server error occurred."
-			:ServiceUnavailable ->
+			:service_unavailable ->
 			 "The service is unavailable."
-			:MissingTopic ->
+			:missing_topic ->
 				"The apns-topic header of the request was not specified and was required. The apns-topic header is mandatory when the client is connected using a certificate that supports multiple topics."
     end
   end
