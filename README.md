@@ -136,9 +136,9 @@ Using a more complex `alert` dictionary?
 Define custom payload data like so:
   ```elixir
   n
-  |> put_custom("your-custom-key" => %{
+  |> put_custom(%{"your-custom-key" => %{
       "custom-value" => 500
-    })
+    }})
   ```
 
 ## Handling Push Responses
@@ -173,7 +173,7 @@ Define custom payload data like so:
   
 Notification structs returned as `{:ok, notification}` will always contain exactly one registration ID for the `registration_id` key. 
 
-For `{:error, reason, notification}` tuples, this key can be one or many IDs depending on the error. `:InvalidRegistration` will return exactly one, whereas `:AuthenticationError` and `:InternalServerError` will return up to 1000 IDs (and the callback called for each failed 1000-chunked request).
+For `{:error, reason, notification}` tuples, this key can be one or many IDs depending on the error. `:invalid_registration` will return exactly one, whereas `:authentication_error` and `:internal_server_error` will return up to 1000 IDs (and the callback called for each failed 1000-chunked request).
   
 #### Error Responses
 *Slightly modified from [GCM Server Reference](https://developers.google.com/cloud-messaging/http-server-ref#error-codes)*
