@@ -4,7 +4,9 @@ defmodule Pigeon.GCMTest do
   test "successfully sends a valid push" do
     reg_id = Application.get_env(:pigeon, :valid_gcm_reg_id)
     data = %{message: "Test push"}
-    result = Pigeon.GCM.Notification.new(data, reg_id)
+    result =
+      data
+      |> Pigeon.GCM.Notification.new(reg_id)
       |> Pigeon.GCM.push
 
     assert result == :ok
@@ -39,7 +41,8 @@ defmodule Pigeon.GCMTest do
   end
 
   test "parse_result with success and new registration_id" do
-    assert Pigeon.GCM.parse_result(%{ "message_id" => "1:2342", "registration_id" => "32" }) == {:ok, "1:2342", "32"}
+    assert Pigeon.GCM.parse_result(%{ "message_id" => "1:2342", "registration_id" => "32" }) ==
+      {:ok, "1:2342", "32"}
   end
 
   test "parse_result with error unavailable" do
@@ -49,13 +52,15 @@ defmodule Pigeon.GCMTest do
   test "encode_requests with one registration_id" do
     data = %{key: "value"}
     registration_id = [["123456"]]
-    assert Pigeon.GCM.encode_requests(registration_id, data) == [{"123456", "{\"to\":\"123456\",\"data\":{\"key\":\"value\"}}"}]
+    assert Pigeon.GCM.encode_requests(registration_id, data) ==
+      [{"123456", ~S({"to":"123456","data":{"key":"value"}})}]
   end
 
   test "encode_requests with multiple registration_ids" do
     data = %{key: "value"}
     registration_id = ["aaaaaa", "bbbbbb", "cccccc"]
-    assert Pigeon.GCM.encode_requests([registration_id], data) == [{registration_id, "{\"registration_ids\":[\"aaaaaa\",\"bbbbbb\",\"cccccc\"],\"data\":{\"key\":\"value\"}}"}]
+    expected = ~S({"registration_ids":["aaaaaa","bbbbbb","cccccc"],"data":{"key":"value"}})
+    assert Pigeon.GCM.encode_requests([registration_id], data) == [{registration_id, expected}]
   end
 
   test "encode_requests with over 1000 registration_ids" do

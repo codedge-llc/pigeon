@@ -1,4 +1,7 @@
 defmodule Pigeon.Notification do
+  @moduledoc """
+    Contains shared functions for GCM and APNS.
+  """
   require Logger
 
   def json_payload(payload) do
@@ -13,11 +16,17 @@ defmodule Pigeon.Notification do
 end
 
 defmodule Pigeon.APNS.Notification do
+  @moduledoc """
+    Defines APNS notification struct and convenience constructor functions.
+  """
   defstruct device_token: nil, payload: %{"aps" => %{}}, expiration: nil, topic: nil
 
-  @spec new(String.t, String.t, String.t) :: %{msg: String.t, device_token: String.t, topic: String.t}
   def new(msg, token, topic) do
-    %Pigeon.APNS.Notification{device_token: token, topic: topic, payload: %{"aps" => %{"alert" => msg}}}
+    %Pigeon.APNS.Notification{
+      device_token: token,
+      topic: topic,
+      payload: %{"aps" => %{"alert" => msg}}
+    }
   end
 
   def put_alert(notification, alert), do: update_payload(notification, "alert", alert)
@@ -31,11 +40,14 @@ defmodule Pigeon.APNS.Notification do
   def put_category(notification, category), do: update_payload(notification, "category", category)
 
   defp update_payload(notification, key, value) do
-    new_aps = Map.get(notification.payload, "aps") |> Map.put(key, value)
+    new_aps =
+      notification.payload
+      |> Map.get("aps")
+      |> Map.put(key, value)
     new_payload = notification.payload |> Map.put("aps", new_aps)
     %{notification | payload: new_payload}
   end
-  
+
   def put_custom(notification, data) do
     new_payload = Map.merge(notification.payload, data)
     %{notification | payload: new_payload}
@@ -43,6 +55,9 @@ defmodule Pigeon.APNS.Notification do
 end
 
 defmodule Pigeon.GCM.Notification do
+  @moduledoc """
+    Defines GCM notification struct and convenience constructor functions.
+  """
   defstruct registration_id: nil, data: nil, message_id: nil, updated_registration_id: nil
 
   def new(data, registration_ids) when is_list(registration_ids) do

@@ -1,13 +1,16 @@
 defmodule Pigeon.HTTP2 do
+  @moduledoc """
+    Handles all HTTP2 connection, request and response functions.
+  """
   require Logger
   import Pigeon.Notification
 
-  defp apns_production_api_uri, do: 'api.push.apple.com'
-  defp apns_development_api_uri, do: 'api.development.push.apple.com'
+  defp apns_production_api_uri, do: "api.push.apple.com"
+  defp apns_development_api_uri, do: "api.development.push.apple.com"
 
   def connect(mode, cert, key) do
-    uri = push_uri(mode)
-    options = [{:certfile, cert}, 
+    uri = mode |> push_uri |> to_char_list
+    options = [{:certfile, cert},
                {:keyfile, key},
                {:password, ''},
                {:packet, 0},
@@ -54,7 +57,7 @@ defmodule Pigeon.HTTP2 do
   end
   def status_code(payload), do: payload
 
-	def establish_connection(socket) do
+  def establish_connection(socket) do
     {:ok, data} = send_settings(socket)
     if data == build_frame(0x04, 0x01, 0, <<>>) do
       send_ack(socket)
@@ -145,7 +148,9 @@ defmodule Pigeon.HTTP2 do
     end
   end
 
-  def parse_frame(<<payload_size::24, frame_type::8, flags::8, 0::1, stream_id::31, payload::binary>>) do
+  def parse_frame(<<payload_size::24, frame_type::8, flags::8, 0::1,
+    stream_id::31, payload::binary>>) do
+
     %{
       payload_size: payload_size,
       frame_type: frame_type,
@@ -154,9 +159,9 @@ defmodule Pigeon.HTTP2 do
       payload: payload
     }
   end
-  def parse_frame(bin), do: bin 
+  def parse_frame(bin), do: bin
 
-	def connection_preface, do: "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
+  def connection_preface, do: "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
   def settings_frame, do: build_frame(0x4, 0, 0, <<>>)
   def settings_ack_frame, do: build_frame(0x04, 0x01, 0, <<>>)
   def ack_frame, do: build_frame(0x01, 0, 0, <<>>)
@@ -168,9 +173,13 @@ defmodule Pigeon.HTTP2 do
   end
 
   def push_header_frame(stream, mode, notification) do
-    uri = push_uri(mode) |> to_string
+    uri = mode |> push_uri
     end_headers = 0x4
-    payload_size = "#{byte_size(json_payload(notification.payload))}"
+    payload_size =
+      notification.payload
+      |> json_payload
+      |> byte_size
+      |> to_string
     headers = <<post_header::bitstring,
       https_header::bitstring,
       encode_header(":path", "/3/device/#{notification.device_token}")::bitstring,
@@ -189,7 +198,10 @@ defmodule Pigeon.HTTP2 do
   def https_header, do: <<1::1, 0::1, 0::1, 0::1, 0::1, 1::1, 1::1, 1::1>>
 
   def encode_header(header, value) do
-    <<0::1, 0::1, 0::1, 1::1, 0::4, 0::1, byte_size("#{header}")::7, "#{header}", 0::1, byte_size("#{value}")::7, "#{value}">>
+    <<0::1, 0::1, 0::1, 1::1, 0::4, 0::1, byte_size(header)::7>>
+    <> header
+    <> <<0::1, byte_size(value)::7>>
+    <> value
   end
 
   def push_data_frame(stream, payload) do

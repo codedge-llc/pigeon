@@ -1,4 +1,9 @@
 defmodule Pigeon.APNS do
+  @moduledoc """
+    Defines publically-exposed Apple Push Notification Service (APNS) functions. For implementation
+    see APNSWorker.
+  """
+
   @doc """
     Sends a push over APNS.
   """

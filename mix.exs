@@ -22,6 +22,7 @@ defmodule Pigeon.Mixfile do
   defp deps do
     [{:poison, "~> 1.5"},
     {:httpoison, "~> 0.7"},
+    {:dogma, "~> 0.1", only: :dev},
     {:earmark, "~> 0.1", only: :dev},
     {:ex_doc, "~> 0.11", only: :dev}]
   end

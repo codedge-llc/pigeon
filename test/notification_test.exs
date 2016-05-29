@@ -7,7 +7,7 @@ defmodule Pigeon.NotificationTest do
 
     expected_result = %Pigeon.GCM.Notification{
       registration_id: reg_id,
-      data: data, 
+      data: data,
       message_id: nil,
       updated_registration_id: nil
     }
@@ -19,9 +19,9 @@ defmodule Pigeon.NotificationTest do
     data = %{key: "value"}
 
     expected_result = %Pigeon.GCM.Notification{
-      registration_id: reg_ids, 
-      data: data, 
-      message_id: nil, 
+      registration_id: reg_ids,
+      data: data,
+      message_id: nil,
       updated_registration_id: nil
     }
     assert Pigeon.GCM.Notification.new(data, reg_ids) == expected_result
