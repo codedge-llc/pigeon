@@ -69,6 +69,10 @@ When using `Pigeon.GCM.Notification.new/2`, `message_id` and `updated_registrati
     apns_2197: true (optional)
   ```
 
+  `apns_cert` and `apns_key` can be a tuple like {:my_app, "certs/cert.pem"}
+  which will use a path relative to the `priv` folder of the given application.
+  This is useful for CI/`exrm` deployment.
+
 2. Create a notification packet. **Note: Your push topic is generally the app's bundle identifier.**
   ```elixir
   n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic")
