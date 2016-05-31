@@ -105,7 +105,7 @@ The contents of `payload` is what will be received on the iOS device. If updatin
    openssl pkcs12 -clcerts -nokeys -out cert.pem -in cert.p12
    ```
    
-6. Convert the key.
+6. Convert the key. Be sure to set a password here. You will need that password in order to remove it in the next step.
    ```
    openssl pkcs12 -nocerts -out key.pem -in key.p12
    ```
