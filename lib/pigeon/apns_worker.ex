@@ -7,8 +7,9 @@ defmodule Pigeon.APNSWorker do
   require Logger
 
   def start_link(name, mode, cert, key) do
-    Logger.debug "Starting #{name}\n\t mode: #{mode}, \
-      cert: #{cert}, key: #{key}"
+    Logger.debug """
+      Starting #{name}\n\tmode: #{mode}, cert: #{cert}, key: #{key}
+      """
     GenServer.start_link(__MODULE__, {:ok, mode, cert, key}, name: name)
   end
 
@@ -21,8 +22,9 @@ defmodule Pigeon.APNSWorker do
       {:ok, socket} ->
         establish_connection(mode, cert, key, socket)
       {:error, :timeout} ->
-        Logger.error "Failed to establish SSL connection. \
-          Is the certificate signed for :#{mode} mode?"
+        Logger.error """
+          Failed to establish SSL connection. Is the certificate signed for :#{mode} mode?
+          """
         {:stop, {:error, :timeout}}
     end
   end
@@ -32,7 +34,7 @@ defmodule Pigeon.APNSWorker do
     case HTTP2.connect(mode, cert, key) do
       {:ok, socket} ->
         {:ok, socket}
-      {:error, :timeout} ->
+      {:error, _} ->
         connect_socket(mode, cert, key, tries + 1)
     end
   end
@@ -56,28 +58,57 @@ defmodule Pigeon.APNSWorker do
 
   def handle_cast({:push, :apns, notification}, state) do
     %{stream_id: stream_id} = state
-    send_push(state, notification, nil)
+    data = package_push(state, notification)
+    send_push(data, state, notification, nil)
     { :noreply, %{state | stream_id: stream_id + 2 } }
   end
 
   def handle_cast({:push, :apns, notification, on_response}, state) do
     %{stream_id: stream_id} = state
-    send_push(state, notification, on_response)
+    data = package_push(state, notification)
+    send_push(data, state, notification, on_response)
     { :noreply, %{state | stream_id: stream_id + 2 } }
   end
 
-  def send_push(state, notification, on_response) do
+  def package_push(state, notification) do
     %{apns_socket: socket, mode: mode, stream_id: stream_id} = state
 
     json = Pigeon.Notification.json_payload(notification.payload)
     push_header = HTTP2.push_header_frame(stream_id, mode, notification)
     push_data = HTTP2.push_data_frame(stream_id, json)
+    {push_header, push_data}
+  end
 
+  def send_push({push_header, push_data}, state, notification, on_response),
+    do: send_push({push_header, push_data}, state, notification, on_response, 0)
+
+  def send_push({push_header, push_data}, state, notification, on_response, 2) do
+    log_error(:timeout, notification)
+    unless on_response == nil do on_response.({:error, :timeout, notification}) end
+  end
+  def send_push({push_header, push_data}, state, notification, on_response, tries) do
+    %{apns_socket: socket, mode: mode, stream_id: stream_id} = state
     :ssl.send(socket, push_header)
     :ssl.send(socket, push_data)
 
-    {:ok, _headers, payload} = HTTP2.wait_response socket
+    case HTTP2.wait_response socket do
+      {:ok, _headers, payload} ->
+        process_response(payload, socket, notification, on_response)
+      {:error, _} ->
+        exponential_sleep(tries)
+        send_push({push_header, push_data}, state, notification, on_response, tries + 1)
+    end
+  end
 
+  defp exponential_sleep(tries) do
+    2
+    |> :math.pow(tries)
+    |> :erlang.*(1000)
+    |> round
+    |> :timer.sleep
+  end
+
+  defp process_response(payload, socket, notification, on_response) do
     case HTTP2.status_code(payload) do
       200 ->
         unless on_response == nil do on_response.({:ok, notification}) end
@@ -115,11 +146,15 @@ defmodule Pigeon.APNSWorker do
       :bad_priority ->
         "The apns-priority value is bad."
       :missing_device_token ->
-        "The device token is not specified in the request :path. Verify that the :path header \
-          contains the device token."
+        """
+        The device token is not specified in the request :path. Verify that the :path header
+        contains the device token.
+        """
       :bad_device_token ->
-        "The specified device token was bad. Verify that the request contains a valid token and \
-          that the token matches the environment."
+        """
+        The specified device token was bad. Verify that the request contains a valid token and
+        that the token matches the environment.
+        """
       :device_token_not_for_topic ->
         "The device token does not match the specified topic."
       :unregistered ->
@@ -147,9 +182,13 @@ defmodule Pigeon.APNSWorker do
       :service_unavailable ->
         "The service is unavailable."
       :missing_topic ->
-        "The apns-topic header of the request was not specified and was required. The apns-topic \
-          header is mandatory when the client is connected using a certificate that supports \
-          multiple topics."
+          """
+          The apns-topic header of the request was not specified and was required. The apns-topic
+          header is mandatory when the client is connected using a certificate that supports
+          multiple topics.
+          """
+      :timeout ->
+        "The SSL connection timed out."
     end
   end
 
