@@ -9,7 +9,7 @@ Add pigeon as a `mix.exs` dependency:
 **Note: Pigeon's API will likely change until v1.0**
   ```elixir
   def deps do
-    [{:pigeon, "~> 0.6.0"}]
+    [{:pigeon, "~> 0.7.0"}]
   end
   ```
   
@@ -68,6 +68,9 @@ When using `Pigeon.GCM.Notification.new/2`, `message_id` and `updated_registrati
     apns_key: "key_unencrypted.pem"
     apns_2197: true (optional)
   ```
+
+  `apns_cert` and `apns_key` can either be a static file path, full-text string of the file contents (for environment variables), or a tuple like `{:my_app, "certs/cert.pem"}`,
+  which will use a path relative to the `priv` folder of the given application.
 
 2. Create a notification packet. **Note: Your push topic is generally the app's bundle identifier.**
   ```elixir

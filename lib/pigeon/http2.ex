@@ -10,8 +10,8 @@ defmodule Pigeon.HTTP2 do
 
   def connect(mode, cert, key) do
     uri = mode |> push_uri |> to_char_list
-    options = [{:certfile, cert},
-               {:keyfile, key},
+    options = [cert,
+               key,
                {:password, ''},
                {:packet, 0},
                {:reuseaddr, false},
@@ -97,7 +97,9 @@ defmodule Pigeon.HTTP2 do
       {:ssl, socket, bin} ->
         case wait_payload(socket) do
           {:ok, payload} ->
-            {:ok, bin, payload}
+            {header, data} = order_data(bin, payload)
+            {header, data} |> inspect |> Logger.debug
+            {:ok, header, data}
           error ->
             error
         end
@@ -123,6 +125,19 @@ defmodule Pigeon.HTTP2 do
       5000 ->
         {:error, "timeout."}
     end
+  end
+
+  def order_data(first, second) do
+    cond do
+      header_frame?(first) -> {first, second}
+      header_frame?(second) -> {second, first}
+      true -> {first, second}
+    end
+  end
+
+  defp header_frame?(bin) do
+    frame = parse_frame(bin)
+    frame[:frame_type] == 0x1
   end
 
   def parse_frame_type(frame, bin) do

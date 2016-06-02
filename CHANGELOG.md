@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.7.0
+* APNS cert/key configs can now either be a file path, full-text string, or `{:your_app, "path/to/file.pem"}` (which looks in the `/priv` directory of your app)
+* Fixed APNSWorker crash on `:ssl.send/2` timeout
+* Better error-handling for invalid APNS configs
+
 ## v0.6.0
 * `Pigeon.APNS.Notification.new/3` returns `%Pigeon.APNS.Notification{}` struct
 * Configure APNS to use SSL port 2197 with `apns_2197: true` in your `config.exs`
