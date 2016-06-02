@@ -9,7 +9,7 @@ Add pigeon as a `mix.exs` dependency:
 **Note: Pigeon's API will likely change until v1.0**
   ```elixir
   def deps do
-    [{:pigeon, "~> 0.6.0"}]
+    [{:pigeon, "~> 0.7.0"}]
   end
   ```
   
