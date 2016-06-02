@@ -6,45 +6,55 @@ defmodule Pigeon.APNSWorker do
   use GenServer
   require Logger
 
-  def start_link(name, mode, cert, key) do
-    Logger.debug """
-      Starting #{name}\n\tmode: #{mode}, cert: #{cert}, key: #{key}
-      """
-    GenServer.start_link(__MODULE__, {:ok, mode, cert, key}, name: name)
+  def start_link(name, config) do
+    GenServer.start_link(__MODULE__, {:ok, config}, name: name)
   end
 
-  def stop do
-    :gen_server.cast(self, :stop)
-  end
+  def stop, do: :gen_server.cast(self, :stop)
 
-  def init({:ok, mode, cert, key}) do
-    case connect_socket(mode, cert, key, 0) do
+  def init({:ok, config}), do: initialize_worker(config)
+
+  def initialize_worker(config) do
+    mode = config[:mode]
+    case connect_socket(mode, config) do
       {:ok, socket} ->
-        establish_connection(mode, cert, key, socket)
+        establish_connection(mode, config, socket)
       {:error, :timeout} ->
         Logger.error """
           Failed to establish SSL connection. Is the certificate signed for :#{mode} mode?
           """
         {:stop, {:error, :timeout}}
+      {:error, :invalid_config} ->
+        Logger.error """
+          Invalid configuration.
+          """
+        {:stop, {:error, :invalid_config}}
     end
   end
 
-  def connect_socket(_mode, _cert, _key, 3), do: {:error, :timeout}
+  def connect_socket(mode, %{cert: cert, certfile: nil, key: key, keyfile: nil}),
+    do: connect_socket(mode, {:cert, cert}, {:key, key}, 0)
+  def connect_socket(mode, %{cert: nil, certfile: certfile, key: key, keyfile: nil}),
+    do: connect_socket(mode, {:certfile, certfile}, {:key, key}, 0)
+  def connect_socket(mode, %{cert: nil, certfile: certfile, key: nil, keyfile: keyfile}),
+    do: connect_socket(mode, {:certfile, certfile}, {:keyfile, keyfile}, 0)
+  def connect_socket(mode, %{cert: cert, certfile: nil, key: nil, keyfile: keyfile}),
+    do: connect_socket(mode, {:cert, cert}, {:keyfile, keyfile}, 0)
+  def connect_socket(_mode, _), do: {:error, :invalid_config}
+
+  def connect_socket(_mode, _config, 3), do: {:error, :timeout}
   def connect_socket(mode, cert, key, tries) do
     case HTTP2.connect(mode, cert, key) do
-      {:ok, socket} ->
-        {:ok, socket}
-      {:error, _} ->
-        connect_socket(mode, cert, key, tries + 1)
+      {:ok, socket} -> {:ok, socket}
+      {:error, _} -> connect_socket(mode, cert, key, tries + 1)
     end
   end
 
-  def establish_connection(mode, cert, key, socket) do
+  def establish_connection(mode, config, socket) do
     state = %{
       apns_socket: socket,
       mode: mode,
-      cert: cert,
-      key: key,
+      config: config,
       stream_id: 1
     }
     HTTP2.send_connection_preface(socket)
@@ -52,9 +62,7 @@ defmodule Pigeon.APNSWorker do
     {:ok, state}
   end
 
-  def handle_cast(:stop, state) do
-    { :noreply, state }
-  end
+  def handle_cast(:stop, state), do: { :noreply, state }
 
   def handle_cast({:push, :apns, notification}, state) do
     %{stream_id: stream_id} = state
@@ -79,33 +87,16 @@ defmodule Pigeon.APNSWorker do
     {push_header, push_data}
   end
 
-  def send_push({push_header, push_data}, state, notification, on_response),
-    do: send_push({push_header, push_data}, state, notification, on_response, 0)
-
-  def send_push({push_header, push_data}, state, notification, on_response, 2) do
-    log_error(:timeout, notification)
-    unless on_response == nil do on_response.({:error, :timeout, notification}) end
-  end
-  def send_push({push_header, push_data}, state, notification, on_response, tries) do
+  def send_push({push_header, push_data}, state, notification, on_response) do
     %{apns_socket: socket, mode: mode, stream_id: stream_id} = state
     :ssl.send(socket, push_header)
     :ssl.send(socket, push_data)
 
     case HTTP2.wait_response socket do
-      {:ok, _headers, payload} ->
+      {:ok, headers, payload} ->
         process_response(payload, socket, notification, on_response)
-      {:error, _} ->
-        exponential_sleep(tries)
-        send_push({push_header, push_data}, state, notification, on_response, tries + 1)
+      error -> error
     end
-  end
-
-  defp exponential_sleep(tries) do
-    2
-    |> :math.pow(tries)
-    |> :erlang.*(1000)
-    |> round
-    |> :timer.sleep
   end
 
   defp process_response(payload, socket, notification, on_response) do
@@ -113,10 +104,14 @@ defmodule Pigeon.APNSWorker do
       200 ->
         unless on_response == nil do on_response.({:ok, notification}) end
       _error ->
-        {:ok, data_headers, data_payload} = HTTP2.wait_response socket
-        reason = parse_error(data_payload)
-        log_error(reason, notification)
-        unless on_response == nil do on_response.({:error, reason, notification}) end
+        case HTTP2.wait_response socket do
+        {:ok, _data_headers, data_payload} ->
+          reason = parse_error(data_payload)
+          log_error(reason, notification)
+          unless on_response == nil do on_response.({:error, reason, notification}) end
+        _ ->
+          {:error, :timeout}
+        end
     end
   end
 
@@ -192,14 +187,14 @@ defmodule Pigeon.APNSWorker do
     end
   end
 
+  def handle_info({:ssl, socket, bin}, state) do
+    Logger.debug("Recv SSL data: #{inspect(bin)}")
+    {:noreply, state}
+  end
+
   def handle_info({:ssl_closed, _socket}, state) do
-    %{apns_socket: _socket, mode: mode, cert: cert, key: key} = state
+    %{config: config} = state
     Logger.debug("Got connection close...")
-
-    {:ok, sock} = HTTP2.connect(mode, cert, key)
-    {:ok, _data} = HTTP2.send_connection_preface(sock)
-    HTTP2.establish_connection(sock)
-
-    {:noreply, %{state | apns_socket: sock}}
+    initialize_worker(config)
   end
 end
