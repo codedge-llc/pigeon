@@ -2,9 +2,12 @@ defmodule Pigeon.APNSWorker do
   @moduledoc """
     Handles all APNS request and response parsing over an HTTP2 connection.
   """
+
   alias Pigeon.{HTTP2}
   use GenServer
   require Logger
+
+  @ping_period 600_000 # 10 minutes
 
   def start_link(name, config) do
     GenServer.start_link(__MODULE__, {:ok, config}, name: name)
@@ -59,8 +62,10 @@ defmodule Pigeon.APNSWorker do
     }
     HTTP2.send_connection_preface(socket)
     HTTP2.establish_connection(socket)
+    Process.send_after(self, :ping, @ping_period)
     {:ok, state}
   end
+
 
   def handle_cast(:stop, state), do: { :noreply, state }
 
@@ -79,7 +84,7 @@ defmodule Pigeon.APNSWorker do
   end
 
   def package_push(state, notification) do
-    %{apns_socket: socket, mode: mode, stream_id: stream_id} = state
+    %{apns_socket: _socket, mode: mode, stream_id: stream_id} = state
 
     json = Pigeon.Notification.json_payload(notification.payload)
     push_header = HTTP2.push_header_frame(stream_id, mode, notification)
@@ -88,12 +93,12 @@ defmodule Pigeon.APNSWorker do
   end
 
   def send_push({push_header, push_data}, state, notification, on_response) do
-    %{apns_socket: socket, mode: mode, stream_id: stream_id} = state
+    %{apns_socket: socket, mode: _mode, stream_id: _stream_id} = state
     :ssl.send(socket, push_header)
     :ssl.send(socket, push_data)
 
     case HTTP2.wait_response socket do
-      {:ok, headers, payload} ->
+      {:ok, _headers, payload} ->
         process_response(payload, socket, notification, on_response)
       error -> error
     end
@@ -187,7 +192,14 @@ defmodule Pigeon.APNSWorker do
     end
   end
 
-  def handle_info({:ssl, socket, bin}, state) do
+  def handle_info(:ping, %{apns_socket: socket} = state) do
+    :ssl.send(socket, HTTP2.ping_frame)
+    Logger.debug("PING")
+    Process.send_after(self, :ping, @ping_period)
+    { :noreply, state }
+  end
+
+  def handle_info({:ssl, _socket, bin}, state) do
     Logger.debug("Recv SSL data: #{inspect(bin)}")
     {:noreply, state}
   end
