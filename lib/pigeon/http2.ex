@@ -22,6 +22,8 @@ defmodule Pigeon.HTTP2 do
       {:ok, ssl_socket} -> {:ok, ssl_socket}
       {:error, reason} -> {:error, reason}
     end
+
+    :http2_client.start_link(:https, uri, options)
   end
 
   def push_uri(mode) do
@@ -59,10 +61,9 @@ defmodule Pigeon.HTTP2 do
 
   def establish_connection(socket) do
     {:ok, data} = send_settings(socket)
-    if data == build_frame(0x04, 0x01, 0, <<>>) do
-      send_ack(socket)
-    else
-      {:error, "Can't establish a connection."}
+    cond do
+      data == build_frame(0x04, 0x01, 0, <<>>) -> send_ack(socket)
+      true -> {:error, "Can't establish a connection."}
     end
   end
 
@@ -115,15 +116,11 @@ defmodule Pigeon.HTTP2 do
 
   defp wait_payload _socket do
     receive do
-      {:ssl, _socket, bin} ->
-        {:ok, bin}
-      {:ssl_closed, _socket} ->
-        {:error, "closed."}
-      {:ssl_error, _socket, reason} ->
-        {:error, reason}
+      {:ssl, _socket, bin} -> {:ok, bin}
+      {:ssl_closed, _socket} -> {:error, "closed."}
+      {:ssl_error, _socket, reason} -> {:error, reason}
     after
-      5000 ->
-        {:error, "timeout."}
+      5000 -> {:error, "timeout."}
     end
   end
 
