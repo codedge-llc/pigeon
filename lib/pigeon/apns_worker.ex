@@ -101,6 +101,9 @@ defmodule Pigeon.APNSWorker do
       {"apns-topic", notification.topic},
       {"content-length", "#{byte_size(json)}"}
     ]
+    unless is_nil(notification.id) do
+      req_headers = req_headers ++ [{"apns-id", notification.id}]
+    end
     :h2_client.send_request(socket, req_headers, json)
     new_q = Map.put(queue, "#{stream_id}", {notification, on_response})
     new_stream_id = stream_id + 2
