@@ -21,7 +21,7 @@ defmodule Pigeon.GCM do
     requests =
       notification.registration_id
       |> chunk_registration_ids
-      |> encode_requests(notification.data)
+      |> encode_requests(notification.payload)
 
     response = fn({_reg_ids, payload}) ->
       HTTPoison.post(gcm_uri, payload, gcm_headers(gcm_key))
@@ -40,7 +40,7 @@ defmodule Pigeon.GCM do
     requests =
       notification.registration_id
       |> chunk_registration_ids
-      |> encode_requests(notification.data)
+      |> encode_requests(notification.payload)
 
     response = fn({reg_ids, payload}) ->
       {:ok, %HTTPoison.Response{status_code: status, body: body}} =
@@ -56,11 +56,20 @@ defmodule Pigeon.GCM do
   def chunk_registration_ids(reg_ids) when is_binary(reg_ids), do: [[reg_ids]]
   def chunk_registration_ids(reg_ids), do: Enum.chunk(reg_ids, 1000, 1000, [])
 
-  def encode_requests([[reg_id]|_rest], data) do
-    [{reg_id, Poison.encode!(%{to: reg_id, data: data})}]
+  def encode_requests([[reg_id]|_rest], payload) do
+    to_send = Map.merge(%{"to" => reg_id}, payload)
+    [{reg_id, Poison.encode!(to_send)}]
   end
-  def encode_requests(registration_ids, data) do
-    Enum.map(registration_ids, fn(x) -> {x, Poison.encode!(%{registration_ids: x, data: data})} end)
+  def encode_requests(registration_ids, payload) do
+    Enum.map(registration_ids, fn(x) -> encode_payload(x, payload) end)
+  end
+
+  defp encode_payload(x, payload) do
+    encoded =
+      %{"registration_ids" => x}
+      |> Map.merge(payload)
+      |> Poison.encode!
+    {x, encoded}
   end
 
   def process_response(status, body, notification, on_response) do
