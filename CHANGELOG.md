@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.8.0
+* Implemented Chatterbox as APNS HTTP2 client
+* APNS server responses now caught asynchronously
+* GCM support for `notification` and `data` payload keys (`Pigeon.GCM.Notification.new` API changes)
+
 ## v0.7.0
 * APNS cert/key configs can now either be a file path, full-text string, or `{:your_app, "path/to/file.pem"}` (which looks in the `/priv` directory of your app)
 * Fixed APNSWorker crash on `:ssl.send/2` timeout
