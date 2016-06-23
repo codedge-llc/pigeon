@@ -14,21 +14,16 @@ defmodule Pigeon.Supervisor do
   end
 
   def init(:ok) do
-    children = []
-    config = ssl_config
-
-    if apns_keys? do
-      if valid_apns_config?(config) do
-        apns = worker(Pigeon.APNSWorker,
-          [:apns_worker, config],
-          id: :apns_worker)
-
-        children = [apns]
-      else
-        Logger.error "Error starting :apns_worker. Invalid mode/cert/key configuration."
+    children =
+      cond do
+        !apns_keys? ->
+          []
+        valid_apns_config?(ssl_config) ->
+          [worker(Pigeon.APNSWorker, [:apns_worker, ssl_config], id: :apns_worker)]
+        true ->
+          Logger.error "Error starting :apns_worker. Invalid mode/cert/key configuration."
+          []
       end
-    end
-
     supervise(children, strategy: :one_for_one)
   end
 
