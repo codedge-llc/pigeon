@@ -2,12 +2,18 @@ defmodule Pigeon.APNSWorker do
   @moduledoc """
     Handles all APNS request and response parsing over an HTTP2 connection.
   """
-
-  alias Pigeon.{HTTP2}
   use GenServer
   require Logger
 
-  @ping_period 600_000 # 10 minutes
+  defp apns_production_api_uri, do: "api.push.apple.com"
+  defp apns_development_api_uri, do: "api.development.push.apple.com"
+
+  def push_uri(mode) do
+    case mode do
+      :dev -> apns_development_api_uri
+      :prod -> apns_production_api_uri
+    end
+  end
 
   def start_link(name, config) do
     GenServer.start_link(__MODULE__, {:ok, config}, name: name)
@@ -21,7 +27,13 @@ defmodule Pigeon.APNSWorker do
     mode = config[:mode]
     case connect_socket(mode, config) do
       {:ok, socket} ->
-        establish_connection(mode, config, socket)
+        {:ok, %{
+          apns_socket: socket,
+          mode: mode,
+          config: config,
+          stream_id: 1,
+          queue: %{}
+        }}
       {:error, :timeout} ->
         Logger.error """
           Failed to establish SSL connection. Is the certificate signed for :#{mode} mode?
@@ -47,76 +59,56 @@ defmodule Pigeon.APNSWorker do
 
   def connect_socket(_mode, _config, 3), do: {:error, :timeout}
   def connect_socket(mode, cert, key, tries) do
-    case HTTP2.connect(mode, cert, key) do
+    uri = mode |> push_uri |> to_char_list
+    options = [cert,
+               key,
+               {:password, ''},
+               {:packet, 0},
+               {:reuseaddr, false},
+               {:active, true},
+               :binary]
+    options =
+      case Application.get_env(:pigeon, :apns_2197) do
+        true -> options ++ [{:port, 2197}]
+        _ -> options
+      end
+
+    case :h2_client.start_link(:https, uri, options) do
       {:ok, socket} -> {:ok, socket}
       {:error, _} -> connect_socket(mode, cert, key, tries + 1)
     end
   end
 
-  def establish_connection(mode, config, socket) do
-    state = %{
-      apns_socket: socket,
-      mode: mode,
-      config: config,
-      stream_id: 1
-    }
-    HTTP2.send_connection_preface(socket)
-    HTTP2.establish_connection(socket)
-    Process.send_after(self, :ping, @ping_period)
-    {:ok, state}
-  end
-
-
   def handle_cast(:stop, state), do: { :noreply, state }
 
   def handle_cast({:push, :apns, notification}, state) do
-    %{stream_id: stream_id} = state
-    data = package_push(state, notification)
-    send_push(data, state, notification, nil)
-    { :noreply, %{state | stream_id: stream_id + 2 } }
+    send_push(state, notification, nil)
   end
 
   def handle_cast({:push, :apns, notification, on_response}, state) do
-    %{stream_id: stream_id} = state
-    data = package_push(state, notification)
-    send_push(data, state, notification, on_response)
-    { :noreply, %{state | stream_id: stream_id + 2 } }
+    send_push(state, notification, on_response)
   end
 
-  def package_push(state, notification) do
-    %{apns_socket: _socket, mode: mode, stream_id: stream_id} = state
-
+  def send_push(state, notification, on_response) do
+    %{apns_socket: socket, stream_id: stream_id, queue: queue} = state
     json = Pigeon.Notification.json_payload(notification.payload)
-    push_header = HTTP2.push_header_frame(stream_id, mode, notification)
-    push_data = HTTP2.push_data_frame(stream_id, json)
-    {push_header, push_data}
+    req_headers = [
+      {":method", "POST"},
+      {":path", "/3/device/#{notification.device_token}"},
+      {"apns-topic", notification.topic},
+      {"content-length", "#{byte_size(json)}"}]
+      |> put_apns_id(notification)
+
+    :h2_client.send_request(socket, req_headers, json)
+    new_q = Map.put(queue, "#{stream_id}", {notification, on_response})
+    new_stream_id = stream_id + 2
+    { :noreply, %{state | stream_id: new_stream_id, queue: new_q } }
   end
 
-  def send_push({push_header, push_data}, state, notification, on_response) do
-    %{apns_socket: socket, mode: _mode, stream_id: _stream_id} = state
-    :ssl.send(socket, push_header)
-    :ssl.send(socket, push_data)
-
-    case HTTP2.wait_response socket do
-      {:ok, _headers, payload} ->
-        process_response(payload, socket, notification, on_response)
-      error -> error
-    end
-  end
-
-  defp process_response(payload, socket, notification, on_response) do
-    case HTTP2.status_code(payload) do
-      200 ->
-        unless on_response == nil do on_response.({:ok, notification}) end
-      _error ->
-        case HTTP2.wait_response socket do
-        {:ok, _data_headers, data_payload} ->
-          reason = parse_error(data_payload)
-          log_error(reason, notification)
-          unless on_response == nil do on_response.({:error, reason, notification}) end
-        _ ->
-          {:error, :timeout}
-        end
+  defp put_apns_id(headers, notification) do
+    case notification.id do
+      nil -> headers
+      id -> headers ++ [{"apns-id", id}]
     end
   end
 
@@ -192,21 +184,41 @@ defmodule Pigeon.APNSWorker do
     end
   end
 
-  def handle_info(:ping, %{apns_socket: socket} = state) do
-    :ssl.send(socket, HTTP2.ping_frame)
-    Logger.debug("PING")
-    Process.send_after(self, :ping, @ping_period)
-    { :noreply, state }
+  def handle_info({:END_STREAM, stream}, state) do
+    %{apns_socket: socket, queue: queue} = state
+    queue |> inspect |> Logger.debug
+
+    {:ok, {headers, body}} = :h2_client.get_response(socket, stream)
+    {notification, on_response} = queue["#{stream}"]
+
+    case get_status(headers) do
+      "200" ->
+        notification = %{notification | id: get_apns_id(headers)}
+        unless on_response == nil do on_response.({:ok, notification}) end
+        new_queue = Map.delete(queue, "#{stream}")
+        {:noreply, %{state | queue: new_queue}}
+      nil ->
+        {:noreply, state}
+      _error ->
+        reason = parse_error(body)
+        log_error(reason, notification)
+        unless on_response == nil do on_response.({:error, reason, notification}) end
+        new_queue = Map.delete(queue, "#{stream}")
+        {:noreply, %{state | queue: new_queue}}
+    end
   end
 
-  def handle_info({:ssl, _socket, bin}, state) do
-    Logger.debug("Recv SSL data: #{inspect(bin)}")
-    {:noreply, state}
+  defp get_status(headers) do
+    case Enum.find(headers, fn({key, _val}) -> key == ":status" end) do
+      {":status", status} -> status
+      nil -> nil
+    end
   end
 
-  def handle_info({:ssl_closed, _socket}, state) do
-    %{config: config} = state
-    Logger.debug("Got connection close...")
-    initialize_worker(config)
+  defp get_apns_id(headers) do
+    case Enum.find(headers, fn({key, _val}) -> key == "apns-id" end) do
+      {"apns-id", id} -> id
+      nil -> nil
+    end
   end
 end
