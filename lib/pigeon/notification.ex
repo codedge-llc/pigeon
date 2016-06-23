@@ -67,13 +67,24 @@ defmodule Pigeon.GCM.Notification do
   @moduledoc """
     Defines GCM notification struct and convenience constructor functions.
   """
-  defstruct registration_id: nil, data: nil, message_id: nil, updated_registration_id: nil
+  defstruct registration_id: nil, payload: %{}, message_id: nil, updated_registration_id: nil
 
-  def new(data, registration_ids) when is_list(registration_ids) do
-    %Pigeon.GCM.Notification{registration_id: registration_ids, data: data}
+  def new(registration_ids, notification \\ %{}, data \\ %{})
+  def new(registration_ids, notification, data) do
+    %Pigeon.GCM.Notification{registration_id: registration_ids}
+    |> put_notification(notification)
+    |> put_data(data)
   end
 
-  def new(data, registration_id) do
-    %Pigeon.GCM.Notification{registration_id: registration_id, data: data}
+  def put_data(n, data), do: update_payload(n, "data", data)
+
+  def put_notification(n, notification), do: update_payload(n, "notification", notification)
+
+  defp update_payload(notification, _key, value) when value == %{}, do: notification
+  defp update_payload(notification, key, value) do
+    payload =
+      notification.payload
+      |> Map.put(key, value)
+    %{notification | payload: payload}
   end
 end
