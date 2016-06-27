@@ -10,7 +10,10 @@ Add pigeon as a `mix.exs` dependency:
 **Note: Pigeon's API will likely change until v1.0**
   ```elixir
   def deps do
-    [{:pigeon, "~> 0.8.0"}]
+    [
+      {:pigeon, "~> 0.8.0"},
+      {:chatterbox, github: "joedevivo/chatterbox", tag: "0.3.0"}
+    ]
   end
   ```
   
@@ -104,6 +107,7 @@ or
 The contents of `payload` is what will be received on the iOS device. If updating this field directly, use strings for your keys. It is recommended to use the convenience functions defined in *Notifications with Custom Data*. `expiration` is a UNIX epoch date in seconds (UTC). Passing a value of `0` expires the notification immediately and Apple will not attempt to redeliver it.
 ```elixir
 %Pigeon.APNS.Notification{
+    id: nil,
     device_token: nil,
     topic: nil,
     expiration: nil,
