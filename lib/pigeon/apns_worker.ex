@@ -95,9 +95,9 @@ defmodule Pigeon.APNSWorker do
     req_headers = [
       {":method", "POST"},
       {":path", "/3/device/#{notification.device_token}"},
-      {"apns-topic", notification.topic},
       {"content-length", "#{byte_size(json)}"}]
       |> put_apns_id(notification)
+      |> put_apns_topic(notification)
 
     :h2_client.send_request(socket, req_headers, json)
     new_q = Map.put(queue, "#{stream_id}", {notification, on_response})
@@ -109,6 +109,13 @@ defmodule Pigeon.APNSWorker do
     case notification.id do
       nil -> headers
       id -> headers ++ [{"apns-id", id}]
+    end
+  end
+
+  defp put_apns_topic(headers, notification) do
+    case notification.topic do
+      nil   -> headers
+      topic -> headers ++ [{"apns-topic", topic}]
     end
   end
 
