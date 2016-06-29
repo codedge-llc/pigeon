@@ -18,37 +18,43 @@ defmodule Pigeon.GCM do
   @spec push(Pigeon.GCM.Notification) :: none
   def push(notification) do
     gcm_key = Application.get_env(:pigeon, :gcm_key)
-    requests =
-      notification.registration_id
-      |> chunk_registration_ids
-      |> encode_requests(notification.payload)
-
-    response = fn({_reg_ids, payload}) ->
-      HTTPoison.post(gcm_uri, payload, gcm_headers(gcm_key))
-    end
-
-    for r <- requests, do: Task.async(fn -> response.(r) end)
-    :ok
+    do_push(notification, %{gcm_key: gcm_key})
   end
 
   @doc """
     Sends a push over GCM and executes function on success/failure.
   """
   @spec push(Pigeon.GCM.Notification, (() -> none)) :: none
-  def push(notification, on_response) do
+  def push(notification, on_response) when is_function(on_response) do
     gcm_key = Application.get_env(:pigeon, :gcm_key)
+    do_push(notification, %{gcm_key: gcm_key}, on_response)
+  end
+
+  def push(notification, config, on_response \\ nil) do
+    do_push(notification, config, on_response)
+  end
+
+  defp do_push(notification, %{gcm_key: gcm_key}, on_response \\ nil) do
     requests =
       notification.registration_id
       |> chunk_registration_ids
       |> encode_requests(notification.payload)
 
-    response = fn({reg_ids, payload}) ->
-      {:ok, %HTTPoison.Response{status_code: status, body: body}} =
-        HTTPoison.post(gcm_uri, payload, gcm_headers(gcm_key))
+    response =
+      case on_response do
+        nil ->
+          fn({_reg_ids, payload}) ->
+            HTTPoison.post(gcm_uri, payload, gcm_headers(gcm_key))
+          end
+        _ ->
+          fn({reg_ids, payload}) ->
+            {:ok, %HTTPoison.Response{status_code: status, body: body}} =
+              HTTPoison.post(gcm_uri, payload, gcm_headers(gcm_key))
 
-      notification = %{ notification | registration_id: reg_ids }
-      process_response(status, body, notification, on_response)
-    end
+            notification = %{ notification | registration_id: reg_ids }
+            process_response(status, body, notification, on_response)
+          end
+      end
     for r <- requests, do: Task.async(fn -> response.(r) end)
     :ok
   end
