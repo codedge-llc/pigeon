@@ -5,9 +5,9 @@
 HTTP2-compliant wrapper for sending iOS and Android push notifications.
 
 ## Installation
-Add pigeon as a `mix.exs` dependency:
-
 **Note: Pigeon's API will likely change until v1.0**
+
+Add pigeon and chatterbox as `mix.exs` dependencies:
   ```elixir
   def deps do
     [
