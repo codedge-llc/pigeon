@@ -12,7 +12,7 @@ Add pigeon and chatterbox as `mix.exs` dependencies:
   def deps do
     [
       {:pigeon, "~> 0.8.0"},
-      {:chatterbox, github: "joedevivo/chatterbox", tag: "0.3.0"}
+      {:chatterbox, github: "joedevivo/chatterbox"}
     ]
   end
   ```
