@@ -114,7 +114,7 @@ defmodule Pigeon.APNSWorker do
 
   defp parse_error(data) do
     {:ok, response} = Poison.decode(data)
-    response["reason"] |> Mix.Utils.underscore |> String.to_atom
+    response["reason"] |> Macro.underscore |> String.to_existing_atom
   end
 
   defp log_error(reason, notification) do

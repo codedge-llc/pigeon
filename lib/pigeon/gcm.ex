@@ -125,7 +125,7 @@ defmodule Pigeon.GCM do
     if is_nil(error) do
       parse_success(result)
     else
-      error_atom = error |> Mix.Utils.underscore |> String.to_atom
+      error_atom = error |> Macro.underscore |> String.to_existing_atom
       {:error, error_atom}
     end
   end
