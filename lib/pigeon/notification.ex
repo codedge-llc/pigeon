@@ -48,6 +48,8 @@ defmodule Pigeon.APNS.Notification do
 
   def put_category(notification, category), do: update_payload(notification, "category", category)
 
+  def put_mutable_content(notification), do: update_payload(notification, "mutable-content", 1)
+
   defp update_payload(notification, key, value) do
     new_aps =
       notification.payload
