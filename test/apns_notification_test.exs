@@ -67,6 +67,15 @@ defmodule Pigeon.APNSNotificationTest do
     assert n.payload == %{"aps" => %{"alert" => test_msg, "category" => category}}
   end
 
+  test "put_mutable_content" do
+    n =
+      test_msg
+      |> Pigeon.APNS.Notification.new(test_device_token, test_topic)
+      |> Pigeon.APNS.Notification.put_mutable_content
+
+    assert n.payload == %{"aps" => %{"alert" => test_msg, "mutable-content" => 1}}
+  end
+
   test "put_custom" do
     custom = %{"custom-key" => %{"custom-value" => 500}}
     n =
