@@ -4,7 +4,7 @@ defmodule Pigeon.Mixfile do
   def project do
     [app: :pigeon,
      name: "Pigeon",
-     version: "0.8.0",
+     version: "0.9.0",
      elixir: "~> 1.2",
      source_url: "https://github.com/codedge-llc/pigeon",
      description: description,
@@ -24,7 +24,7 @@ defmodule Pigeon.Mixfile do
     {:httpoison, "~> 0.7"},
     {:chatterbox, github: "joedevivo/chatterbox"},
     {:dogma, "~> 0.1", only: :dev},
-    {:earmark, "~> 0.1", only: :dev},
+    {:earmark, "~> 1.0", only: :dev},
     {:ex_doc, "~> 0.11", only: :dev}]
   end
 

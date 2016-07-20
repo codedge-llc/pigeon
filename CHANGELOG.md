@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.9.0
+* APNS topic made optional
+* APNS `put_mutable_content` helper function added
+* GCM can be configured on a per-push basis
+* Updated to use Macro.underscore
+
 ## v0.8.0
 * Implemented Chatterbox as APNS HTTP2 client
 * APNS server responses now caught asynchronously

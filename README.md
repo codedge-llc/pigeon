@@ -94,7 +94,7 @@ or
 
 2. Create a notification packet. **Note: Your push topic is generally the app's bundle identifier.**
   ```elixir
-  n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic")
+  n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic (optional)")
   ```
   
   
@@ -145,6 +145,7 @@ Notifications can contain additional information in `payload`. (e.g. setting bad
   |> put_badge(5)
   |> put_sound("default")
   |> put_content_available
+  |> put_mutable_content
   |> put_category("category")
   ```
   
