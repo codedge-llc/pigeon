@@ -14,6 +14,16 @@ defmodule Pigeon.GCMTest do
     assert result == :ok
   end
 
+  test "successfully sends a valid push with an explicit config" do
+    reg_id = Application.get_env(:pigeon, :valid_gcm_reg_id)
+    result =
+      reg_id
+      |> Pigeon.GCM.Notification.new(%{}, @data)
+      |> Pigeon.GCM.push(%{gcm_key: System.get_env("GCM_KEY")})
+
+    assert result == :ok
+  end
+
   test "successfully sends a valid push with callback" do
     reg_id = Application.get_env(:pigeon, :valid_gcm_reg_id)
     n = Pigeon.GCM.Notification.new(reg_id, %{}, @data)
