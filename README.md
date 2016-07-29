@@ -11,7 +11,7 @@ Add pigeon and chatterbox as `mix.exs` dependencies:
   ```elixir
   def deps do
     [
-      {:pigeon, "~> 0.8.0"},
+      {:pigeon, "~> 0.9.0"},
       {:chatterbox, github: "joedevivo/chatterbox"}
     ]
   end
