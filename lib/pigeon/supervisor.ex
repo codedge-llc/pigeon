@@ -9,9 +9,7 @@ defmodule Pigeon.Supervisor do
     Supervisor.start_link(__MODULE__, :ok, name: :pigeon)
   end
 
-  def stop do
-    :gen_server.cast(:pigeon, :stop)
-  end
+  def stop, do: :gen_server.cast(:pigeon, :stop)
 
   def init(:ok) do
     children =
@@ -101,7 +99,5 @@ defmodule Pigeon.Supervisor do
     end
   end
 
-  def handle_cast(:stop , state) do
-    { :noreply, state }
-  end
+  def handle_cast(:stop , state), do: { :noreply, state }
 end
