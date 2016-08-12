@@ -3,6 +3,6 @@ elixir:
 - 1.3.2
 before_install:
 - openssl aes-256-cbc -K $encrypted_944d6c2c1357_key -iv $encrypted_944d6c2c1357_iv
-  -in cert.pem.enc -out cert.pem -d
-- openssl aes-256-cbc -K $encrypted_944d6c2c1357_key -iv $encrypted_944d6c2c1357_iv
   -in key_unencrypted.pem.enc -out key_unencrypted.pem -d
+- openssl aes-256-cbc -K $encrypted_944d6c2c1357_key -iv $encrypted_944d6c2c1357_iv
+  -in cert.pem.enc -out cert.pem -d
