@@ -47,6 +47,10 @@ defmodule Pigeon.APNSWorker do
     end
   end
 
+  def connect_socket(_mode, %{cert: nil, certfile: nil, key: _, keyfile: _}), do:
+    {:error, :invalid_config}
+  def connect_socket(_mode, %{cert: _, certfile: _, key: nil, keyfile: nil}), do:
+    {:error, :invalid_config}
   def connect_socket(mode, %{cert: cert, certfile: nil, key: key, keyfile: nil}),
     do: connect_socket(mode, {:cert, cert}, {:key, key}, 0)
   def connect_socket(mode, %{cert: nil, certfile: certfile, key: key, keyfile: nil}),
@@ -60,6 +64,14 @@ defmodule Pigeon.APNSWorker do
   def connect_socket(_mode, _config, 3), do: {:error, :timeout}
   def connect_socket(mode, cert, key, tries) do
     uri = mode |> push_uri |> to_char_list
+    options = connect_socket_options(cert, key)
+    case :h2_client.start_link(:https, uri, options) do
+      {:ok, socket} -> {:ok, socket}
+      {:error, _} -> connect_socket(mode, cert, key, tries + 1)
+    end
+  end
+
+  def connect_socket_options(cert, key) do
     options = [cert,
                key,
                {:password, ''},
@@ -67,15 +79,9 @@ defmodule Pigeon.APNSWorker do
                {:reuseaddr, false},
                {:active, true},
                :binary]
-    options =
-      case Application.get_env(:pigeon, :apns_2197) do
-        true -> options ++ [{:port, 2197}]
-        _ -> options
-      end
-
-    case :h2_client.start_link(:https, uri, options) do
-      {:ok, socket} -> {:ok, socket}
-      {:error, _} -> connect_socket(mode, cert, key, tries + 1)
+    case Application.get_env(:pigeon, :apns_2197) do
+      true -> options ++ [{:port, 2197}]
+      _ -> options
     end
   end
 
@@ -193,7 +199,6 @@ defmodule Pigeon.APNSWorker do
 
   def handle_info({:END_STREAM, stream}, state) do
     %{apns_socket: socket, queue: queue} = state
-    queue |> inspect |> Logger.debug
 
     {:ok, {headers, body}} = :h2_client.get_response(socket, stream)
     {notification, on_response} = queue["#{stream}"]
