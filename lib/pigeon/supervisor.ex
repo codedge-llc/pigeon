@@ -17,7 +17,13 @@ defmodule Pigeon.Supervisor do
         !apns_keys? ->
           []
         valid_apns_config?(ssl_config) ->
-          [worker(Pigeon.APNSWorker, [:apns_worker, ssl_config], id: :apns_worker)]
+          poolboy_config = [
+            {:name, {:local, pool_name}},
+            {:worker_module, Pigeon.APNSWorker},
+            {:size, 5},
+            {:max_overflow, 5}
+          ]
+          [:poolboy.child_spec(pool_name, poolboy_config, ssl_config)]
         true ->
           Logger.error "Error starting :apns_worker. Invalid mode/cert/key configuration."
           []
@@ -25,9 +31,12 @@ defmodule Pigeon.Supervisor do
     supervise(children, strategy: :one_for_one)
   end
 
+  defp pool_name, do: :default
+
   defp config_mode, do: Application.get_env(:pigeon, :apns_mode)
   defp config_cert, do: Application.get_env(:pigeon, :apns_cert)
   defp config_key, do: Application.get_env(:pigeon, :apns_key)
+
 
   def ssl_config do
     %{
@@ -39,28 +48,28 @@ defmodule Pigeon.Supervisor do
     }
   end
 
-  defp file_path(nil), do: nil
-  defp file_path(path) when is_binary(path) do
+  def file_path(nil), do: nil
+  def file_path(path) when is_binary(path) do
     cond do
       :filelib.is_file(path) -> Path.expand(path)
       true -> nil
     end
   end
-  defp file_path({app_name, path}) when is_atom(app_name),
+  def file_path({app_name, path}) when is_atom(app_name),
     do: Path.expand(path, :code.priv_dir(app_name))
 
-  defp cert({_app_name, _path}), do: nil
-  defp cert(nil), do: nil
-  defp cert(bin) do
+  def cert({_app_name, _path}), do: nil
+  def cert(nil), do: nil
+  def cert(bin) do
     case :public_key.pem_decode(bin) do
       [{:Certificate, cert, _}] -> cert
       _ -> nil
     end
   end
 
-  defp key({_app_name, _path}), do: nil
-  defp key(nil), do: nil
-  defp key(bin) do
+  def key({_app_name, _path}), do: nil
+  def key(nil), do: nil
+  def key(bin) do
     case :public_key.pem_decode(bin) do
       [{:RSAPrivateKey, key, _}] -> {:RSAPrivateKey, key}
       _ -> nil
@@ -84,7 +93,9 @@ defmodule Pigeon.Supervisor do
   def push(service, notification) do
     case service do
       :apns ->
-        GenServer.cast(:apns_worker, {:push, :apns, notification})
+        :poolboy.transaction(pool_name, fn(worker) ->
+          GenServer.cast(worker, {:push, :apns, notification})
+        end)
       _ ->
         Logger.error "Unknown service #{service}"
     end
@@ -93,11 +104,13 @@ defmodule Pigeon.Supervisor do
   def push(service, notification, on_response) do
     case service do
       :apns ->
-        GenServer.cast(:apns_worker, {:push, :apns, notification, on_response})
+        :poolboy.transaction(pool_name, fn(worker) ->
+          GenServer.cast(worker, {:push, :apns, notification, on_response})
+        end)
       _ ->
         Logger.error "Unknown service #{service}"
     end
   end
 
-  def handle_cast(:stop , state), do: { :noreply, state }
+  def handle_cast(:stop, state), do: { :noreply, state }
 end

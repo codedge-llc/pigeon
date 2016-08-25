@@ -4,7 +4,8 @@ defmodule Pigeon.GCM do
   """
   require Logger
 
-  defp gcm_uri, do: 'https://gcm-http.googleapis.com/gcm/send'
+  #defp gcm_uri, do: 'https://gcm-http.googleapis.com/gcm/send'
+  defp gcm_uri, do: 'fcm.googleapis.com/fcm/send'
 
   defp gcm_headers(key) do
     [{ "Authorization", "key=#{key}" },

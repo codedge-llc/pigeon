@@ -16,7 +16,10 @@ defmodule Pigeon.APNSTest do
   describe "push/2" do
     test "returns {:ok, notification} on successful push" do
       pid = self
-      on_response = fn(x) -> send pid, x end
+      on_response = fn(x) -> 
+        IO.inspect x
+        send pid, x
+      end
 
       n =
         "push/2 :ok"

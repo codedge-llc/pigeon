@@ -15,8 +15,8 @@ defmodule Pigeon.APNSWorker do
     end
   end
 
-  def start_link(name, config) do
-    GenServer.start_link(__MODULE__, {:ok, config}, name: name)
+  def start_link(config) do
+    GenServer.start_link(__MODULE__, {:ok, config}, [])
   end
 
   def stop, do: :gen_server.cast(self, :stop)
@@ -27,6 +27,7 @@ defmodule Pigeon.APNSWorker do
     mode = config[:mode]
     case connect_socket(mode, config) do
       {:ok, socket} ->
+        Logger.debug "Started worker #{inspect(self)}"
         {:ok, %{
           apns_socket: socket,
           mode: mode,
