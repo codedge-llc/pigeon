@@ -1,7 +1,7 @@
 defmodule Pigeon.APNSWorkerTest do
   use ExUnit.Case
 
-  alias Pigeon.{APNSWorker, Supervisor}
+  alias Pigeon.{APNS, APNSWorker}
 
   describe "push_uri/1" do
     test ":dev returns api.development.push.apple.com" do
@@ -22,8 +22,8 @@ defmodule Pigeon.APNSWorkerTest do
   describe "initialize_worker/1" do
     test "returns {:ok, config} on successful initialization" do
       result =
-        Supervisor.ssl_config
-        |> APNSWorker.initialize_worker()
+        APNS.Config.default_config
+        |> APNSWorker.initialize_worker
       {:ok, %{
         apns_socket: _socket,
         mode: mode,
@@ -33,7 +33,7 @@ defmodule Pigeon.APNSWorkerTest do
       }} = result
 
       assert mode == :dev
-      assert config == Supervisor.ssl_config
+      assert config == APNS.Config.default_config
       assert stream_id == 1
     end
 
@@ -42,8 +42,8 @@ defmodule Pigeon.APNSWorkerTest do
       Application.put_env(:pigeon, :apns_cert, "bad_cert.pem")
 
       result =
-        Supervisor.ssl_config()
-        |> APNSWorker.initialize_worker()
+        APNS.Config.default_config
+        |> APNSWorker.initialize_worker
 
       assert result == {:stop, {:error, :invalid_config}}
 

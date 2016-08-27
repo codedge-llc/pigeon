@@ -1,24 +1,24 @@
-defmodule Pigeon.SupervisorTest do
+defmodule Pigeon.APNS.ConfigTest do
   use ExUnit.Case
 
-  alias Pigeon.Supervisor
+  alias Pigeon.APNS.Config
 
-  describe "apns_keys?" do
+  describe "default_keys?" do
     test "returns true if env :apns_mode, :apns_cert, and :apns_key are set" do
-      assert Supervisor.apns_keys?
+      assert Config.default_keys?
     end
 
     test "returns false if not set" do
       mode = Application.get_env(:pigeon, :apns_mode)
       Application.put_env(:pigeon, :apns_mode, nil)
 
-      refute Supervisor.apns_keys?
+      refute Config.default_keys?
 
       Application.put_env(:pigeon, :apns_mode, mode)
     end
   end
 
-  test "valid_apns_config? returns true if proper ssl config keys present" do
-    assert Supervisor.valid_apns_config?(Supervisor.ssl_config)
+  test "valid? returns true if proper ssl config keys present" do
+    assert Config.valid?(Config.default_config)
   end
 end

@@ -16,17 +16,14 @@ defmodule Pigeon.APNSTest do
   describe "push/2" do
     test "returns {:ok, notification} on successful push" do
       pid = self
-      on_response = fn(x) -> 
-        IO.inspect x
-        send pid, x
-      end
+      on_response = fn(x) -> send pid, x end
 
       n =
         "push/2 :ok"
         |> test_message()
         |> Pigeon.APNS.Notification.new(test_token, test_topic)
 
-      assert Pigeon.APNS.push(n, on_response) == :ok
+      assert Pigeon.APNS.push(n, on_response: on_response) == :ok
 
       assert_receive({:ok, _notif}, 5_000)
     end
@@ -39,7 +36,7 @@ defmodule Pigeon.APNSTest do
         |> test_message()
         |> Pigeon.APNS.Notification.new(test_token, test_topic, bad_id)
 
-      assert Pigeon.APNS.push(n, on_response) == :ok
+      assert Pigeon.APNS.push(n, on_response: on_response) == :ok
 
       assert_receive({:error, :bad_message_id, _n}, 5_000)
     end
@@ -52,7 +49,7 @@ defmodule Pigeon.APNSTest do
         |> test_message()
         |> Pigeon.APNS.Notification.new(bad_token, test_topic)
 
-      assert Pigeon.APNS.push(n, on_response) == :ok
+      assert Pigeon.APNS.push(n, on_response: on_response) == :ok
 
       assert_receive({:error, :bad_device_token, _n}, 5_000)
     end
@@ -66,7 +63,7 @@ defmodule Pigeon.APNSTest do
         |> test_message()
         |> Pigeon.APNS.Notification.new(token)
 
-      assert Pigeon.APNS.push(n, on_response) == :ok
+      assert Pigeon.APNS.push(n, on_response: on_response) == :ok
 
       assert_receive({:error, :missing_topic, _n}, 5_000)
     end
