@@ -13,13 +13,14 @@ defmodule Pigeon.GCM do
      { "Accept", "application/json" }]
   end
 
+  defp default_gcm_key, do: Application.get_env(:pigeon, :gcm)[:key]
+
   @doc """
     Sends a push over GCM
   """
   @spec push(Pigeon.GCM.Notification) :: none
   def push(notification) do
-    gcm_key = Application.get_env(:pigeon, :gcm_key)
-    do_push(notification, %{gcm_key: gcm_key})
+    do_push(notification, %{gcm_key: default_gcm_key})
   end
 
   @doc """
@@ -27,8 +28,7 @@ defmodule Pigeon.GCM do
   """
   @spec push(Pigeon.GCM.Notification, (() -> none)) :: none
   def push(notification, on_response) when is_function(on_response) do
-    gcm_key = Application.get_env(:pigeon, :gcm_key)
-    do_push(notification, %{gcm_key: gcm_key}, on_response)
+    do_push(notification, %{gcm_key: default_gcm_key}, on_response)
   end
 
   def push(notification, config, on_response \\ nil) do

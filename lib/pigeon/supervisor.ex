@@ -3,7 +3,6 @@ defmodule Pigeon.Supervisor do
     Supervises an APNSWorker, restarting as necessary.
   """
   use Supervisor
-  require Logger
   alias Pigeon.APNS.Config
 
   def start_link, do: Supervisor.start_link(__MODULE__, :ok, name: :pigeon)

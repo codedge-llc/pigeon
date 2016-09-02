@@ -22,7 +22,7 @@ defmodule Pigeon.APNSWorkerTest do
   describe "initialize_worker/1" do
     test "returns {:ok, config} on successful initialization" do
       result =
-        APNS.Config.default_config
+        APNS.Config.config(:default)
         |> APNSWorker.initialize_worker
       {:ok, %{
         apns_socket: _socket,
@@ -33,59 +33,66 @@ defmodule Pigeon.APNSWorkerTest do
       }} = result
 
       assert mode == :dev
-      assert config == APNS.Config.default_config
+      assert config == APNS.Config.config(:default)
       assert stream_id == 1
     end
 
     test "returns {:stop, {:error, :invalid_config}} if certificate or key are invalid" do
-      cert = Application.get_env(:pigeon, :apns_cert)
-      Application.put_env(:pigeon, :apns_cert, "bad_cert.pem")
+      apns = Application.get_env(:pigeon, :apns)
+      bad_config = %{ apns[:default] | cert: "bad_cert.pem"}
+      bad_apns = Keyword.put(apns, :default, bad_config)
+
+      Application.put_env(:pigeon, :apns, bad_apns)
 
       result =
-        APNS.Config.default_config
+        APNS.Config.config(:default)
         |> APNSWorker.initialize_worker
 
       assert result == {:stop, {:error, :invalid_config}}
 
-      Application.put_env(:pigeon, :apns_cert, cert)
+      Application.put_env(:pigeon, :apns, apns)
     end
   end
 
   describe "connect_socket_options/2" do
-    test "returns valid socket options for given cert and key" do
-      cert = {:cert, "cert.pem"}
-      key = {:key, "key.pem"}
-      actual = APNSWorker.connect_socket_options(cert, key)
-      expected = [cert,
-                  key,
+    test "returns {:ok, options} for valid config" do
+      cert = "cert.pem"
+      key = "key.pem"
+      config = %{
+        cert: cert,
+        key: key
+      }
+      actual = APNSWorker.connect_socket_options(config)
+      expected = {:ok, [{:cert, cert},
+                  {:key, key},
                   {:password, ''},
                   {:packet, 0},
                   {:reuseaddr, false},
                   {:active, true},
-                  :binary]
+                  :binary]}
 
       assert actual == expected
     end
 
     test "includes {:port, 2197} if env apns_2197: true" do
-      port = Application.get_env(:pigeon, :apns_2197)
-      Application.put_env(:pigeon, :apns_2197, true)
-
-      cert = {:cert, "cert.pem"}
-      key = {:key, "key.pem"}
-      actual = APNSWorker.connect_socket_options(cert, key)
-      expected = [cert,
-                  key,
+      cert = "cert.pem"
+      key = "key.pem"
+      config = %{
+        cert: cert,
+        key: key,
+        use_2197: true
+      }
+      actual = APNSWorker.connect_socket_options(config)
+      expected = {:ok, [{:cert, cert},
+                  {:key, key},
                   {:password, ''},
                   {:packet, 0},
                   {:reuseaddr, false},
                   {:active, true},
                   :binary,
-                  {:port, 2197}]
+                  {:port, 2197}]}
 
       assert actual == expected
-
-      Application.put_env(:pigeon, :apns_2197, port)
     end
   end
 end

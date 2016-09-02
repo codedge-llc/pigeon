@@ -2,8 +2,8 @@ defmodule Pigeon.APNSTest do
   use ExUnit.Case
 
   def test_message(msg), do: "#{DateTime.to_string(DateTime.utc_now())} - #{msg}"
-  def test_topic, do: Application.get_env(:pigeon, :apns_topic)
-  def test_token, do: Application.get_env(:pigeon, :valid_apns_token)
+  def test_topic, do: Application.get_env(:pigeon, :test)[:apns_topic]
+  def test_token, do: Application.get_env(:pigeon, :test)[:valid_apns_token]
   def bad_token, do: "00fc13adff785122b4ad28809a3420982341241421348097878e577c991de8f0"
   def bad_id, do: "123e4567-e89b-12d3-a456-42665544000"
 
@@ -55,13 +55,12 @@ defmodule Pigeon.APNSTest do
     end
 
     test "returns {:error, :missing_topic, n} on missing topic for certs supporting mult topics" do
-      token = Application.get_env(:pigeon, :valid_apns_token)
       pid = self
       on_response = fn(x) -> send pid, x end
       n =
         "push/2 :missing_topic"
         |> test_message()
-        |> Pigeon.APNS.Notification.new(token)
+        |> Pigeon.APNS.Notification.new(test_token)
 
       assert Pigeon.APNS.push(n, on_response: on_response) == :ok
 

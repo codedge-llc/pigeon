@@ -3,17 +3,21 @@ defmodule Pigeon.APNS.Config do
     Validates configuration settings that initialize APNSWorkers.
   """
 
-  defp default_mode, do: Application.get_env(:pigeon, :apns_mode)
-  defp default_cert, do: Application.get_env(:pigeon, :apns_cert)
-  defp default_key, do: Application.get_env(:pigeon, :apns_key)
+  def default_pool, do: :default
+  def default_pool_size, do: 2
+  def default_max_overflow, do: 2
 
-  def default_config do
+  def config(pool) do
+    config = Application.get_env(:pigeon, :apns)[pool]
     %{
-      mode: default_mode,
-      cert: cert(default_cert),
-      certfile: file_path(default_cert),
-      key: key(default_key),
-      keyfile: file_path(default_key)
+      mode: config[:mode],
+      cert: cert(config[:cert]),
+      certfile: file_path(config[:cert]),
+      key: key(config[:key]),
+      keyfile: file_path(config[:key]),
+      use_2197: config[:use_2197] || false,
+      pool_size: config[:pool_size] || default_pool_size,
+      max_overflow: config[:max_overflow] || default_max_overflow
     }
   end
 
@@ -43,10 +47,6 @@ defmodule Pigeon.APNS.Config do
       [{:RSAPrivateKey, key, _}] -> {:RSAPrivateKey, key}
       _ -> nil
     end
-  end
-
-  def default_keys? do
-    !is_nil(default_mode) && !is_nil(default_cert) && !is_nil(default_key)
   end
 
   def valid?(config) do

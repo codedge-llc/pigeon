@@ -7,7 +7,12 @@ defmodule Pigeon do
   """
 
   def start(_type, _args) do
-    Pigeon.Supervisor.start_link
-    Pigeon.APNS.start_default_connection
+    response = Pigeon.Supervisor.start_link
+
+    :pigeon
+    |> Application.get_env(:apns)
+    |> Enum.each(fn({pool, config}) -> Pigeon.APNS.start_connection(pool) end)
+
+    response
   end
 end

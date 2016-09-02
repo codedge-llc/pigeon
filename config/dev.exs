@@ -1,7 +1,13 @@
 use Mix.Config
 
-config :pigeon,
-  apns_mode: :dev,
-  apns_cert: System.get_env("APNS_CERT"),
-  apns_key: System.get_env("APNS_CERT_KEY"),
-  gcm_key: System.get_env("GCM_KEY")
+config :pigeon, :gcm,
+  key: System.get_env("GCM_KEY")
+
+config :pigeon, :apns,
+  default: %{
+    cert: "cert.pem",
+    key: "key_unencrypted.pem",
+    mode: :dev,
+    pool_size: 2,
+    max_overflow: 0
+  }
