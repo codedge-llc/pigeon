@@ -22,7 +22,8 @@ defmodule Pigeon.APNSWorkerTest do
   describe "initialize_worker/1" do
     test "returns {:ok, config} on successful initialization" do
       result =
-        APNS.Config.config(:default)
+        :default
+        |> APNS.Config.config
         |> APNSWorker.initialize_worker
       {:ok, %{
         apns_socket: _socket,
@@ -45,7 +46,8 @@ defmodule Pigeon.APNSWorkerTest do
       Application.put_env(:pigeon, :apns, bad_apns)
 
       result =
-        APNS.Config.config(:default)
+        :default
+        |> APNS.Config.config
         |> APNSWorker.initialize_worker
 
       assert result == {:stop, {:error, :invalid_config}}

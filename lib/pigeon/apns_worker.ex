@@ -48,7 +48,7 @@ defmodule Pigeon.APNSWorker do
     end
   end
 
-  def connect_socket(config, 3), do: {:error, :timeout}
+  def connect_socket(_config, 3), do: {:error, :timeout}
   def connect_socket(config, tries) do
     uri = config[:mode] |> push_uri |> to_char_list
     case connect_socket_options(config) do
@@ -62,7 +62,7 @@ defmodule Pigeon.APNSWorker do
     key = get_opt(config, :key, :keyfile)
     cond do
       cert && key ->
-        options = 
+        options =
           [cert,
           key,
           {:password, ''},

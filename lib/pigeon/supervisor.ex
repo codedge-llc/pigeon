@@ -3,7 +3,6 @@ defmodule Pigeon.Supervisor do
     Supervises an APNSWorker, restarting as necessary.
   """
   use Supervisor
-  alias Pigeon.APNS.Config
 
   def start_link, do: Supervisor.start_link(__MODULE__, :ok, name: :pigeon)
 
@@ -12,8 +11,6 @@ defmodule Pigeon.Supervisor do
   def init(:ok) do
     supervise([], strategy: :one_for_one)
   end
-
-  defp pool_name, do: :default
 
   def push(pool_name, notification, on_response \\ nil) do
     case on_response do

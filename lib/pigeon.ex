@@ -11,7 +11,7 @@ defmodule Pigeon do
 
     :pigeon
     |> Application.get_env(:apns)
-    |> Enum.each(fn({pool, config}) -> Pigeon.APNS.start_connection(pool) end)
+    |> Enum.each(fn({pool, _config}) -> Pigeon.APNS.start_connection(pool) end)
 
     response
   end

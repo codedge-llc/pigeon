@@ -7,13 +7,30 @@ defmodule Pigeon.APNSTest do
   def bad_token, do: "00fc13adff785122b4ad28809a3420982341241421348097878e577c991de8f0"
   def bad_id, do: "123e4567-e89b-12d3-a456-42665544000"
 
-  test "push/1 sends a push notification" do
-    n = Pigeon.APNS.Notification.new(test_message("push/1"), test_token, test_topic)
+  describe "push/1" do
+    test "returns {:ok, notification} on successful push" do
+      n = Pigeon.APNS.Notification.new(test_message("push/1"), test_token, test_topic)
+      assert {:ok, _notif} = Pigeon.APNS.push(n)
+    end
 
-    assert Pigeon.APNS.push(n) == :ok
+    test "returns {:error, reason, notification} on unsuccessful push" do
+      n = Pigeon.APNS.Notification.new(test_message("push/1"), "bad_token", test_topic)
+      assert {:error, :bad_device_token, _notif} = Pigeon.APNS.push(n)
+    end
+
+    test "returns list of response tuples for multiple notifications" do
+      n = Pigeon.APNS.Notification.new(test_message("push/1"), test_token, test_topic)
+      bad_n = Pigeon.APNS.Notification.new(test_message("push/1"), "asdf1234", test_topic)
+      assert %{
+        ok: [_n1, _n2],
+        error: %{
+          bad_device_token: [_n3]
+        }
+      } = Pigeon.APNS.push([n, n, bad_n])
+    end
   end
 
-  describe "push/2" do
+  describe "push/1 with :on_response" do
     test "returns {:ok, notification} on successful push" do
       pid = self
       on_response = fn(x) -> send pid, x end
