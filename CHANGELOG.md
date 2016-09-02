@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.9.1
+* Fixed :eaddrinuse error when restarting Pigeon too quickly with :apns_2197 enabled
+
 ## v0.9.0
 * APNS topic made optional
 * APNS `put_mutable_content` helper function added

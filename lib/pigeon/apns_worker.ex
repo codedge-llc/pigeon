@@ -76,7 +76,7 @@ defmodule Pigeon.APNSWorker do
                key,
                {:password, ''},
                {:packet, 0},
-               {:reuseaddr, false},
+               {:reuseaddr, true},
                {:active, true},
                :binary]
     case Application.get_env(:pigeon, :apns_2197) do

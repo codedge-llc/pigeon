@@ -60,7 +60,7 @@ defmodule Pigeon.APNSWorkerTest do
                   key,
                   {:password, ''},
                   {:packet, 0},
-                  {:reuseaddr, false},
+                  {:reuseaddr, true},
                   {:active, true},
                   :binary]
 
@@ -78,7 +78,7 @@ defmodule Pigeon.APNSWorkerTest do
                   key,
                   {:password, ''},
                   {:packet, 0},
-                  {:reuseaddr, false},
+                  {:reuseaddr, true},
                   {:active, true},
                   :binary,
                   {:port, 2197}]
