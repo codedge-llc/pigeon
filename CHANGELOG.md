@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.9.2
+* Fixed GCM error response atom conversion
+
 ## v0.9.1
 * Fixed :eaddrinuse error when restarting Pigeon too quickly with :apns_2197 enabled
 
