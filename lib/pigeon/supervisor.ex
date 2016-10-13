@@ -118,23 +118,19 @@ defmodule Pigeon.Supervisor do
     valid_client_id? and valid_client_secret?
   end
 
-  def push(service, notification) do
-    case service do
-      :apns ->
-        GenServer.cast(:apns_worker, {:push, :apns, notification})
-      _ ->
-        Logger.error "Unknown service #{service}"
-    end
-  end
+  def push(:apns, notification),
+    do: GenServer.cast(:apns_worker, {:push, :apns, notification})
+  def push(:adm, notification),
+    do: GenServer.cast(:adm_worker, {:push, :adm, notification})
+  def push(service, _notification),
+    do: Logger.error "Unknown service #{service}"
 
-  def push(service, notification, on_response) do
-    case service do
-      :apns ->
-        GenServer.cast(:apns_worker, {:push, :apns, notification, on_response})
-      _ ->
-        Logger.error "Unknown service #{service}"
-    end
-  end
+  def push(:apns, notification, on_response),
+    do: GenServer.cast(:apns_worker, {:push, :apns, notification, on_response})
+  def push(:adm, notification, on_response),
+    do: GenServer.cast(:adm_worker, {:push, :adm, notification, on_response})
+  def push(service, _notification, _on_response),
+    do: Logger.error "Unknown service #{service}"
 
   def handle_cast(:stop , state), do: { :noreply, state }
 end
