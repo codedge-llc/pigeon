@@ -95,7 +95,8 @@ defmodule Pigeon.ADM.Notification do
   @moduledoc """
     Defines Amazon ADM notification struct and convenience constructor functions.
   """
-  defstruct registration_id: nil, payload: %{}, consolidation_key: nil, expires_after: 604800, md5: nil
+  defstruct registration_id: nil, payload: %{}, updated_registration_id: nil,
+            consolidation_key: nil, expires_after: 604800, md5: nil
 
   def new(registration_id, data \\ %{})
   def new(registration_id, data) do

@@ -181,9 +181,63 @@ defmodule Pigeon.ADMWorker do
     payload |> Map.put("md5", md5)
   end
 
-  # TODO
-  defp process_response(status, body, notification, on_response) do
-    Logger.debug("response status: #{status} -- body: #{body}")
-    :todo
+  defp process_response(200, body, notification, on_response),
+    do: handle_200_status(body, notification, on_response)
+  defp process_response(status, body, notification, on_response),
+    do: handle_error_status_code(status, body, notification, on_response)
+
+  defp handle_error_status_code(status, body, notification, on_response) do
+    case Poison.decode(body) do
+      {:ok, %{"reason" => reason}} ->
+        on_response.({:error, reason, notification})
+      {:error, _} ->
+        on_response.({:error, generic_error_reason(status), notification})
+    end
+  end
+
+  defp generic_error_reason(400), do: :invalid_jSON
+  defp generic_error_reason(401), do: :authentication_error
+  defp generic_error_reason(500), do: :internal_server_error
+  defp generic_error_reason(_), do: :unknown_error
+
+  defp handle_200_status(body, notification, on_response) do
+    {:ok, json} = Poison.decode(body)
+    process_callback({notification.registration_id, json}, notification, on_response)
+  end
+
+  defp process_callback({reg_id, response}, notification, on_response) do
+    case parse_result(response) do
+      :ok ->
+        notification = %{ notification | registration_id: reg_id }
+        on_response.({:ok, notification})
+
+      {:ok, registration_id} ->
+        notification =
+          %{ notification | registration_id: reg_id, updated_registration_id: registration_id }
+        on_response.({:ok, notification})
+
+      {:error, reason} ->
+        notification = %{ notification | registration_id: reg_id }
+        on_response.({:error, reason, notification})
+    end
+  end
+
+  defp parse_result(result) do
+    error = result["reason"]
+    if is_nil(error) do
+      parse_success(result)
+    else
+      error_atom = error |> Macro.underscore |> String.to_atom
+      {:error, error_atom}
+    end
+  end
+
+  defp parse_success(result) do
+    registration_id = result["registrationID"]
+    if is_nil(registration_id) do
+      :ok
+    else
+      {:ok, registration_id}
+    end
   end
 end
