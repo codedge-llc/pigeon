@@ -104,7 +104,11 @@ defmodule Pigeon.ADM.Notification do
     |> put_data(data)
   end
 
-  def put_data(n, data), do: update_payload(n, "data", data)
+  def put_data(n, data) do
+    n
+    |> update_payload("data", data)
+    |> calculate_md5
+  end
 
   defp update_payload(notification, _key, value) when value == %{}, do: notification
   defp update_payload(notification, key, value) do
@@ -112,5 +116,20 @@ defmodule Pigeon.ADM.Notification do
       notification.payload
       |> Map.put(key, value)
     %{notification | payload: payload}
+  end
+
+  def calculate_md5(notification) do
+    data = notification.payload["data"]
+
+    concat =
+      data
+      |> Map.keys
+      |> Enum.sort
+      |> Enum.map(fn key -> "#{key}:#{data[key]}" end)
+      |> Enum.join(",")
+
+    md5 = :crypto.hash(:md5, concat) |> Base.encode64
+
+    %{notification | md5: md5}
   end
 end
