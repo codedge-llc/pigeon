@@ -4,6 +4,7 @@ defmodule Pigeon.ADMWorker do
     Includes managing OAuth2 tokens.
   """
   use GenServer
+  require Logger
 
   @token_refresh_uri "https://api.amazon.com/auth/O2/token"
 
@@ -30,15 +31,19 @@ defmodule Pigeon.ADMWorker do
 
   def handle_cast({:push, :adm, notification}, state) do
     case refresh_access_token_if_needed(state) do
-      {:ok, state} -> do_push(notification, state, nil)
-      {:error, _reason} -> {:noreply, state}
+      {:ok, state} ->
+        :ok = do_push(notification, state, nil)
+        {:noreply, state}
+      {:error, _reason} ->
+        {:noreply, state}
     end
   end
 
   def handle_cast({:push, :adm, notification, on_response}, state) do
     case refresh_access_token_if_needed(state) do
       {:ok, state} ->
-        do_push(notification, state, on_response)
+        :ok = do_push(notification, state, on_response)
+        {:noreply, state}
       {:error, reason} ->
         on_response.({:error, reason, notification})
         {:noreply, state}
@@ -57,7 +62,8 @@ defmodule Pigeon.ADMWorker do
         refresh_access_token(state)
       access_token_expired?(access_token_refreshed_datetime_erl, access_token_expiration_seconds) ->
         refresh_access_token(state)
-      true -> state
+      true ->
+        {:ok, state}
     end
   end
 
@@ -86,7 +92,7 @@ defmodule Pigeon.ADMWorker do
         %{
           "access_token" => access_token,
           "expires_in" => expiration_seconds,
-          "scope" => scope,
+          "scope" => _scope,
           "token_type" => token_type
         } = response_json
 
@@ -99,6 +105,7 @@ defmodule Pigeon.ADMWorker do
 
       {:ok, %{body: response_body}} ->
         {:ok, response_json} = Poison.decode(response_body)
+        Logger.error "Refresh token response: #{inspect response_json}"
         {:error, response_json["reason"]}
     end
   end
@@ -118,10 +125,7 @@ defmodule Pigeon.ADMWorker do
   end
 
   defp do_push(notification, state, on_response) do
-    requests =
-      notification.registration_id
-      |> chunk_registration_ids
-      |> encode_requests(notification.payload)
+    request = {notification.registration_id, encode_payload(notification)}
 
     response =
       case on_response do
@@ -138,7 +142,7 @@ defmodule Pigeon.ADMWorker do
             process_response(status, body, notification, on_response)
           end
       end
-    for r <- requests, do: Task.async(fn -> response.(r) end)
+    Task.async(fn -> response.(request) end)
     :ok
   end
 
@@ -147,33 +151,39 @@ defmodule Pigeon.ADMWorker do
   end
 
   defp adm_headers(%{access_token: access_token, access_token_type: token_type}) do
-    [{"Authorization", "#{token_type} #{access_token}"}]
+    [{"Authorization", "#{token_type} #{access_token}"},
+     {"Content-Type", "application/json"},
+     {"X-Amzn-Type-Version", "com.amazon.device.messaging.ADMMessage@1.0"},
+     {"Accept", "application/json"},
+     {"X-Amzn-Accept-Type", "com.amazon.device.messaging.ADMSendResult@1.0"}]
   end
 
-  # Amazon ADM does not support batch sending
-  def chunk_registration_ids(reg_ids) when is_binary(reg_ids), do: [[reg_ids]]
-  def chunk_registration_ids(reg_ids), do: Enum.chunk(reg_ids, 1, 1, [])
-
-  # TODO
-  def encode_requests([[reg_id]|_rest], payload) do
-    to_send = Map.merge(%{"to" => reg_id}, payload)
-    [{reg_id, Poison.encode!(to_send)}]
-  end
-  def encode_requests(registration_ids, payload) do
-    Enum.map(registration_ids, fn(x) -> encode_payload(x, payload) end)
+  defp encode_payload(notification) do
+    notification.payload
+    |> put_consolidation_key(notification.consolidation_key)
+    |> put_expires_after(notification.expires_after)
+    |> put_md5(notification.md5)
+    |> Poison.encode!
   end
 
-  # TODO
-  defp encode_payload(x, payload) do
-    encoded =
-      %{"registration_ids" => x}
-      |> Map.merge(payload)
-      |> Poison.encode!
-    {x, encoded}
+  defp put_consolidation_key(payload, nil), do: payload
+  defp put_consolidation_key(payload, consolidation_key) do
+    payload |> Map.put("consolidationKey", consolidation_key)
+  end
+
+  defp put_expires_after(payload, nil), do: payload
+  defp put_expires_after(payload, expires_after) do
+    payload |> Map.put("expiresAfter", expires_after)
+  end
+
+  defp put_md5(payload, nil), do: payload
+  defp put_md5(payload, md5) do
+    payload |> Map.put("md5", md5)
   end
 
   # TODO
   defp process_response(status, body, notification, on_response) do
+    Logger.debug("response status: #{status} -- body: #{body}")
     :todo
   end
 end
