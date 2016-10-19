@@ -90,3 +90,26 @@ defmodule Pigeon.GCM.Notification do
     %{notification | payload: payload}
   end
 end
+
+defmodule Pigeon.ADM.Notification do
+  @moduledoc """
+    Defines Amazon ADM notification struct and convenience constructor functions.
+  """
+  defstruct registration_id: nil, payload: %{}, consolidation_key: nil, expires_after: 604800, md5: nil
+
+  def new(registration_id, data \\ %{})
+  def new(registration_id, data) do
+    %Pigeon.ADM.Notification{registration_id: registration_id}
+    |> put_data(data)
+  end
+
+  def put_data(n, data), do: update_payload(n, "data", data)
+
+  defp update_payload(notification, _key, value) when value == %{}, do: notification
+  defp update_payload(notification, key, value) do
+    payload =
+      notification.payload
+      |> Map.put(key, value)
+    %{notification | payload: payload}
+  end
+end
