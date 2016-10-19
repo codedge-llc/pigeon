@@ -189,7 +189,8 @@ defmodule Pigeon.ADMWorker do
   defp handle_error_status_code(status, body, notification, on_response) do
     case Poison.decode(body) do
       {:ok, %{"reason" => reason}} ->
-        on_response.({:error, reason, notification})
+        reason_atom = reason |> Macro.underscore |> String.to_atom
+        on_response.({:error, reason_atom, notification})
       {:error, _} ->
         on_response.({:error, generic_error_reason(status), notification})
     end
