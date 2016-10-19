@@ -106,7 +106,7 @@ defmodule Pigeon.ADM.Notification do
 
   def put_data(n, data) do
     n
-    |> update_payload("data", data)
+    |> update_payload("data", ensure_strings(data))
     |> calculate_md5
   end
 
@@ -116,6 +116,15 @@ defmodule Pigeon.ADM.Notification do
       notification.payload
       |> Map.put(key, value)
     %{notification | payload: payload}
+  end
+
+  @doc """
+    ADM requires that "data" keys and values are all strings
+  """
+  def ensure_strings(data) do
+    data
+    |> Enum.map(fn {key, value} -> {"#{key}", "#{value}"} end)
+    |> Enum.into(%{})
   end
 
   def calculate_md5(notification) do

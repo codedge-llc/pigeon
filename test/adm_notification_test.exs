@@ -7,7 +7,7 @@ defmodule Pigeon.ADMNotificationTest do
   test "new" do
     expected_result = %Pigeon.ADM.Notification{
       registration_id: test_registration_id,
-      payload: %{"data" => test_data},
+      payload: %{"data" => %{ "message" => "your message" }},
       updated_registration_id: nil,
       consolidation_key: nil,
       expires_after: 604800,
@@ -22,5 +22,23 @@ defmodule Pigeon.ADMNotificationTest do
     }
     result_n = Pigeon.ADM.Notification.calculate_md5(n)
     assert "w2qyl/pbK7HVl9zfzu7Nww==" == result_n.md5
+  end
+
+  test "ensure_strings" do
+    data = %{
+      :message => "your message",
+      "string_key" => "string_value",
+      "something" => 123,
+      456 => true
+    }
+    n = Pigeon.ADM.Notification.new(test_registration_id, data)
+
+    expected_result = %{
+      "message" => "your message",
+      "string_key" => "string_value",
+      "something" => "123",
+      "456" => "true"
+    }
+    assert expected_result == n.payload["data"]
   end
 end
