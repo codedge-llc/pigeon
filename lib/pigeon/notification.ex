@@ -137,7 +137,7 @@ defmodule Pigeon.ADM.Notification do
       |> Enum.map(fn key -> "#{key}:#{data[key]}" end)
       |> Enum.join(",")
 
-    md5 = :crypto.hash(:md5, concat) |> Base.encode64
+    md5 = :md5 |> :crypto.hash(concat) |> Base.encode64
 
     %{notification | md5: md5}
   end

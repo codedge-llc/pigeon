@@ -5,6 +5,8 @@ defmodule Pigeon.APNSWorker do
   use GenServer
   require Logger
 
+  @ping_period 600_000 # 10 minutes
+
   defp apns_production_api_uri, do: "api.push.apple.com"
   defp apns_development_api_uri, do: "api.development.push.apple.com"
 
@@ -15,8 +17,8 @@ defmodule Pigeon.APNSWorker do
     end
   end
 
-  def start_link(name, config) do
-    GenServer.start_link(__MODULE__, {:ok, config}, name: name)
+  def start_link(config) do
+    GenServer.start_link(__MODULE__, {:ok, config}, name: config[:name])
   end
 
   def stop, do: :gen_server.cast(self, :stop)
@@ -25,8 +27,9 @@ defmodule Pigeon.APNSWorker do
 
   def initialize_worker(config) do
     mode = config[:mode]
-    case connect_socket(mode, config) do
+    case connect_socket(config, 0) do
       {:ok, socket} ->
+        Process.send_after(self, :ping, @ping_period)
         {:ok, %{
           apns_socket: socket,
           mode: mode,
@@ -34,6 +37,11 @@ defmodule Pigeon.APNSWorker do
           stream_id: 1,
           queue: %{}
         }}
+      {:closed, _socket} ->
+        Logger.error """
+          Socket closed unexpectedly.
+          """
+        {:stop, {:error, :bad_connection}}
       {:error, :timeout} ->
         Logger.error """
           Failed to establish SSL connection. Is the certificate signed for :#{mode} mode?
@@ -47,41 +55,56 @@ defmodule Pigeon.APNSWorker do
     end
   end
 
-  def connect_socket(_mode, %{cert: nil, certfile: nil, key: _, keyfile: _}), do:
-    {:error, :invalid_config}
-  def connect_socket(_mode, %{cert: _, certfile: _, key: nil, keyfile: nil}), do:
-    {:error, :invalid_config}
-  def connect_socket(mode, %{cert: cert, certfile: nil, key: key, keyfile: nil}),
-    do: connect_socket(mode, {:cert, cert}, {:key, key}, 0)
-  def connect_socket(mode, %{cert: nil, certfile: certfile, key: key, keyfile: nil}),
-    do: connect_socket(mode, {:certfile, certfile}, {:key, key}, 0)
-  def connect_socket(mode, %{cert: nil, certfile: certfile, key: nil, keyfile: keyfile}),
-    do: connect_socket(mode, {:certfile, certfile}, {:keyfile, keyfile}, 0)
-  def connect_socket(mode, %{cert: cert, certfile: nil, key: nil, keyfile: keyfile}),
-    do: connect_socket(mode, {:cert, cert}, {:keyfile, keyfile}, 0)
-  def connect_socket(_mode, _), do: {:error, :invalid_config}
-
-  def connect_socket(_mode, _config, 3), do: {:error, :timeout}
-  def connect_socket(mode, cert, key, tries) do
-    uri = mode |> push_uri |> to_char_list
-    options = connect_socket_options(cert, key)
-    case :h2_client.start_link(:https, uri, options) do
-      {:ok, socket} -> {:ok, socket}
-      {:error, _} -> connect_socket(mode, cert, key, tries + 1)
+  def connect_socket(_config, 3), do: {:error, :timeout}
+  def connect_socket(config, tries) do
+    uri = config[:mode] |> push_uri |> to_char_list
+    case connect_socket_options(config) do
+      {:ok, options} -> do_connect_socket(config, uri, options, tries)
+      error -> error
     end
   end
 
-  def connect_socket_options(cert, key) do
-    options = [cert,
-               key,
-               {:password, ''},
-               {:packet, 0},
-               {:reuseaddr, true},
-               {:active, true},
-               :binary]
-    case Application.get_env(:pigeon, :apns_2197) do
+  def connect_socket_options(config) do
+    cert = get_opt(config, :cert, :certfile)
+    key = get_opt(config, :key, :keyfile)
+    cond do
+      cert && key ->
+        options =
+          [cert,
+          key,
+          {:password, ''},
+          {:packet, 0},
+          {:reuseaddr, true},
+          {:active, true},
+          :binary]
+          |> optional_add_2197(config)
+        {:ok, options}
+      true ->
+        {:error, :invalid_config}
+    end
+  end
+
+  defp optional_add_2197(options, config) do
+    case config[:use_2197] do
       true -> options ++ [{:port, 2197}]
       _ -> options
+    end
+  end
+
+  defp get_opt(config, key_1, key_2) do
+    cond do
+      config[key_1] -> {key_1, config[key_1]}
+      config[key_2] -> {key_2, config[key_2]}
+      true -> nil
+    end
+  end
+
+  defp do_connect_socket(config, uri, options, tries) do
+    case Kadabra.open(uri, :https, options) do
+      {:ok, socket} -> {:ok, socket}
+      {:error, reason} ->
+        Logger.error(inspect(reason))
+        connect_socket(config, tries + 1)
     end
   end
 
@@ -95,6 +118,11 @@ defmodule Pigeon.APNSWorker do
     send_push(state, notification, on_response)
   end
 
+  def handle_cast(msg, state) do
+    Logger.debug "Recv: #{inspect(msg)}"
+    {:noreply, state}
+  end
+
   def send_push(state, notification, on_response) do
     %{apns_socket: socket, stream_id: stream_id, queue: queue} = state
     json = Pigeon.Notification.json_payload(notification.payload)
@@ -105,7 +133,7 @@ defmodule Pigeon.APNSWorker do
       |> put_apns_id(notification)
       |> put_apns_topic(notification)
 
-    :h2_client.send_request(socket, req_headers, json)
+    Kadabra.request(socket, req_headers, json)
     new_q = Map.put(queue, "#{stream_id}", {notification, on_response})
     new_stream_id = stream_id + 2
     { :noreply, %{state | stream_id: new_stream_id, queue: new_q } }
@@ -197,17 +225,23 @@ defmodule Pigeon.APNSWorker do
     end
   end
 
-  def handle_info({:END_STREAM, stream}, state) do
-    %{apns_socket: socket, queue: queue} = state
+  def handle_info(:ping, state) do
+    Kadabra.ping(state.apns_socket)
+    Process.send_after(self, :ping, @ping_period)
 
-    {:ok, {headers, body}} = :h2_client.get_response(socket, stream)
-    {notification, on_response} = queue["#{stream}"]
+    { :noreply, state }
+  end
+
+  def handle_info({:end_stream, %Kadabra.Stream{id: stream_id, headers: headers, body: body}},
+                                                %{apns_socket: _socket, queue: queue} = state) do
+
+    {notification, on_response} = queue["#{stream_id}"]
 
     case get_status(headers) do
       "200" ->
         notification = %{notification | id: get_apns_id(headers)}
         unless on_response == nil do on_response.({:ok, notification}) end
-        new_queue = Map.delete(queue, "#{stream}")
+        new_queue = Map.delete(queue, "#{stream_id}")
         {:noreply, %{state | queue: new_queue}}
       nil ->
         {:noreply, state}
@@ -215,10 +249,14 @@ defmodule Pigeon.APNSWorker do
         reason = parse_error(body)
         log_error(reason, notification)
         unless on_response == nil do on_response.({:error, reason, notification}) end
-        new_queue = Map.delete(queue, "#{stream}")
+        new_queue = Map.delete(queue, "#{stream_id}")
         {:noreply, %{state | queue: new_queue}}
     end
   end
+
+  def handle_info({:ping, _from}, state), do: {:noreply, state}
+
+  def handle_info({:ok, _from}, state), do: {:noreply, state}
 
   defp get_status(headers) do
     case Enum.find(headers, fn({key, _val}) -> key == ":status" end) do

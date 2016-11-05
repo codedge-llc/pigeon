@@ -8,11 +8,12 @@ defmodule Pigeon.ADM do
     Sends a push over ADM.
   """
   @spec push(Pigeon.ADM.Notification) :: none
-  def push(notification), do: Pigeon.Supervisor.push(:adm, notification)
+  def push(notification), do: GenServer.cast(:adm_worker, {:push, :adm, notification})
 
   @doc """
     Sends a push over ADM.
   """
   @spec push(Pigeon.ADM.Notification, (() -> none)) :: none
-  def push(notification, on_response), do: Pigeon.Supervisor.push(:adm, notification, on_response)
+  def push(notification, on_response),
+    do: GenServer.cast(:adm_worker, {:push, :adm, notification, on_response})
 end

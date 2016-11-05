@@ -4,10 +4,11 @@ defmodule Pigeon.GCMTest do
   @data %{"message" => "Test push"}
   @payload %{"data" => @data}
 
+  defp valid_gcm_reg_id, do: Application.get_env(:pigeon, :test)[:valid_gcm_reg_id]
+
   test "successfully sends a valid push" do
-    reg_id = Application.get_env(:pigeon, :valid_gcm_reg_id)
     result =
-      reg_id
+      valid_gcm_reg_id
       |> Pigeon.GCM.Notification.new(%{}, @data)
       |> Pigeon.GCM.push
 
@@ -15,9 +16,8 @@ defmodule Pigeon.GCMTest do
   end
 
   test "successfully sends a valid push with an explicit config" do
-    reg_id = Application.get_env(:pigeon, :valid_gcm_reg_id)
     result =
-      reg_id
+      valid_gcm_reg_id
       |> Pigeon.GCM.Notification.new(%{}, @data)
       |> Pigeon.GCM.push(%{gcm_key: System.get_env("GCM_KEY")})
 
@@ -25,7 +25,7 @@ defmodule Pigeon.GCMTest do
   end
 
   test "successfully sends a valid push with callback" do
-    reg_id = Application.get_env(:pigeon, :valid_gcm_reg_id)
+    reg_id = valid_gcm_reg_id
     n = Pigeon.GCM.Notification.new(reg_id, %{}, @data)
 
     Pigeon.GCM.push(n, fn(x) -> send self, x end)
