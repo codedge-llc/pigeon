@@ -83,13 +83,13 @@ or
 1. Set your environment variables. See below for setting up your certificate and key.
   ```elixir
   config :pigeon, :apns,
-   default: %{
-    cert: "cert.pem",
-    key: "key_unencrypted.pem",
-    mode: :dev
-	  use_2197: true (optional)
+    default: %{
+      cert: "cert.pem",
+      key: "key_unencrypted.pem",
+      mode: :dev
+      use_2197: true (optional)
   }
-
+  ```
   `apns_cert` and `apns_key` can either be a static file path, full-text string of the file contents (for environment variables), or a tuple like `{:my_app, "certs/cert.pem"}`,
   which will use a path relative to the `priv` folder of the given application.
 
