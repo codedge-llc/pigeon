@@ -23,11 +23,21 @@ defmodule Pigeon.APNSWorker do
 
   def init({:ok, config}), do: initialize_worker(config)
 
+  def ping(socket) do
+    Kadabra.ping(socket)
+    receive do
+      something -> something |> inspect |> Logger.debug
+		after 5_000 ->
+			Logger.debug "¯\_(ツ)_/¯"
+    end
+  end
+
   def initialize_worker(config) do
     mode = config[:mode]
     case connect_socket(config, 0) do
       {:ok, socket} ->
         Logger.debug "Started worker #{inspect(self)}"
+
         {:ok, %{
           apns_socket: socket,
           mode: mode,
@@ -35,6 +45,11 @@ defmodule Pigeon.APNSWorker do
           stream_id: 1,
           queue: %{}
         }}
+      {:closed, socket} -> 
+        Logger.error """
+          Socket closed unexpectedly.
+          """
+        {:stop, {:error, :bad_connection}}
       {:error, :timeout} ->
         Logger.error """
           Failed to establish SSL connection. Is the certificate signed for :#{mode} mode?
@@ -67,7 +82,7 @@ defmodule Pigeon.APNSWorker do
           key,
           {:password, ''},
           {:packet, 0},
-          {:reuseaddr, false},
+          {:reuseaddr, true},
           {:active, true},
           :binary]
           |> optional_add_2197(config)
@@ -93,10 +108,17 @@ defmodule Pigeon.APNSWorker do
   end
 
   defp do_connect_socket(config, uri, options, tries) do
-    case :h2_client.start_link(:https, uri, options) do
+    case Kadabra.open(uri, :https, options) do
       {:ok, socket} -> {:ok, socket}
-      {:error, _} -> connect_socket(config, tries + 1)
+      {:error, reason} ->
+        Logger.error(inspect(reason))
+        connect_socket(config, tries + 1)
     end
+  end
+
+  def handle_cast(:ping, state) do
+    ping(state.apns_socket)
+    { :noreply, state }
   end
 
   def handle_cast(:stop, state), do: { :noreply, state }
@@ -119,7 +141,7 @@ defmodule Pigeon.APNSWorker do
       |> put_apns_id(notification)
       |> put_apns_topic(notification)
 
-    :h2_client.send_request(socket, req_headers, json)
+    Kadabra.request(socket, req_headers, json)
     new_q = Map.put(queue, "#{stream_id}", {notification, on_response})
     new_stream_id = stream_id + 2
     { :noreply, %{state | stream_id: new_stream_id, queue: new_q } }
@@ -211,17 +233,18 @@ defmodule Pigeon.APNSWorker do
     end
   end
 
-  def handle_info({:END_STREAM, stream}, state) do
-    %{apns_socket: socket, queue: queue} = state
+  def handle_info({:end_stream, %Kadabra.Stream{id: stream_id,
+                                                headers: headers,
+                                                body: body} = stream}, 
+                                                %{apns_socket: socket, queue: queue} = state) do
 
-    {:ok, {headers, body}} = :h2_client.get_response(socket, stream)
-    {notification, on_response} = queue["#{stream}"]
+    {notification, on_response} = queue["#{stream_id}"]
 
     case get_status(headers) do
       "200" ->
         notification = %{notification | id: get_apns_id(headers)}
         unless on_response == nil do on_response.({:ok, notification}) end
-        new_queue = Map.delete(queue, "#{stream}")
+        new_queue = Map.delete(queue, "#{stream_id}")
         {:noreply, %{state | queue: new_queue}}
       nil ->
         {:noreply, state}
@@ -229,9 +252,19 @@ defmodule Pigeon.APNSWorker do
         reason = parse_error(body)
         log_error(reason, notification)
         unless on_response == nil do on_response.({:error, reason, notification}) end
-        new_queue = Map.delete(queue, "#{stream}")
+        new_queue = Map.delete(queue, "#{stream_id}")
         {:noreply, %{state | queue: new_queue}}
     end
+  end
+
+  def handle_info(whatever, state) do
+    Logger.debug(inspect(whatever))
+    {:noreply, state}
+  end
+
+  def handle_cast(whatever, state) do
+    Logger.debug(inspect(whatever))
+    {:noreply, state}
   end
 
   defp get_status(headers) do

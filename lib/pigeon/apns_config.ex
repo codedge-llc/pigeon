@@ -4,7 +4,7 @@ defmodule Pigeon.APNS.Config do
   """
 
   def default_pool, do: :default
-  def default_pool_size, do: 2
+  def default_pool_size, do: 1
   def default_max_overflow, do: 2
 
   def config(pool) do

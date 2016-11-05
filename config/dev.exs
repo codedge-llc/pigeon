@@ -8,6 +8,7 @@ config :pigeon, :apns,
     cert: "cert.pem",
     key: "key_unencrypted.pem",
     mode: :dev,
-    pool_size: 2,
+    pool_size: 1,
+    use_2197: true,
     max_overflow: 0
   }

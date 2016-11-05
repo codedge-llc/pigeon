@@ -12,6 +12,12 @@ defmodule Pigeon.Supervisor do
     supervise([], strategy: :one_for_one)
   end
 
+  def ping(pool_name) do
+    :poolboy.transaction(pool_name, fn(worker) ->
+      GenServer.cast(worker, :ping)
+    end)
+  end
+
   def push(pool_name, notification, on_response \\ nil) do
     case on_response do
       nil ->

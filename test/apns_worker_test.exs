@@ -33,7 +33,7 @@ defmodule Pigeon.APNSWorkerTest do
         queue: _queue
       }} = result
 
-      assert mode == :dev
+      assert mode == :prod
       assert config == APNS.Config.config(:default)
       assert stream_id == 1
     end
@@ -69,7 +69,7 @@ defmodule Pigeon.APNSWorkerTest do
                   {:key, key},
                   {:password, ''},
                   {:packet, 0},
-                  {:reuseaddr, false},
+                  {:reuseaddr, true},
                   {:active, true},
                   :binary]}
 
@@ -89,12 +89,30 @@ defmodule Pigeon.APNSWorkerTest do
                   {:key, key},
                   {:password, ''},
                   {:packet, 0},
-                  {:reuseaddr, false},
+                  {:reuseaddr, true},
                   {:active, true},
                   :binary,
                   {:port, 2197}]}
 
       assert actual == expected
+    end
+  end
+
+  describe "ping/1" do
+    test "sends ping frame" do
+      result =
+        :default
+        |> APNS.Config.config
+        |> APNSWorker.initialize_worker
+      {:ok, %{
+        apns_socket: socket,
+        mode: mode,
+        config: config,
+        stream_id: stream_id,
+        queue: _queue
+      }} = result
+      
+      Pigeon.APNSWorker.ping(socket)
     end
   end
 end
