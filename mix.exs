@@ -22,7 +22,7 @@ defmodule Pigeon.Mixfile do
   end
 
   defp deps do
-    [{:poison, "~> 2.0"},
+    [{:poison, "~> 3.0"},
     {:httpoison, "~> 0.7"},
     {:chatterbox, github: "joedevivo/chatterbox"},
     {:dogma, "~> 0.1", only: :dev},
