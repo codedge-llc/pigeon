@@ -7,4 +7,6 @@ config :pigeon,
   apns_cert: "cert.pem",
   apns_key: "key_unencrypted.pem",
   apns_topic: System.get_env("APNS_TOPIC"),
-  apns_mode: :dev
+  apns_mode: :dev,
+  adm_client_id: System.get_env("ADM_OAUTH2_CLIENT_ID"),
+  adm_client_secret: System.get_env("ADM_OAUTH2_CLIENT_SECRET")

@@ -90,3 +90,55 @@ defmodule Pigeon.GCM.Notification do
     %{notification | payload: payload}
   end
 end
+
+defmodule Pigeon.ADM.Notification do
+  @moduledoc """
+    Defines Amazon ADM notification struct and convenience constructor functions.
+  """
+  defstruct registration_id: nil, payload: %{}, updated_registration_id: nil,
+            consolidation_key: nil, expires_after: 604800, md5: nil
+
+  def new(registration_id, data \\ %{})
+  def new(registration_id, data) do
+    %Pigeon.ADM.Notification{registration_id: registration_id}
+    |> put_data(data)
+  end
+
+  def put_data(n, data) do
+    n
+    |> update_payload("data", ensure_strings(data))
+    |> calculate_md5
+  end
+
+  defp update_payload(notification, _key, value) when value == %{}, do: notification
+  defp update_payload(notification, key, value) do
+    payload =
+      notification.payload
+      |> Map.put(key, value)
+    %{notification | payload: payload}
+  end
+
+  @doc """
+    ADM requires that "data" keys and values are all strings
+  """
+  def ensure_strings(data) do
+    data
+    |> Enum.map(fn {key, value} -> {"#{key}", "#{value}"} end)
+    |> Enum.into(%{})
+  end
+
+  def calculate_md5(notification) do
+    data = notification.payload["data"]
+
+    concat =
+      data
+      |> Map.keys
+      |> Enum.sort
+      |> Enum.map(fn key -> "#{key}:#{data[key]}" end)
+      |> Enum.join(",")
+
+    md5 = :crypto.hash(:md5, concat) |> Base.encode64
+
+    %{notification | md5: md5}
+  end
+end
