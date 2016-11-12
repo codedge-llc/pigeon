@@ -14,6 +14,12 @@ defmodule Pigeon.Mixfile do
      test_coverage: [tool: ExCoveralls],
      preferred_cli_env: ["coveralls": :test, "coveralls.detail": :test,
       "coveralls.post": :test, "coveralls.html": :test],
+     docs: [main: "getting-started",
+            extras: ["docs/Getting Started.md",
+                     "docs/APNS Apple iOS.md",
+                     "docs/GCM Android.md",
+                     "docs/ADM Amazon Android.md",
+                     "CHANGELOG.md"]],
      deps: deps]
   end
 
