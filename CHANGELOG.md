@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.10.0
+* Migrated HTTP/2 client from `chatterbox` to `kadabra`
+* Support for ADM (Amazon Android) push
+* APNS pushes are now synchronous by default. For async pushes use the new `on_response` option. GCM and ADM will have it in the next major release.
+* Bulk APNS pushing
+* Handling of multiple APNS worker connections with different configs
+* Re-implemented APNS socket pings to keep connections open
+* `:invalid_jSON` corrected to `:invalid_json`
+
 ## v0.9.2
 * Fixed GCM error response atom conversion
 

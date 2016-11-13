@@ -4,7 +4,8 @@ defmodule Pigeon.GCM do
   """
   require Logger
 
-  defp gcm_uri, do: 'https://gcm-http.googleapis.com/gcm/send'
+  # defp gcm_uri, do: 'https://gcm-http.googleapis.com/gcm/send'
+  defp gcm_uri, do: 'fcm.googleapis.com/fcm/send'
 
   defp gcm_headers(key) do
     [{ "Authorization", "key=#{key}" },
@@ -12,13 +13,14 @@ defmodule Pigeon.GCM do
      { "Accept", "application/json" }]
   end
 
+  defp default_gcm_key, do: Application.get_env(:pigeon, :gcm)[:key]
+
   @doc """
     Sends a push over GCM
   """
   @spec push(Pigeon.GCM.Notification) :: none
   def push(notification) do
-    gcm_key = Application.get_env(:pigeon, :gcm_key)
-    do_push(notification, %{gcm_key: gcm_key})
+    do_push(notification, %{gcm_key: default_gcm_key})
   end
 
   @doc """
@@ -26,8 +28,7 @@ defmodule Pigeon.GCM do
   """
   @spec push(Pigeon.GCM.Notification, (() -> none)) :: none
   def push(notification, on_response) when is_function(on_response) do
-    gcm_key = Application.get_env(:pigeon, :gcm_key)
-    do_push(notification, %{gcm_key: gcm_key}, on_response)
+    do_push(notification, %{gcm_key: default_gcm_key}, on_response)
   end
 
   def push(notification, config, on_response \\ nil) do
@@ -83,7 +84,7 @@ defmodule Pigeon.GCM do
       200 ->
         handle_200_status(body, notification, on_response)
       400 ->
-        handle_error_status_code(:invalid_jSON, notification, on_response)
+        handle_error_status_code(:invalid_json, notification, on_response)
       401 ->
         handle_error_status_code(:authentication_error, notification, on_response)
       500 ->
