@@ -110,7 +110,7 @@ For `{:error, reason, notification}` tuples, this key can be one or many IDs dep
 |`:invalid_package_name`          |Invalid Package Name         |
 |`:authentication_error`          |Authentication Error         |
 |`:mismatch_sender_id`            |Mismatched Sender            |
-|`:invalid_jSON`                  |Invalid JSON                 |
+|`:invalid_json`                  |Invalid JSON                 |
 |`:message_too_big`               |Message Too Big              |
 |`:invalid_data_key`              |Invalid Data Key             |
 |`:invalid_ttl`                   |Invalid Time to Live         |

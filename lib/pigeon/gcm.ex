@@ -84,7 +84,7 @@ defmodule Pigeon.GCM do
       200 ->
         handle_200_status(body, notification, on_response)
       400 ->
-        handle_error_status_code(:invalid_jSON, notification, on_response)
+        handle_error_status_code(:invalid_json, notification, on_response)
       401 ->
         handle_error_status_code(:authentication_error, notification, on_response)
       500 ->

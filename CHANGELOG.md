@@ -7,6 +7,7 @@
 * Bulk APNS pushing
 * Handling of multiple APNS worker connections with different configs
 * Re-implemented APNS socket pings to keep connections open
+* `:invalid_jSON` corrected to `:invalid_json`
 
 ## v0.9.2
 * Fixed GCM error response atom conversion

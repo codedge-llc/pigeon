@@ -196,7 +196,7 @@ defmodule Pigeon.ADMWorker do
     end
   end
 
-  defp generic_error_reason(400), do: :invalid_jSON
+  defp generic_error_reason(400), do: :invalid_json
   defp generic_error_reason(401), do: :authentication_error
   defp generic_error_reason(500), do: :internal_server_error
   defp generic_error_reason(_), do: :unknown_error
