@@ -24,7 +24,7 @@ defmodule Pigeon.Mixfile do
   end
 
   def application do
-    [applications: [:logger, :httpoison, :poolboy],
+    [applications: [:logger, :httpoison, :poolboy, :kadabra],
     mod: {Pigeon, []}]
   end
 
