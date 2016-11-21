@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.10.1
+* Fix: kadabra not started
+
 ## v0.10.0
 * Migrated HTTP/2 client from `chatterbox` to `kadabra`
 * Support for ADM (Amazon Android) push
