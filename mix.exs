@@ -41,7 +41,7 @@ defmodule Pigeon.Mixfile do
 
   defp description do
     """
-    HTTP2-compliant wrapper for sending iOS (APNS) and Android (GCM) push notifications.
+    HTTP2-compliant wrapper for sending iOS (APNS), Android (GCM), and Amazon Android (ADM) push notifications.
     """
   end
 
