@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.10.2
+* Fix: poison dependency version made optionally `~> 2.0 or ~> 3.0`
+
 ## v0.10.1
 * Fix: kadabra not started
 
