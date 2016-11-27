@@ -24,4 +24,7 @@ After running `mix deps.get`, configure `mix.exs` to start the application autom
   ```
   
 ## Getting Started
-For usage and configuration, see the [docs](https://hexdocs.pm/pigeon/getting-started.html).
+For usage and configuration, see the docs:
+* [APNS (Apple iOS)](https://hexdocs.pm/pigeon/apns-apple-ios.html)
+* [GCM (Android)](https://hexdocs.pm/pigeon/gcm-android.html)
+* [ADM (Amazon Android)](https://hexdocs.pm/pigeon/adm-amazon-android.html)
