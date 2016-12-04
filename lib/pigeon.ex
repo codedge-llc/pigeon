@@ -13,7 +13,7 @@ defmodule Pigeon do
   end
 
   defp workers do
-    adm_worker ++ apns_workers
+    [ supervisor(Pigeon.APNSD.Supervisor, [], name: Pigeon.APNSD.Supervisor) | adm_worker ++ apns_workers ]
   end
 
   def adm_worker do
