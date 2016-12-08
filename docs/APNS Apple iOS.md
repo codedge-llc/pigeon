@@ -121,11 +121,11 @@ Multiple APNS worker connections can be configured simultaneously. Useful for su
     }
   ```
 
-Send pushes with a `to` option in your second parameter.
+Send pushes with a `name` option in your second parameter.
 
   ```elixir
   n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic")
-  Pigeon.APNS.push(n, to: :custom_worker)
+  Pigeon.APNS.push(n, name: :custom_worker)
   ```
 
 ## Asynchronous Pushing
