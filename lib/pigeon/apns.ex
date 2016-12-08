@@ -43,7 +43,7 @@ defmodule Pigeon.APNS do
     end
   end
 
-  defp group_responses(responses) do
+  def group_responses(responses) do
     Enum.reduce(responses, %{}, fn(response, acc) ->
       case response do
         {:ok, r} -> update_result(acc, r)
