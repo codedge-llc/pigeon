@@ -5,7 +5,7 @@ defmodule Pigeon.GCM do
   require Logger
 
   # defp gcm_uri, do: 'https://gcm-http.googleapis.com/gcm/send'
-  defp gcm_uri, do: 'fcm.googleapis.com/fcm/send'
+  defp gcm_uri, do: Application.get_env(:pigeon, :gcm)[:endpoint] || 'fcm.googleapis.com/fcm/send'
 
   defp gcm_headers(key) do
     [{ "Authorization", "key=#{key}" },
@@ -20,7 +20,7 @@ defmodule Pigeon.GCM do
   """
   @spec push(Pigeon.GCM.Notification) :: none
   def push(notification) do
-    do_push(notification, %{gcm_key: default_gcm_key()})
+    do_push(notification, %{gcm_key: default_gcm_key(), gcm_endpoint: gcm_uri()})
   end
 
   @doc """
@@ -35,7 +35,7 @@ defmodule Pigeon.GCM do
     do_push(notification, config, on_response)
   end
 
-  defp do_push(notification, %{gcm_key: gcm_key}, on_response \\ nil) do
+  defp do_push(notification, %{gcm_key: gcm_key, gcm_endpoint: gcm_uri}, on_response \\ nil) do
     requests =
       notification.registration_id
       |> chunk_registration_ids

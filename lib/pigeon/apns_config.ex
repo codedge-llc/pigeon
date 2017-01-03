@@ -8,6 +8,8 @@ defmodule Pigeon.APNS.Config do
   def config(name) do
     config = Application.get_env(:pigeon, :apns)[name]
     %{
+      production_endpoint: config[:production_endpoint] ||  "api.push.apple.com",
+      development_endpoint: config[:development_endpoint] ||  "api.development.push.apple.com",
       name: name,
       mode: config[:mode],
       cert: cert(config[:cert]),

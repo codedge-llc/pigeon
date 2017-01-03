@@ -7,13 +7,10 @@ defmodule Pigeon.APNSWorker do
 
   @ping_period 600_000 # 10 minutes
 
-  defp apns_production_api_uri, do: "api.push.apple.com"
-  defp apns_development_api_uri, do: "api.development.push.apple.com"
-
-  def push_uri(mode) do
-    case mode do
-      :dev -> apns_development_api_uri()
-      :prod -> apns_production_api_uri()
+  def push_uri(config) do
+    case config[:mode] do
+      :dev -> config[:development_endpoint]
+      :prod -> config[:production_endpoint]
     end
   end
 
@@ -21,7 +18,7 @@ defmodule Pigeon.APNSWorker do
     GenServer.start_link(__MODULE__, {:ok, config}, name: config[:name])
   end
 
-  def stop, do: :gen_server.cast(self(), :stop)
+  def stop, do: :gen_server.cast(self, :stop)
 
   def init({:ok, config}), do: initialize_worker(config)
 
@@ -29,7 +26,7 @@ defmodule Pigeon.APNSWorker do
     mode = config[:mode]
     case connect_socket(config, 0) do
       {:ok, socket} ->
-        Process.send_after(self(), :ping, @ping_period)
+        Process.send_after(self, :ping, @ping_period)
         {:ok, %{
           apns_socket: socket,
           mode: mode,
@@ -57,7 +54,7 @@ defmodule Pigeon.APNSWorker do
 
   def connect_socket(_config, 3), do: {:error, :timeout}
   def connect_socket(config, tries) do
-    uri = config[:mode] |> push_uri |> to_char_list
+    uri = config |> push_uri |> to_char_list
     case connect_socket_options(config) do
       {:ok, options} -> do_connect_socket(config, uri, options, tries)
       error -> error
@@ -260,7 +257,7 @@ defmodule Pigeon.APNSWorker do
 
   def handle_info(:ping, state) do
     Kadabra.ping(state.apns_socket)
-    Process.send_after(self(), :ping, @ping_period)
+    Process.send_after(self, :ping, @ping_period)
 
     { :noreply, state }
   end
