@@ -10,6 +10,7 @@ defmodule Pigeon.APNS.Config do
     %{
       production_endpoint: config[:production_endpoint] ||  "api.push.apple.com",
       development_endpoint: config[:development_endpoint] ||  "api.development.push.apple.com",
+      port: config[:port] ||  443,
       name: name,
       mode: config[:mode],
       cert: cert(config[:cert]),
