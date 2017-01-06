@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.10.3
+* Fix: cleaned up Elixir v1.4 warnings
+
 ## v0.10.2
 * Fix: poison dependency version made optionally `~> 2.0 or ~> 3.0`
 

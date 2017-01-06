@@ -12,7 +12,7 @@ defmodule Pigeon.ADMWorker do
     GenServer.start_link(__MODULE__, {:ok, config}, name: name)
   end
 
-  def stop, do: :gen_server.cast(self, :stop)
+  def stop, do: :gen_server.cast(self(), :stop)
 
   def init({:ok, config}), do: initialize_worker(config)
 

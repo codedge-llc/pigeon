@@ -8,8 +8,8 @@ defmodule Pigeon.ADM.Config do
 
   def default_config do
     %{
-      client_id: config_adm_client_id,
-      client_secret: config_adm_client_secret
+      client_id: config_adm_client_id(),
+      client_secret: config_adm_client_secret()
     }
   end
 

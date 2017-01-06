@@ -8,7 +8,7 @@ defmodule Pigeon.GCMTest do
 
   test "successfully sends a valid push" do
     result =
-      valid_gcm_reg_id
+      valid_gcm_reg_id()
       |> Pigeon.GCM.Notification.new(%{}, @data)
       |> Pigeon.GCM.push
 
@@ -17,7 +17,7 @@ defmodule Pigeon.GCMTest do
 
   test "successfully sends a valid push with an explicit config" do
     result =
-      valid_gcm_reg_id
+      valid_gcm_reg_id()
       |> Pigeon.GCM.Notification.new(%{}, @data)
       |> Pigeon.GCM.push(%{gcm_key: System.get_env("GCM_KEY")})
 
@@ -25,10 +25,10 @@ defmodule Pigeon.GCMTest do
   end
 
   test "successfully sends a valid push with callback" do
-    reg_id = valid_gcm_reg_id
+    reg_id = valid_gcm_reg_id()
     n = Pigeon.GCM.Notification.new(reg_id, %{}, @data)
 
-    Pigeon.GCM.push(n, fn(x) -> send self, x end)
+    Pigeon.GCM.push(n, fn(x) -> send self(), x end)
 
     assert_receive {_ref, [{:ok, notification}]}, 5000
     assert notification.registration_id == reg_id
@@ -39,7 +39,7 @@ defmodule Pigeon.GCMTest do
     reg_id = "bad_registration_id"
     n = Pigeon.GCM.Notification.new(reg_id, %{}, @data)
 
-    Pigeon.GCM.push(n, fn(x) -> send self, x end)
+    Pigeon.GCM.push(n, fn(x) -> send self(), x end)
 
     assert_receive {_ref, [{:error, :invalid_registration, n}]}, 5000
     assert n.registration_id == reg_id

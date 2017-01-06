@@ -1,6 +1,6 @@
 defmodule Pigeon.GCM do
   @moduledoc """
-    Handles all Google Cloud Messaging (GCM) request and response functionality.
+  Handles all Google Cloud Messaging (GCM) request and response functionality.
   """
   require Logger
 
@@ -16,19 +16,19 @@ defmodule Pigeon.GCM do
   defp default_gcm_key, do: Application.get_env(:pigeon, :gcm)[:key]
 
   @doc """
-    Sends a push over GCM
+  Sends a push over GCM
   """
   @spec push(Pigeon.GCM.Notification) :: none
   def push(notification) do
-    do_push(notification, %{gcm_key: default_gcm_key})
+    do_push(notification, %{gcm_key: default_gcm_key()})
   end
 
   @doc """
-    Sends a push over GCM and executes function on success/failure.
+  Sends a push over GCM and executes function on success/failure.
   """
   @spec push(Pigeon.GCM.Notification, (() -> none)) :: none
   def push(notification, on_response) when is_function(on_response) do
-    do_push(notification, %{gcm_key: default_gcm_key}, on_response)
+    do_push(notification, %{gcm_key: default_gcm_key()}, on_response)
   end
 
   def push(notification, config, on_response \\ nil) do
@@ -45,12 +45,12 @@ defmodule Pigeon.GCM do
       case on_response do
         nil ->
           fn({_reg_ids, payload}) ->
-            HTTPoison.post(gcm_uri, payload, gcm_headers(gcm_key))
+            HTTPoison.post(gcm_uri(), payload, gcm_headers(gcm_key))
           end
         _ ->
           fn({reg_ids, payload}) ->
             {:ok, %HTTPoison.Response{status_code: status, body: body}} =
-              HTTPoison.post(gcm_uri, payload, gcm_headers(gcm_key))
+              HTTPoison.post(gcm_uri(), payload, gcm_headers(gcm_key))
 
             notification = %{ notification | registration_id: reg_ids }
             process_response(status, body, notification, on_response)

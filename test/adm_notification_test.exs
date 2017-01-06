@@ -6,14 +6,14 @@ defmodule Pigeon.ADMNotificationTest do
 
   test "new" do
     expected_result = %Pigeon.ADM.Notification{
-      registration_id: test_registration_id,
+      registration_id: test_registration_id(),
       payload: %{"data" => %{ "message" => "your message" }},
       updated_registration_id: nil,
       consolidation_key: nil,
       expires_after: 604800,
       md5: "qzF+HgArKZjJrpfcTbiFxg=="
     }
-    assert expected_result == Pigeon.ADM.Notification.new(test_registration_id, test_data)
+    assert expected_result == Pigeon.ADM.Notification.new(test_registration_id(), test_data())
   end
 
   test "calculate_md5" do
@@ -31,7 +31,7 @@ defmodule Pigeon.ADMNotificationTest do
       "something" => 123,
       456 => true
     }
-    n = Pigeon.ADM.Notification.new(test_registration_id, data)
+    n = Pigeon.ADM.Notification.new(test_registration_id(), data)
 
     expected_result = %{
       "message" => "your message",

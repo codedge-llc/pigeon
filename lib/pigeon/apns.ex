@@ -30,7 +30,7 @@ defmodule Pigeon.APNS do
   end
 
   defp do_sync_push(notification, opts) do
-    pid = self
+    pid = self()
     on_response = fn(x) -> send pid, {:ok, x} end
 
     worker_name = opts[:name] || Config.default_name

@@ -12,8 +12,8 @@ defmodule Pigeon.APNSWorker do
 
   def push_uri(mode) do
     case mode do
-      :dev -> apns_development_api_uri
-      :prod -> apns_production_api_uri
+      :dev -> apns_development_api_uri()
+      :prod -> apns_production_api_uri()
     end
   end
 
@@ -21,7 +21,7 @@ defmodule Pigeon.APNSWorker do
     GenServer.start_link(__MODULE__, {:ok, config}, name: config[:name])
   end
 
-  def stop, do: :gen_server.cast(self, :stop)
+  def stop, do: :gen_server.cast(self(), :stop)
 
   def init({:ok, config}), do: initialize_worker(config)
 
@@ -29,7 +29,7 @@ defmodule Pigeon.APNSWorker do
     mode = config[:mode]
     case connect_socket(config, 0) do
       {:ok, socket} ->
-        Process.send_after(self, :ping, @ping_period)
+        Process.send_after(self(), :ping, @ping_period)
         {:ok, %{
           apns_socket: socket,
           mode: mode,
@@ -260,7 +260,7 @@ defmodule Pigeon.APNSWorker do
 
   def handle_info(:ping, state) do
     Kadabra.ping(state.apns_socket)
-    Process.send_after(self, :ping, @ping_period)
+    Process.send_after(self(), :ping, @ping_period)
 
     { :noreply, state }
   end

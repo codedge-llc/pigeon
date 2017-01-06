@@ -4,11 +4,11 @@ defmodule Pigeon.Mixfile do
   def project do
     [app: :pigeon,
      name: "Pigeon",
-     version: "0.10.2",
+     version: "0.10.3",
      elixir: "~> 1.2",
      source_url: "https://github.com/codedge-llc/pigeon",
-     description: description,
-     package: package,
+     description: description(),
+     package: package(),
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      test_coverage: [tool: ExCoveralls],
@@ -20,7 +20,7 @@ defmodule Pigeon.Mixfile do
                      "docs/GCM Android.md",
                      "docs/ADM Amazon Android.md",
                      "CHANGELOG.md"]],
-     deps: deps]
+     deps: deps()]
   end
 
   def application do

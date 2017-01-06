@@ -9,11 +9,11 @@ defmodule Pigeon do
 
   def start(_type, _args) do
     opts = [strategy: :one_for_one, name: :pigeon]
-    Supervisor.start_link(workers, opts)
+    Supervisor.start_link(workers(), opts)
   end
 
   defp workers do
-    adm_worker ++ apns_workers
+    adm_worker() ++ apns_workers()
   end
 
   def adm_worker do
