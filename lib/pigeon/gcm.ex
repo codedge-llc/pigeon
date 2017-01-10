@@ -39,7 +39,7 @@ defmodule Pigeon.GCM do
     requests =
       notification.registration_id
       |> chunk_registration_ids
-      |> encode_requests(notification.payload)
+      |> encode_requests(notification)
 
     response =
       case on_response do
@@ -63,8 +63,8 @@ defmodule Pigeon.GCM do
   def chunk_registration_ids(reg_ids) when is_binary(reg_ids), do: [[reg_ids]]
   def chunk_registration_ids(reg_ids), do: Enum.chunk(reg_ids, 1000, 1000, [])
 
-  def encode_requests([[reg_id]|_rest], payload) do
-    to_send = Map.merge(%{"to" => reg_id}, payload)
+  def encode_requests([[reg_id]|_rest], %{payload: payload, priority: priority}) do
+    to_send = Map.merge(%{"to" => reg_id, "priority" => to_string(priority)}, payload)
     [{reg_id, Poison.encode!(to_send)}]
   end
   def encode_requests(registration_ids, payload) do

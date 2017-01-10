@@ -69,7 +69,8 @@ defmodule Pigeon.GCM.Notification do
   @moduledoc """
     Defines GCM notification struct and convenience constructor functions.
   """
-  defstruct registration_id: nil, payload: %{}, message_id: nil, updated_registration_id: nil
+  defstruct registration_id: nil, payload: %{}, message_id: nil,
+            updated_registration_id: nil, priority: :normal
 
   def new(registration_ids, notification \\ %{}, data \\ %{})
   def new(registration_ids, notification, data) do
@@ -81,6 +82,10 @@ defmodule Pigeon.GCM.Notification do
   def put_data(n, data), do: update_payload(n, "data", data)
 
   def put_notification(n, notification), do: update_payload(n, "notification", notification)
+
+  def put_priority(n, :normal), do: %{n | priority: :normal}
+  def put_priority(n, :high),   do: %{n | priority: :high}
+  def put_priority(n, _),       do: n
 
   defp update_payload(notification, _key, value) when value == %{}, do: notification
   defp update_payload(notification, key, value) do
