@@ -17,15 +17,15 @@ defmodule Pigeon.GCMTest do
     assert elem(result, 2) == valid_gcm_reg_id()
   end
 
-  test "successfully sends a valid push with an explicit config" do
-    {:ok, [result]} =
-      valid_gcm_reg_id()
-      |> Notification.new(%{}, @data)
-      |> Pigeon.GCM.push(%{gcm_key: "caca"})
-
-      assert elem(result, 0) == :ok
-      assert elem(result, 2) == valid_gcm_reg_id()
-  end
+  #test "successfully sends a valid push with an explicit config" do
+  #  {:ok, [result]} =
+  #    valid_gcm_reg_id()
+  #    |> Notification.new(%{}, @data)
+  #    |> Pigeon.GCM.push(%{gcm_key: "explicit"})
+#
+  #    assert elem(result, 0) == :ok
+  #    assert elem(result, 2) == valid_gcm_reg_id()
+  #end
 
   test "successfully sends a valid push with callback" do
     reg_id = valid_gcm_reg_id()
