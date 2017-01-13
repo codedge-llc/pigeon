@@ -3,147 +3,106 @@ defmodule Pigeon.GCM do
   Handles all Google Cloud Messaging (GCM) request and response functionality.
   """
   require Logger
+  import Supervisor.Spec
 
-  # defp gcm_uri, do: 'https://gcm-http.googleapis.com/gcm/send'
-  defp gcm_uri, do: Application.get_env(:pigeon, :gcm)[:endpoint] || 'fcm.googleapis.com/fcm/send'
+  @default_timeout 5_000
 
-  defp gcm_headers(key) do
-    [{ "Authorization", "key=#{key}" },
-     { "Content-Type", "application/json" },
-     { "Accept", "application/json" }]
+  def push(notification, opts \\ [])
+  def push(notification, opts) when is_list(notification) do
+    case opts[:on_response] do
+      nil ->
+        tasks = for n <- notification, do: Task.async(fn -> do_sync_push(n, opts) end)
+        tasks
+        |> Task.yield_many(@default_timeout + 500)
+        |> Enum.map(fn {task, response} -> response || Task.shutdown(task, :brutal_kill) end)
+        |> group_responses
+      on_response -> push(notification, on_response, opts)
+    end
   end
 
-  defp default_gcm_key, do: Application.get_env(:pigeon, :gcm)[:key]
-
-  @doc """
-  Sends a push over GCM
-  """
-  @spec push(Pigeon.GCM.Notification) :: none
-  def push(notification) do
-    do_push(notification, %{gcm_key: default_gcm_key(), gcm_endpoint: gcm_uri()})
+  def push(notification, opts) do
+    case opts[:on_response] do
+      nil -> do_sync_push(notification, opts)
+      on_response -> push(notification, on_response, opts)
+    end
   end
 
-  @doc """
-  Sends a push over GCM and executes function on success/failure.
-  """
-  @spec push(Pigeon.GCM.Notification, (() -> none)) :: none
-  def push(notification, on_response) when is_function(on_response) do
-    do_push(notification, %{gcm_key: default_gcm_key()}, on_response)
+  defp do_sync_push(notification, opts) do
+    pid = self()
+    on_response = fn(x) -> send pid, {:ok, x} end
+    push(notification, on_response, opts)
+    receive do
+      {:ok, x} -> x
+    after
+      @default_timeout -> {:error, :timeout, notification}
+    end
   end
 
-  def push(notification, config, on_response \\ nil) do
-    do_push(notification, config, on_response)
-  end
-
-  defp do_push(notification, %{gcm_key: gcm_key, gcm_endpoint: gcm_uri}, on_response \\ nil) do
-    requests =
-      notification.registration_id
-      |> chunk_registration_ids
-      |> encode_requests(notification.payload)
-
-    response =
-      case on_response do
-        nil ->
-          fn({_reg_ids, payload}) ->
-            HTTPoison.post(gcm_uri(), payload, gcm_headers(gcm_key))
-          end
-        _ ->
-          fn({reg_ids, payload}) ->
-            {:ok, %HTTPoison.Response{status_code: status, body: body}} =
-              HTTPoison.post(gcm_uri(), payload, gcm_headers(gcm_key))
-
-            notification = %{ notification | registration_id: reg_ids }
-            process_response(status, body, notification, on_response)
-          end
-      end
-    for r <- requests, do: Task.async(fn -> response.(r) end)
-    :ok
-  end
-
-  def chunk_registration_ids(reg_ids) when is_binary(reg_ids), do: [[reg_ids]]
-  def chunk_registration_ids(reg_ids), do: Enum.chunk(reg_ids, 1000, 1000, [])
-
-  def encode_requests([[reg_id]|_rest], payload) do
-    to_send = Map.merge(%{"to" => reg_id}, payload)
-    [{reg_id, Poison.encode!(to_send)}]
-  end
-  def encode_requests(registration_ids, payload) do
-    Enum.map(registration_ids, fn(x) -> encode_payload(x, payload) end)
-  end
-
-  defp encode_payload(x, payload) do
-    encoded =
-      %{"registration_ids" => x}
-      |> Map.merge(payload)
+  def encode_requests(notification) do
+      regid = notification.registration_id
+      res = %{attr_name(regid) => regid}
+      |> Map.merge(notification.payload)
       |> Poison.encode!
-    {x, encoded}
+      {regid, res}
   end
 
-  def process_response(status, body, notification, on_response) do
-    case status do
-      200 ->
-        handle_200_status(body, notification, on_response)
-      400 ->
-        handle_error_status_code(:invalid_json, notification, on_response)
-      401 ->
-        handle_error_status_code(:authentication_error, notification, on_response)
-      500 ->
-        handle_error_status_code(:internal_server_error, notification, on_response)
-      _ ->
-        handle_error_status_code(:unknown_error, notification, on_response)
+  defp attr_name(regid) when is_list(regid), do: "registration_ids"
+  defp attr_name(regid) when is_binary(regid), do: "to"
+
+  defp group_responses(responses) do
+    Enum.reduce(responses, %{}, fn(response, acc) ->
+      case response do
+        {:ok, r} -> update_result(acc, r)
+        _ -> acc
+      end
+    end)
+  end
+
+  defp update_result(acc, response) do
+    case response do
+      {:ok, notif} -> add_ok_notif(acc, notif)
+      {:error, reason, notif} -> add_error_notif(acc, reason, notif)
     end
   end
 
-  def handle_error_status_code(reason, notification, on_response),
-    do: on_response.({:error, reason, notification})
-
-  def handle_200_status(body, %{registration_id: reg_id} = n, on_response) when is_list(reg_id) do
-    {:ok, json} = Poison.decode(body)
-    results = Enum.zip(n.registration_id, json["results"])
-    for result <- results, do: process_callback(result, n, on_response)
-  end
-  def handle_200_status(body, %{registration_id: _reg_id} = notification, on_response) do
-    {:ok, json} = Poison.decode(body)
-    results = Enum.zip([notification.registration_id], json["results"])
-    for result <- results, do: process_callback(result, notification, on_response)
+  defp add_ok_notif(acc, notif) do
+    oks = acc[:ok] || []
+    Map.put(acc, :ok, oks ++ [notif])
   end
 
-  def process_callback({reg_id, response}, notification, on_response) do
-    case parse_result(response) do
-      {:ok, message_id} ->
-        notification = %{ notification | registration_id: reg_id, message_id: message_id }
-        on_response.({:ok, notification})
+  defp add_error_notif(acc, reason, notif) do
+    errors = acc[:error] || %{}
+    similar = errors[reason] || []
+    errors = Map.put(errors, reason, similar ++ [notif])
+    Map.put(acc, :error, errors)
+  end
 
-      {:ok, message_id, registration_id} ->
-        notification =
-          %{ notification | registration_id: reg_id,
-          message_id: message_id,
-          updated_registration_id: registration_id }
-        on_response.({:ok, notification})
-
-      {:error, reason} ->
-        notification = %{ notification | registration_id: reg_id }
-        on_response.({:error, reason, notification})
+  @doc """
+    Sends a push over GCM.
+  """
+  def push(notification, on_response, opts) when is_list(notification) do
+    for n <- notification do
+      push(n, on_response, opts)
     end
   end
 
-  def parse_result(result) do
-    error = result["error"]
-    if is_nil(error) do
-      parse_success(result)
-    else
-      error_atom = error |> Macro.underscore |> String.to_atom
-      {:error, error_atom}
-    end
+  def push(notification, on_response, opts) do
+    payload = encode_requests(notification)
+    GenServer.cast(:gcm_worker, {:push, :gcm, payload, on_response})
   end
 
-  def parse_success(result) do
-    message_id = result["message_id"]
-    registration_id = result["registration_id"]
-    if is_nil(registration_id) do
-      {:ok, message_id}
-    else
-      {:ok, message_id, registration_id}
-    end
+
+  def start_connection(name) do
+    config = %{
+      name: name,
+      gcm_key:  Application.get_env(:pigeon, :gcm)[:key]
+    }
+    Supervisor.start_child(:pigeon, worker(Pigeon.GCMWorker, [config], id: name))
   end
+
+  def stop_connection(name) do
+    Supervisor.terminate_child(:pigeon, name)
+    Supervisor.delete_child(:pigeon, name)
+  end
+
 end
