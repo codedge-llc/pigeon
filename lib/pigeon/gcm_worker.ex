@@ -55,7 +55,7 @@ defmodule Pigeon.GCMWorker do
     end
   end
 
-  def connect_socket_options(config) do
+  def connect_socket_options(_config) do
       {:ok,  [
         {:packet, 0},
         {:reuseaddr, true},
@@ -90,21 +90,17 @@ defmodule Pigeon.GCMWorker do
     {:noreply, state}
   end
 
-  def send_push(state, notification, on_response) do
+  def send_push(state, {registration_ids, payload}, on_response) do
     %{gcm_socket: socket, stream_id: stream_id, queue: queue, key: key } = state
-
-    json = Pigeon.Notification.json_payload(notification)
     req_headers = [
       {":method", "POST"},
       {":path", "/fcm/send"},
       { "authorization", "key=#{key}" },
       { "content-type", "application/json" },
       { "accept", "application/json" }]
-    Logger.debug("payload=#{inspect(json)}")
-    Logger.debug("headers=#{inspect(req_headers)}")
-    r = Kadabra.request(socket, req_headers, json)
-    Logger.debug("response=#{r}")
-    new_q = Map.put(queue, "#{stream_id}", {notification, on_response})
+    Kadabra.request(socket, req_headers, payload)
+
+    new_q = Map.put(queue, "#{stream_id}", {registration_ids, on_response})
     new_stream_id = stream_id + 2
     { :noreply, %{state | stream_id: new_stream_id, queue: new_q } }
   end
@@ -114,105 +110,10 @@ defmodule Pigeon.GCMWorker do
     response["reason"] |> Macro.underscore |> String.to_existing_atom
   end
 
-  defp log_error(code, reason, notification) do
-    Logger.error("#{reason}: #{error_msg(code, reason)}\n#{inspect(notification)}")
+  defp log_error(code, reason) do
+    Logger.error("#{reason}: #{code}")
   end
 
-  def error_msg(code, error) do
-    case error do
-      # 400
-      :bad_collapse_id ->
-        "The collapse identifier exceeds the maximum allowed size"
-      :bad_device_token ->
-        """
-        The specified device token was bad. Verify that the request contains a valid token and
-        that the token matches the environment.
-        """
-      :bad_expiration_date ->
-        "The apns-expiration value is bad."
-      :bad_message_id ->
-        "The apns-id value is bad."
-      :bad_priority ->
-        "The apns-priority value is bad."
-      :bad_topic ->
-        "The apns-topic was invalid."
-      :device_token_not_for_topic ->
-        "The device token does not match the specified topic."
-      :duplicate_headers ->
-        "One or more headers were repeated."
-      :idle_timeout ->
-        "Idle time out."
-      :missing_device_token ->
-        """
-        The device token is not specified in the request :path. Verify that the :path header
-        contains the device token.
-        """
-      :missing_topic ->
-          """
-          The apns-topic header of the request was not specified and was required. The apns-topic
-          header is mandatory when the client is connected using a certificate that supports
-          multiple topics.
-          """
-      :payload_empty ->
-        "The message payload was empty."
-      :topic_disallowed ->
-        "Pushing to this topic is not allowed."
-
-      # 403
-      :bad_certificate ->
-        "The certificate was bad."
-      :bad_certificate_environment ->
-        "The client certificate was for the wrong environment."
-      :expired_provider_token ->
-        "The provider token is stale and a new token should be generated."
-      :forbidden ->
-        "The specified action is not allowed."
-      :invalid_provider_token ->
-        "The provider token is not valid or the token signature could not be verified."
-      :missing_provider_token ->
-        """
-        No provider certificate was used to connect to APNs and Authorization header was missing
-        or no provider token was specified." 
-        """
-
-      # 404
-      :bad_path ->
-        "The request contained a bad :path value."
-
-      # 405
-      :method_not_allowed ->
-        "The specified :method was not POST."
-
-      # 410
-      :unregistered ->
-        "The device token is inactive for the specified topic."
-
-      # 413
-      :payload_too_large ->
-        "The message payload was too large. The maximum payload size is 4096 bytes."
-      # 429
-      :too_many_provider_token_updates ->
-        "The provider token is being updated too often."
-      :too_many_requests ->
-        "Too many requests were made consecutively to the same device token."
-
-      # 500
-      :internal_server_error ->
-        "An internal server error occurred."
-
-      # 503
-      :service_unavailable ->
-        "The service is unavailable."
-      :shutdown ->
-        "The server is shutting down."
-
-      # Misc
-      :timeout ->
-        "The SSL connection timed out."
-      _ ->
-        ""
-    end
-  end
 
   def handle_info(:ping, state) do
     Kadabra.ping(state.gcm_socket)
@@ -224,19 +125,25 @@ defmodule Pigeon.GCMWorker do
   def handle_info({:end_stream, %Kadabra.Stream{id: stream_id, headers: headers, body: body}},
                                                 %{gcm_socket: _socket, queue: queue} = state) do
 
-    {notification, on_response} = queue["#{stream_id}"]
+    {registration_ids, on_response} = queue["#{stream_id}"]
     Logger.debug("#{inspect body} and #{inspect headers}")
     case get_status(headers) do
       "200" ->
-        unless on_response == nil do on_response.({:ok, notification}) end
+        result =  Poison.decode! body
+        parse_result(registration_ids, result, on_response)
         new_queue = Map.delete(queue, "#{stream_id}")
         {:noreply, %{state | queue: new_queue}}
       nil ->
         {:noreply, state}
+      "400" ->
+        log_error("400", "Malformed JSON")
+        unless on_response == nil do on_response.({:error, :malformed_json}) end
+        new_queue = Map.delete(queue, "#{stream_id}")
+        {:noreply, %{state | queue: new_queue}}
       code ->
         reason = parse_error(body)
-        log_error(code, reason, notification)
-        unless on_response == nil do on_response.({:error, reason, notification}) end
+        log_error(code, reason)
+        unless on_response == nil do on_response.({:error, reason}) end
         new_queue = Map.delete(queue, "#{stream_id}")
         {:noreply, %{state | queue: new_queue}}
     end
@@ -247,6 +154,43 @@ defmodule Pigeon.GCMWorker do
   def handle_info({:closed, _from}, state), do: {:noreply, state}
 
   def handle_info({:ok, _from}, state), do: {:noreply, state}
+
+  # no on_response callback, ignore
+  def parse_result(_, _, nil), do: :ok
+
+  def parse_result(ids, %{"results" => results}, on_response) do
+    parse_result1(ids, results, on_response, [])
+  end
+
+  def parse_result1([], [], on_response, result) do
+    on_response.(result)
+  end
+
+  def parse_result1(regid, results, on_response, result) when is_binary(regid) do
+    parse_result1([regid], results, on_response, [])
+  end
+
+  def parse_result1([regid | reg_res], [%{"message_id" => id, "registration_id" => new_regid} | rest_results], on_response, acc) do
+    parse_result1(reg_res, rest_results, on_response, [{:update, id, regid, new_regid} | acc])
+  end
+
+  def parse_result1([regid | reg_res], [%{"message_id" => id} | rest_results], on_response, acc) do
+    parse_result1(reg_res, rest_results, on_response, [ {:ok, id, regid} | acc ])
+  end
+
+  def parse_result1([regid | reg_res], [%{"error" => "Unavailable"} | rest_results], on_response, acc) do
+    parse_result1(reg_res, rest_results, on_response, [{:retry, regid} | acc])
+  end
+
+  def parse_result1([regid | reg_res], [%{"error" => invalid } | rest_results], on_response, acc)  when invalid == "NotRegistered" or invalid == "InvalidRegistration" do
+    parse_result1(reg_res, rest_results, on_response, [{:remove, regid} | acc])
+  end
+
+
+
+  def parse_result1([regid | reg_res], [%{"error" => error} | rest_results], on_response, acc) do
+    parse_result1(reg_res, rest_results, on_response, [{:error, regid, error} | acc ])
+  end
 
   defp get_status(headers) do
     case Enum.find(headers, fn({key, _val}) -> key == ":status" end) do

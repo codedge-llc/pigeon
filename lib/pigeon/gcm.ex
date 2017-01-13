@@ -19,6 +19,7 @@ defmodule Pigeon.GCM do
       on_response -> push(notification, on_response, opts)
     end
   end
+
   def push(notification, opts) do
     case opts[:on_response] do
       nil -> do_sync_push(notification, opts)
@@ -29,11 +30,7 @@ defmodule Pigeon.GCM do
   defp do_sync_push(notification, opts) do
     pid = self()
     on_response = fn(x) -> send pid, {:ok, x} end
-
-    payload = Map.merge(%{"to" => notification.registration_id}, notification.payload)
-
-    GenServer.cast(:gcm_worker, {:push, :gcm, payload, on_response})
-
+    push(notification, on_response, opts)
     receive do
       {:ok, x} -> x
     after
@@ -41,46 +38,16 @@ defmodule Pigeon.GCM do
     end
   end
 
-  #defp do_push(notification, %{gcm_key: gcm_key}, on_response \\ nil) do
-    
-#
-  #  response =
-  #    case on_response do
-  #      nil ->
-  #        fn({_reg_ids, payload}) ->
-  #          HTTPoison.post(gcm_uri(), payload, gcm_headers(gcm_key))
-  #        end
-  #      _ ->
-  #        fn({reg_ids, payload}) ->
-  #          {:ok, %HTTPoison.Response{status_code: status, body: body}} =
-  #            HTTPoison.post(gcm_uri(), payload, gcm_headers(gcm_key))
-#
-  #          notification = %{ notification | registration_id: reg_ids }
-  #          process_response(status, body, notification, on_response)
-  #        end
-  #    end
-  #  for r <- requests, do: Task.async(fn -> response.(r) end)
-  #  :ok
-  #end
-#
-  #def chunk_registration_ids(reg_ids) when is_binary(reg_ids), do: [[reg_ids]]
-  #def chunk_registration_ids(reg_ids), do: Enum.chunk(reg_ids, 1000, 1000, [])
-
-  def encode_requests([[reg_id]|_rest], payload) do
-    to_send = Map.merge(%{"to" => reg_id}, payload)
-    [{reg_id, Poison.encode!(to_send)}]
-  end
-  def encode_requests(registration_ids, payload) do
-    Enum.map(registration_ids, fn(x) -> encode_payload(x, payload) end)
-  end
-
-  defp encode_payload(x, payload) do
-    encoded =
-      %{"registration_ids" => x}
-      |> Map.merge(payload)
+  def encode_requests(notification) do
+      regid = notification.registration_id
+      res = %{attr_name(regid) => regid}
+      |> Map.merge(notification.payload)
       |> Poison.encode!
-    {x, encoded}
+      {regid, res}
   end
+
+  defp attr_name(regid) when is_list(regid), do: "registration_ids"
+  defp attr_name(regid) when is_binary(regid), do: "to"
 
   defp group_responses(responses) do
     Enum.reduce(responses, %{}, fn(response, acc) ->
@@ -114,10 +81,14 @@ defmodule Pigeon.GCM do
     Sends a push over GCM.
   """
   def push(notification, on_response, opts) when is_list(notification) do
-    for n <- notification, do: push(n, on_response, opts)
+    for n <- notification do
+      push(n, on_response, opts)
+    end
   end
+
   def push(notification, on_response, opts) do
-    GenServer.cast(:gcm_worker, {:push, :gcm, notification, on_response})
+    payload = encode_requests(notification)
+    GenServer.cast(:gcm_worker, {:push, :gcm, payload, on_response})
   end
 
 
@@ -134,9 +105,4 @@ defmodule Pigeon.GCM do
     Supervisor.delete_child(:pigeon, name)
   end
 
-  def pmap(collection, func) do
-      collection
-      |> Enum.map(&(Task.async(fn -> func.(&1) end)))
-      |> Enum.map(&Task.await/1)
-    end
 end
