@@ -163,7 +163,7 @@ defmodule Pigeon.GCMWorker do
   end
 
   def parse_result1([], [], on_response, result) do
-    on_response.(result)
+    on_response.({:ok, result})
   end
 
   def parse_result1(regid, results, on_response, result) when is_binary(regid) do

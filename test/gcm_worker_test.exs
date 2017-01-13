@@ -8,15 +8,15 @@ defmodule Pigeon.GCMWorkerTest do
   defp valid_gcm_reg_id, do: Application.get_env(:pigeon, :test)[:valid_gcm_reg_id]
 
   test "parse_result with success" do
-    assert GCMWorker.parse_result1(["regid"],[%{ "message_id" => "1:0408" }], &(&1), []) == [{:ok, "1:0408", "regid"}]
+    assert GCMWorker.parse_result1(["regid"],[%{ "message_id" => "1:0408" }], &(&1), []) == {:ok, [{:ok, "1:0408", "regid"}]}
   end
 
   test "parse_result with success and new registration_id" do
-    assert GCMWorker.parse_result1(["regid"], [%{ "message_id" => "1:2342", "registration_id" => "32" }], &(&1), [])  ==  [{:update, "1:2342", "regid",  "32"}]
+    assert GCMWorker.parse_result1(["regid"], [%{ "message_id" => "1:2342", "registration_id" => "32" }], &(&1), [])  ==  {:ok, [{:update, "1:2342", "regid",  "32"}]}
   end
 
   test "parse_result with error unavailable" do
-    assert GCMWorker.parse_result1(["regid"], [%{ "error" => "Unavailable" }], &(&1), [])  ==[ {:retry, "regid"}]
+    assert GCMWorker.parse_result1(["regid"], [%{ "error" => "Unavailable" }], &(&1), [])  =={:ok, [ {:retry, "regid"}]}
   end 
 
   test "send malformed JSON" do
