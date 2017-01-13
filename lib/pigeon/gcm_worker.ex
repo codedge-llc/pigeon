@@ -7,8 +7,7 @@ defmodule Pigeon.GCMWorker do
 
   @ping_period 600_000 # 10 minutes
 
-  defp gcm_uri, do: 'fcm.googleapis.com'
-  #defp gcm_uri, do: 'localhost'
+  defp gcm_uri(config), do: config[:endpoint] || 'fcm.googleapis.com'
 
   def start_link(name, config) do
     GenServer.start_link(__MODULE__, {:ok, config}, name: name)
@@ -48,19 +47,19 @@ defmodule Pigeon.GCMWorker do
 
   def connect_socket(_config, 3), do: {:error, :timeout}
   def connect_socket(config, tries) do
-    uri = gcm_uri |> to_char_list
+    uri = gcm_uri(config) |> to_char_list
     case connect_socket_options(config) do
       {:ok, options} -> do_connect_socket(config, uri, options, tries)
       error -> error
     end
   end
 
-  def connect_socket_options(_config) do
+  def connect_socket_options(config) do
       {:ok,  [
         {:packet, 0},
         {:reuseaddr, true},
         {:active, true},
-        #{:port, 8443},
+        {:port, config[:port] || 443 },
         :binary]
       }
   end
@@ -167,7 +166,7 @@ defmodule Pigeon.GCMWorker do
   end
 
   def parse_result1(regid, results, on_response, result) when is_binary(regid) do
-    parse_result1([regid], results, on_response, [])
+    parse_result1([regid], results, on_response, result)
   end
 
   def parse_result1([regid | reg_res], [%{"message_id" => id, "registration_id" => new_regid} | rest_results], on_response, acc) do
