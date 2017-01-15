@@ -343,8 +343,8 @@ defmodule Pigeon.ADM.Notification do
       iex> Pigeon.ADM.Notification.new("reg ID")
       %Pigeon.ADM.Notification{
         consolidation_key: nil,
-        md5: nil,
-        payload: %{},
+        md5: "1B2M2Y8AsgTpgAmY7PhCfg==",
+        payload: %{"data" => %{}},
         registration_id: "reg ID",
         updated_registration_id: nil
       }
@@ -389,7 +389,8 @@ defmodule Pigeon.ADM.Notification do
     |> calculate_md5
   end
 
-  defp update_payload(notification, _key, value) when value == %{}, do: notification
+  defp update_payload(notification, key, value) when value == %{} and key != "data",
+    do: notification
   defp update_payload(notification, key, value) do
     payload =
       notification.payload
@@ -409,9 +410,7 @@ defmodule Pigeon.ADM.Notification do
   @doc """
   Calculates md5 hash of notification data payload.
   """
-  def calculate_md5(notification) do
-    data = notification.payload["data"]
-
+  def calculate_md5(%{payload: %{"data" => data}} = notification) when is_map(data) do
     concat =
       data
       |> Map.keys
@@ -423,4 +422,5 @@ defmodule Pigeon.ADM.Notification do
 
     %{notification | md5: md5}
   end
+  def calculate_md5(notification), do: notification
 end
