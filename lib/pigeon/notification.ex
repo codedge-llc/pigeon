@@ -340,6 +340,15 @@ defmodule Pigeon.ADM.Notification do
 
   ## Examples
   
+      iex> Pigeon.ADM.Notification.new("reg ID")
+      %Pigeon.ADM.Notification{
+        consolidation_key: nil,
+        md5: nil,
+        payload: %{},
+        registration_id: "reg ID",
+        updated_registration_id: nil
+      }
+
       iex> Pigeon.ADM.Notification.new("reg ID", %{"message" => "your message"})
       %Pigeon.ADM.Notification{
         consolidation_key: nil,
