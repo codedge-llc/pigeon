@@ -6,7 +6,7 @@ defmodule Pigeon.APNS do
   require Logger
   import Supervisor.Spec
 
-  alias Pigeon.APNS.Config
+  alias Pigeon.APNS.{Config, Notification}
 
   @default_timeout 5_000
 
@@ -72,11 +72,13 @@ defmodule Pigeon.APNS do
   end
 
   @doc """
-    Sends a push over APNS.
+  Sends a push over APNS.
   """
+  @spec push([Notification.t], ((Notification.t) -> ()), Keyword.t) :: no_return
   def push(notification, on_response, opts) when is_list(notification) do
     for n <- notification, do: push(n, on_response, opts)
   end
+  @spec push(Notification.t, ((Notification.t) -> ()), Keyword.t) :: no_return
   def push(notification, on_response, opts) do
     worker_name = opts[:name] || Config.default_name
     GenServer.cast(worker_name, {:push, :apns, notification, on_response})

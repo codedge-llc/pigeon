@@ -1,5 +1,6 @@
 defmodule Pigeon.APNSTest do
   use ExUnit.Case
+  doctest Pigeon.APNS.Notification
 
   def test_message(msg), do: "#{DateTime.to_string(DateTime.utc_now())} - #{msg}"
   def test_topic, do: Application.get_env(:pigeon, :test)[:apns_topic]
