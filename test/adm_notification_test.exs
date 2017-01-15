@@ -4,7 +4,19 @@ defmodule Pigeon.ADMNotificationTest do
   def test_registration_id, do: "test1234"
   def test_data, do: %{ message: "your message" }
 
-  test "new" do
+  test "new/1" do
+    expected_result = %Pigeon.ADM.Notification{
+      registration_id: test_registration_id(),
+      payload: %{"data" => %{}},
+      updated_registration_id: nil,
+      consolidation_key: nil,
+      expires_after: 604800,
+      md5: "1B2M2Y8AsgTpgAmY7PhCfg=="
+    }
+    assert expected_result == Pigeon.ADM.Notification.new(test_registration_id())
+  end
+
+  test "new/2" do
     expected_result = %Pigeon.ADM.Notification{
       registration_id: test_registration_id(),
       payload: %{"data" => %{ "message" => "your message" }},

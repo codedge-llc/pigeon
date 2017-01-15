@@ -241,4 +241,6 @@ defmodule Pigeon.ADMWorker do
       {:ok, registration_id}
     end
   end
+
+  def handle_info({_from, {:ok, %HTTPoison.Response{status_code: 200}}}, state), do: {:noreply, state}
 end
