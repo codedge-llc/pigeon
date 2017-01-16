@@ -5,6 +5,8 @@ defmodule Pigeon.GCMWorker do
   use GenServer
   require Logger
 
+  alias Pigeon.GCM.NotificationResponse
+
   @ping_period 600_000 # 10 minutes
 
   defp gcm_uri(config), do: config[:endpoint] || 'fcm.googleapis.com'
@@ -158,7 +160,7 @@ defmodule Pigeon.GCMWorker do
   def parse_result(_, _, nil), do: :ok
 
   def parse_result(ids, %{"results" => results}, on_response) do
-    parse_result1(ids, results, on_response, [])
+    parse_result1(ids, results, on_response, %NotificationResponse{})
   end
 
   def parse_result1([], [], on_response, result) do
@@ -169,26 +171,47 @@ defmodule Pigeon.GCMWorker do
     parse_result1([regid], results, on_response, result)
   end
 
-  def parse_result1([regid | reg_res], [%{"message_id" => id, "registration_id" => new_regid} | rest_results], on_response, acc) do
-    parse_result1(reg_res, rest_results, on_response, [{:update, id, regid, new_regid} | acc])
+  def parse_result1([regid | reg_res], [%{"message_id" => id, "registration_id" => new_regid} | rest_results], on_response,
+      %NotificationResponse{ update: update} =  resp) do
+    new_updates = [ {regid, new_regid} | update ]
+    parse_result1(reg_res, rest_results, on_response, 
+      %{ resp | message_id: id, update: new_updates })
   end
 
-  def parse_result1([regid | reg_res], [%{"message_id" => id} | rest_results], on_response, acc) do
-    parse_result1(reg_res, rest_results, on_response, [ {:ok, id, regid} | acc ])
+  def parse_result1([regid | reg_res], [%{"message_id" => id} | rest_results], on_response,
+      %NotificationResponse{ok: ok} =  resp) do
+    parse_result1(reg_res, rest_results, on_response, 
+      %{ resp | message_id: id, ok: [ regid | ok] })
   end
 
-  def parse_result1([regid | reg_res], [%{"error" => "Unavailable"} | rest_results], on_response, acc) do
-    parse_result1(reg_res, rest_results, on_response, [{:retry, regid} | acc])
+  def parse_result1([regid | reg_res], [%{"error" => "Unavailable"} | rest_results], on_response, 
+      %NotificationResponse{retry: retry} = resp) do
+    parse_result1(reg_res, rest_results, on_response, 
+      %{ resp | retry: [ regid | retry] })
   end
 
-  def parse_result1([regid | reg_res], [%{"error" => invalid } | rest_results], on_response, acc)  when invalid == "NotRegistered" or invalid == "InvalidRegistration" do
-    parse_result1(reg_res, rest_results, on_response, [{:remove, regid} | acc])
+  def parse_result1([regid | reg_res], [%{"error" => invalid } | rest_results], on_response, 
+      %NotificationResponse{remove: remove} =   resp )when invalid == "NotRegistered" or invalid == "InvalidRegistration" do
+    parse_result1(reg_res, rest_results, on_response, 
+      %{ resp | remove: [ regid | remove ] })
   end
 
+  def parse_result1([regid | reg_res] = regs, [%{"error" => error} | rest_results] = results, on_response, 
+      %NotificationResponse{error: regs_in_error} = resp) do
+    case  Map.has_key? regs_in_error, error do
+      true -> 
+        parse_result1(reg_res, rest_results, on_response, 
+          %{ resp  | error: %{regs_in_error | error => regid  } })
+      false -> # create map key if required.
+         parse_result1(regs, results, on_response, 
+          %{ resp | error: Map.merge(%{error => []}, regs_in_error) })
+    end
+  end
 
-
-  def parse_result1([regid | reg_res], [%{"error" => error} | rest_results], on_response, acc) do
-    parse_result1(reg_res, rest_results, on_response, [{:error, regid, error} | acc ])
+  
+  def parse_result1(regs, [%{"error" => error} | _r] = results, on_response, 
+      %NotificationResponse{error: errors} = resp) do
+   
   end
 
   defp get_status(headers) do

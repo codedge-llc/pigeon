@@ -8,13 +8,12 @@ defmodule Pigeon.GCMTest do
   defp valid_gcm_reg_id, do: Application.get_env(:pigeon, :test)[:valid_gcm_reg_id]
 
   test "successfully sends a valid push" do
-    {:ok, [result]} =
+    {:ok, notification} =
       valid_gcm_reg_id()
       |> Notification.new(%{}, @data)
       |> Pigeon.GCM.push
 
-    assert elem(result, 0) == :ok
-    assert elem(result, 2) == valid_gcm_reg_id()
+    assert notification.ok == [valid_gcm_reg_id()]
   end
 
   #test "successfully sends a valid push with an explicit config" do
@@ -33,7 +32,8 @@ defmodule Pigeon.GCMTest do
     pid = self()
     Pigeon.GCM.push(n, fn(x) -> send pid, x end, %{})
 
-    assert_receive {:ok, [{:ok, id, reg_id}]}, 5000
+    assert_receive {:ok, notification}, 5000
+    assert notification.ok == [reg_id]
   end
 
   test "returns an error on pushing with a bad registration_id" do
@@ -42,7 +42,7 @@ defmodule Pigeon.GCMTest do
     pid = self()
     Pigeon.GCM.push(n, fn(x) -> send pid, x end, %{})
 
-    assert_receive {:ok, [{:remove, reg_id}]}, 5000
+    assert_receive {:ok, %Pigeon.GCM.NotificationResponse{remove: ["bad_registration_id"]}}, 5000
     assert n.registration_id == reg_id
     assert n.payload == %{"data" => @data}
   end

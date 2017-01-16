@@ -91,6 +91,14 @@ defmodule Pigeon.GCM.Notification do
   end
 end
 
+defmodule Pigeon.GCM.NotificationResponse do
+  @moduledoc """
+    Passed to the GCM on_response callback
+  """
+  defstruct message_id: nil, ok: [], retry: [], update: [], remove: [], error: %{}
+
+end
+
 defmodule Pigeon.ADM.Notification do
   @moduledoc """
     Defines Amazon ADM notification struct and convenience constructor functions.
