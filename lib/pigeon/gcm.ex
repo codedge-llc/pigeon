@@ -17,7 +17,7 @@ defmodule Pigeon.GCM do
         for n <- notification do
           pid = self()
           on_response = fn(x) -> send pid, {:ok, x} end
-          send_push(notification, on_response, opts)
+          send_push(n, on_response, opts)
         end
         Enum.foldl(notification, %{}, fn(n, acc) ->
           receive do
@@ -88,7 +88,7 @@ defmodule Pigeon.GCM do
   def send_push(notification, on_response, opts) do
     encode_requests(notification)
     |> Enum.map( fn(payload) ->
-          GenServer.cast(:gcm_worker, {:push, :gcm, payload, on_response})
+          GenServer.cast(:gcm_worker, generate_envelope(payload, on_response, opts))
         end)
   end
 
@@ -104,6 +104,11 @@ defmodule Pigeon.GCM do
     Supervisor.terminate_child(:pigeon, name)
     Supervisor.delete_child(:pigeon, name)
   end
+
+  def generate_envelope payload, on_response, opts do
+    { :push, :gcm, payload, on_response, Map.new(opts)}
+  end
+
 
   def merge %NotificationResponse{ok: ok1, retry: retry1, update: update1, remove: remove1, error: error1}, 
                    %NotificationResponse{ok: ok2, retry: retry2, update: update2, remove: remove2, error: error2} do

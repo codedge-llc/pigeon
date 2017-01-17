@@ -78,11 +78,12 @@ defmodule Pigeon.GCMWorker do
 
   def handle_cast(:stop, state), do: { :noreply, state }
 
-  def handle_cast({:push, :gcm, notification}, state) do
-    send_push(state, notification, nil)
+
+  def handle_cast({:push, :gcm, notification, on_response, %{gcm_key: key}}, state) do
+    send_push(state, notification, on_response, key)
   end
 
-  def handle_cast({:push, :gcm, notification, on_response}, state) do
+  def handle_cast({:push, :gcm, notification, on_response, _opts}, state) do
     send_push(state, notification, on_response)
   end
 
@@ -91,8 +92,12 @@ defmodule Pigeon.GCMWorker do
     {:noreply, state}
   end
 
-  def send_push(state, {registration_ids, payload}, on_response) do
-    %{gcm_socket: socket, stream_id: stream_id, queue: queue, key: key } = state
+  def send_push(%{key: key } = state, payload, on_response) do
+    send_push(state, payload, on_response, key)
+  end
+  
+  def send_push(%{gcm_socket: socket, stream_id: stream_id, queue: queue} = state, 
+      {registration_ids, payload}, on_response, key) do
     req_headers = [
       {":method", "POST"},
       {":path", "/fcm/send"},
@@ -136,6 +141,11 @@ defmodule Pigeon.GCMWorker do
         {:noreply, %{state | queue: new_queue}}
       nil ->
         {:noreply, state}
+      "401" ->
+        log_error("401", "Unauthorized")
+        unless on_response == nil do on_response.({:error, :unauthorized}) end
+        new_queue = Map.delete(queue, "#{stream_id}")
+        {:noreply, %{state | queue: new_queue}}
       "400" ->
         log_error("400", "Malformed JSON")
         unless on_response == nil do on_response.({:error, :malformed_json}) end

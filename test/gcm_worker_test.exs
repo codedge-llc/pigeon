@@ -33,7 +33,7 @@ defmodule Pigeon.GCMWorkerTest do
   test "send malformed JSON" do
     {:ok, pid} = GCMWorker.start_link(:gonecrashing, key: Application.get_env(:pigeon, :gcm)[:key])
     me = self()
-    :gen_server.cast(pid, {:push, :gcm, {"toto", "this is not json"}, &(send me, &1)})
+    :gen_server.cast(pid, {:push, :gcm, {"toto", "this is not json"}, &(send me, &1), %{}})
     assert_receive {:error, :malformed_json}, 5000
     :gen_server.cast(pid, :stop)
   end

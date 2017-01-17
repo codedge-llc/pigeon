@@ -40,15 +40,14 @@ defmodule Pigeon.GCMTest do
     assert length(r3) == 534
   end
 
-  #test "successfully sends a valid push with an explicit config" do
-  #  {:ok, [result]} =
-  #    valid_gcm_reg_id()
-  #    |> Notification.new(%{}, @data)
-  #    |> Pigeon.GCM.push(%{gcm_key: "explicit"})
-#
-  #    assert elem(result, 0) == :ok
-  #    assert elem(result, 2) == valid_gcm_reg_id()
-  #end
+  test "successfully sends a valid push with an explicit config" do
+    response =
+      valid_gcm_reg_id()
+      |> Notification.new(%{}, @data)
+      |> Pigeon.GCM.push(%{gcm_key: "explicit"})
+
+     assert response == {:error, :unauthorized}
+  end
 
   test "successfully sends a valid push with callback" do
     reg_id = valid_gcm_reg_id()
@@ -87,9 +86,4 @@ defmodule Pigeon.GCMTest do
     assert Pigeon.GCM.encode_requests(payload) == [{registration_id, expected}]
   end
 
-  #test "encode_requests with over 1000 registration_ids" do
-  #  reg_ids = Enum.chunk(Enum.to_list(1..2500), 1000, 1000, [])
-  #  result = Pigeon.GCM.encode_requests(reg_ids, @payload)
-  #  assert Enum.count(result) == 3
-  #end
 end
