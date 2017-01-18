@@ -17,24 +17,37 @@ defmodule Pigeon.GCMTest do
     assert notification.ok == [valid_gcm_reg_id()]
   end
 
-
   test "Can merge two responses" do
-    nr1 = %NotificationResponse{ok: ["42"], retry: ["12"], error: %{"error" => ["1"] }}
-    nr2 = %NotificationResponse{ok: ["43"],  update: ["12"], error: %{"error" => ["2"], "error2"=> ["1"]} }
-    assert Pigeon.GCM.merge(nr1, nr2) == %NotificationResponse{ok: ["42", "43"], retry: ["12"],  update: ["12"],  error: %{"error" => ["1", "2"] , "error2" => ["1"]}}
+    nr1 = %NotificationResponse{
+      ok: ["42"],
+      retry: ["12"],
+      error: %{"error" => ["1"]}
+    }
+    nr2 = %NotificationResponse{
+      ok: ["43"],
+      update: ["12"],
+      error: %{"error" => ["2"], "error2"=> ["1"]}
+    }
+    assert Pigeon.GCM.merge(nr1, nr2) ==
+      %NotificationResponse{
+        ok: ["42", "43"],
+        retry: ["12"],
+        update: ["12"],
+        error: %{"error" => ["1", "2"] , "error2" => ["1"]}
+      }
   end
 
   test "Message for less than 1000 recipients should not be chunked" do
     regs = Enum.to_list(1..999)
-    notification = Notification.new(regs,%{}, @data)
+    notification = Notification.new(regs, %{}, @data)
     assert [{^regs, encoded}] = res = Pigeon.GCM.encode_requests(notification)
   end
 
   test "Message for over 1000 recipients should be chunked" do
     regs = Enum.to_list(1..2534)
-    notification = Notification.new(regs,%{}, @data)
+    notification = Notification.new(regs, %{}, @data)
     res = Pigeon.GCM.encode_requests(notification)
-    assert [{r1, e1}, {r2, e2}, {r3, e3}]  = res 
+    assert [{r1, e1}, {r2, e2}, {r3, e3}]  = res
     assert length(r1) == 1000
     assert length(r2) == 1000
     assert length(r3) == 534
@@ -69,8 +82,6 @@ defmodule Pigeon.GCMTest do
     assert n.registration_id == reg_id
     assert n.payload == %{"data" => @data}
   end
-
-  
 
   test "encode_requests with one registration_id" do
     registration_id = "123456"

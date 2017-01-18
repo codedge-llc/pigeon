@@ -49,7 +49,7 @@ defmodule Pigeon.GCMWorker do
 
   def connect_socket(_config, 3), do: {:error, :timeout}
   def connect_socket(config, tries) do
-    uri = gcm_uri(config) |> to_char_list
+    uri = config |> gcm_uri() |> to_char_list
     case connect_socket_options(config) do
       {:ok, options} -> do_connect_socket(config, uri, options, tries)
       error -> error
@@ -95,8 +95,8 @@ defmodule Pigeon.GCMWorker do
   def send_push(%{key: key } = state, payload, on_response) do
     send_push(state, payload, on_response, key)
   end
-  
-  def send_push(%{gcm_socket: socket, stream_id: stream_id, queue: queue} = state, 
+
+  def send_push(%{gcm_socket: socket, stream_id: stream_id, queue: queue} = state,
       {registration_ids, payload}, on_response, key) do
     req_headers = [
       {":method", "POST"},
@@ -181,47 +181,58 @@ defmodule Pigeon.GCMWorker do
     parse_result1([regid], results, on_response, result)
   end
 
-  def parse_result1([regid | reg_res], [%{"message_id" => id, "registration_id" => new_regid} | rest_results], on_response,
-      %NotificationResponse{ update: update} =  resp) do
-    new_updates = [ {regid, new_regid} | update ]
-    parse_result1(reg_res, rest_results, on_response, 
-      %{ resp | message_id: id, update: new_updates })
+  def parse_result1([regid | reg_res],
+                    [%{"message_id" => id, "registration_id" => new_regid} | rest_results],
+                    on_response,
+                    %NotificationResponse{ update: update} =  resp) do
+
+    new_updates = [{regid, new_regid} | update]
+    parse_result1(reg_res, rest_results, on_response, %{resp | message_id: id, update: new_updates})
   end
 
-  def parse_result1([regid | reg_res], [%{"message_id" => id} | rest_results], on_response,
-      %NotificationResponse{ok: ok} =  resp) do
-    parse_result1(reg_res, rest_results, on_response, 
-      %{ resp | message_id: id, ok: [ regid | ok] })
+  def parse_result1([regid | reg_res],
+                    [%{"message_id" => id} | rest_results],
+                    on_response,
+                    %NotificationResponse{ok: ok} = resp) do
+
+    parse_result1(reg_res, rest_results, on_response, %{resp | message_id: id, ok: [regid | ok]})
   end
 
-  def parse_result1([regid | reg_res], [%{"error" => "Unavailable"} | rest_results], on_response, 
-      %NotificationResponse{retry: retry} = resp) do
-    parse_result1(reg_res, rest_results, on_response, 
-      %{ resp | retry: [ regid | retry] })
+  def parse_result1([regid | reg_res],
+                    [%{"error" => "Unavailable"} | rest_results],
+                    on_response,
+                    %NotificationResponse{retry: retry} = resp) do
+
+    parse_result1(reg_res, rest_results, on_response, %{resp | retry: [regid | retry]})
   end
 
-  def parse_result1([regid | reg_res], [%{"error" => invalid } | rest_results], on_response, 
-      %NotificationResponse{remove: remove} =   resp )when invalid == "NotRegistered" or invalid == "InvalidRegistration" do
-    parse_result1(reg_res, rest_results, on_response, 
-      %{ resp | remove: [ regid | remove ] })
+  def parse_result1([regid | reg_res],
+                    [%{"error" => invalid } | rest_results],
+                    on_response,
+                    %NotificationResponse{remove: remove} = resp) when invalid == "NotRegistered"
+                                                                    or invalid == "InvalidRegistration" do
+
+    parse_result1(reg_res, rest_results, on_response, %{resp | remove: [regid | remove]})
   end
 
-  def parse_result1([regid | reg_res] = regs, [%{"error" => error} | rest_results] = results, on_response, 
-      %NotificationResponse{error: regs_in_error} = resp) do
-    case  Map.has_key? regs_in_error, error do
-      true -> 
-        parse_result1(reg_res, rest_results, on_response, 
-          %{ resp  | error: %{regs_in_error | error => regid  } })
+  def parse_result1([regid | reg_res] = regs,
+                    [%{"error" => error} | rest_results] = results,
+                    on_response,
+                    %NotificationResponse{error: regs_in_error} = resp) do
+
+    case Map.has_key?(regs_in_error, error) do
+      true ->
+        parse_result1(reg_res, rest_results, on_response,
+          %{resp | error: %{regs_in_error | error => regid}})
       false -> # create map key if required.
-         parse_result1(regs, results, on_response, 
-          %{ resp | error: Map.merge(%{error => []}, regs_in_error) })
+         parse_result1(regs, results, on_response,
+          %{resp | error: Map.merge(%{error => []}, regs_in_error)})
     end
   end
 
-  
-  def parse_result1(regs, [%{"error" => error} | _r] = results, on_response, 
+  def parse_result1(regs, [%{"error" => error} | _r] = results, on_response,
       %NotificationResponse{error: errors} = resp) do
-   
+
   end
 
   defp get_status(headers) do
@@ -230,5 +241,4 @@ defmodule Pigeon.GCMWorker do
       nil -> nil
     end
   end
-
 end
