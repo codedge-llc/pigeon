@@ -5,6 +5,8 @@ defmodule Pigeon.GCMWorker do
   use GenServer
   require Logger
 
+  alias Pigeon.GCM.NotificationResponse
+
   @ping_period 600_000 # 10 minutes
 
   defp gcm_uri(config), do: config[:endpoint] || 'fcm.googleapis.com'
@@ -47,7 +49,7 @@ defmodule Pigeon.GCMWorker do
 
   def connect_socket(_config, 3), do: {:error, :timeout}
   def connect_socket(config, tries) do
-    uri = gcm_uri(config) |> to_char_list
+    uri = config |> gcm_uri() |> to_char_list
     case connect_socket_options(config) do
       {:ok, options} -> do_connect_socket(config, uri, options, tries)
       error -> error
@@ -76,11 +78,12 @@ defmodule Pigeon.GCMWorker do
 
   def handle_cast(:stop, state), do: { :noreply, state }
 
-  def handle_cast({:push, :gcm, notification}, state) do
-    send_push(state, notification, nil)
+
+  def handle_cast({:push, :gcm, notification, on_response, %{gcm_key: key}}, state) do
+    send_push(state, notification, on_response, key)
   end
 
-  def handle_cast({:push, :gcm, notification, on_response}, state) do
+  def handle_cast({:push, :gcm, notification, on_response, _opts}, state) do
     send_push(state, notification, on_response)
   end
 
@@ -89,8 +92,12 @@ defmodule Pigeon.GCMWorker do
     {:noreply, state}
   end
 
-  def send_push(state, {registration_ids, payload}, on_response) do
-    %{gcm_socket: socket, stream_id: stream_id, queue: queue, key: key } = state
+  def send_push(%{key: key } = state, payload, on_response) do
+    send_push(state, payload, on_response, key)
+  end
+
+  def send_push(%{gcm_socket: socket, stream_id: stream_id, queue: queue} = state,
+      {registration_ids, payload}, on_response, key) do
     req_headers = [
       {":method", "POST"},
       {":path", "/fcm/send"},
@@ -134,6 +141,11 @@ defmodule Pigeon.GCMWorker do
         {:noreply, %{state | queue: new_queue}}
       nil ->
         {:noreply, state}
+      "401" ->
+        log_error("401", "Unauthorized")
+        unless on_response == nil do on_response.({:error, :unauthorized}) end
+        new_queue = Map.delete(queue, "#{stream_id}")
+        {:noreply, %{state | queue: new_queue}}
       "400" ->
         log_error("400", "Malformed JSON")
         unless on_response == nil do on_response.({:error, :malformed_json}) end
@@ -158,7 +170,7 @@ defmodule Pigeon.GCMWorker do
   def parse_result(_, _, nil), do: :ok
 
   def parse_result(ids, %{"results" => results}, on_response) do
-    parse_result1(ids, results, on_response, [])
+    parse_result1(ids, results, on_response, %NotificationResponse{})
   end
 
   def parse_result1([], [], on_response, result) do
@@ -169,26 +181,58 @@ defmodule Pigeon.GCMWorker do
     parse_result1([regid], results, on_response, result)
   end
 
-  def parse_result1([regid | reg_res], [%{"message_id" => id, "registration_id" => new_regid} | rest_results], on_response, acc) do
-    parse_result1(reg_res, rest_results, on_response, [{:update, id, regid, new_regid} | acc])
+  def parse_result1([regid | reg_res],
+                    [%{"message_id" => id, "registration_id" => new_regid} | rest_results],
+                    on_response,
+                    %NotificationResponse{ update: update} =  resp) do
+
+    new_updates = [{regid, new_regid} | update]
+    parse_result1(reg_res, rest_results, on_response, %{resp | message_id: id, update: new_updates})
   end
 
-  def parse_result1([regid | reg_res], [%{"message_id" => id} | rest_results], on_response, acc) do
-    parse_result1(reg_res, rest_results, on_response, [ {:ok, id, regid} | acc ])
+  def parse_result1([regid | reg_res],
+                    [%{"message_id" => id} | rest_results],
+                    on_response,
+                    %NotificationResponse{ok: ok} = resp) do
+
+    parse_result1(reg_res, rest_results, on_response, %{resp | message_id: id, ok: [regid | ok]})
   end
 
-  def parse_result1([regid | reg_res], [%{"error" => "Unavailable"} | rest_results], on_response, acc) do
-    parse_result1(reg_res, rest_results, on_response, [{:retry, regid} | acc])
+  def parse_result1([regid | reg_res],
+                    [%{"error" => "Unavailable"} | rest_results],
+                    on_response,
+                    %NotificationResponse{retry: retry} = resp) do
+
+    parse_result1(reg_res, rest_results, on_response, %{resp | retry: [regid | retry]})
   end
 
-  def parse_result1([regid | reg_res], [%{"error" => invalid } | rest_results], on_response, acc)  when invalid == "NotRegistered" or invalid == "InvalidRegistration" do
-    parse_result1(reg_res, rest_results, on_response, [{:remove, regid} | acc])
+  def parse_result1([regid | reg_res],
+                    [%{"error" => invalid } | rest_results],
+                    on_response,
+                    %NotificationResponse{remove: remove} = resp) when invalid == "NotRegistered"
+                                                                    or invalid == "InvalidRegistration" do
+
+    parse_result1(reg_res, rest_results, on_response, %{resp | remove: [regid | remove]})
   end
 
+  def parse_result1([regid | reg_res] = regs,
+                    [%{"error" => error} | rest_results] = results,
+                    on_response,
+                    %NotificationResponse{error: regs_in_error} = resp) do
 
+    case Map.has_key?(regs_in_error, error) do
+      true ->
+        parse_result1(reg_res, rest_results, on_response,
+          %{resp | error: %{regs_in_error | error => regid}})
+      false -> # create map key if required.
+         parse_result1(regs, results, on_response,
+          %{resp | error: Map.merge(%{error => []}, regs_in_error)})
+    end
+  end
 
-  def parse_result1([regid | reg_res], [%{"error" => error} | rest_results], on_response, acc) do
-    parse_result1(reg_res, rest_results, on_response, [{:error, regid, error} | acc ])
+  def parse_result1(regs, [%{"error" => error} | _r] = results, on_response,
+      %NotificationResponse{error: errors} = resp) do
+
   end
 
   defp get_status(headers) do
@@ -197,5 +241,4 @@ defmodule Pigeon.GCMWorker do
       nil -> nil
     end
   end
-
 end

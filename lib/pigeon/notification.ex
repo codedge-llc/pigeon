@@ -91,6 +91,14 @@ defmodule Pigeon.GCM.Notification do
   end
 end
 
+defmodule Pigeon.GCM.NotificationResponse do
+  @moduledoc """
+    Passed to the GCM on_response callback
+  """
+  defstruct message_id: nil, ok: [], retry: [], update: [], remove: [], error: %{}
+
+end
+
 defmodule Pigeon.ADM.Notification do
   @moduledoc """
     Defines Amazon ADM notification struct and convenience constructor functions.
@@ -110,7 +118,8 @@ defmodule Pigeon.ADM.Notification do
     |> calculate_md5
   end
 
-  defp update_payload(notification, _key, value) when value == %{}, do: notification
+  defp update_payload(notification, key, value) when value == %{} and key != "data",
+    do: notification
   defp update_payload(notification, key, value) do
     payload =
       notification.payload
@@ -127,9 +136,7 @@ defmodule Pigeon.ADM.Notification do
     |> Enum.into(%{})
   end
 
-  def calculate_md5(notification) do
-    data = notification.payload["data"]
-
+  def calculate_md5(%{payload: %{"data" => data}} = notification) when is_map(data) do
     concat =
       data
       |> Map.keys
@@ -141,4 +148,5 @@ defmodule Pigeon.ADM.Notification do
 
     %{notification | md5: md5}
   end
+  def calculate_md5(notification), do: notification
 end
