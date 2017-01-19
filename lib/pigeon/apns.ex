@@ -31,13 +31,14 @@ defmodule Pigeon.APNS do
 
   defp do_sync_push(notification, opts) do
     pid = self()
-    on_response = fn(x) -> send pid, {:ok, x} end
+    ref = :erlang.make_ref
+    on_response = fn(x) -> send pid, {ref, x} end
 
     worker_name = opts[:name] || Config.default_name
     GenServer.cast(worker_name, {:push, :apns, notification, on_response})
 
     receive do
-      {:ok, x} -> x
+      {^ref, x} -> x
     after
       @default_timeout -> {:error, :timeout, notification}
     end
