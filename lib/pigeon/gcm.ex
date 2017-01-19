@@ -14,14 +14,15 @@ defmodule Pigeon.GCM do
   def push(notification, opts) when is_list(notification) do
     case opts[:on_response] do
       nil ->
+        ref = :erlang.make_ref
+        pid = self()
         for n <- notification do
-          pid = self()
-          on_response = fn(x) -> send pid, {:ok, x} end
+          on_response = fn(x) -> send pid, {ref, x} end
           send_push(n, on_response, opts)
         end
         Enum.foldl(notification, %{}, fn(n, acc) ->
           receive do
-            {:ok, %NotificationResponse{message_id: id} = response} ->
+            {^ref, %NotificationResponse{message_id: id} = response} ->
               if Map.has_key?(acc, id) do
                 %{acc | id => merge(response, acc[:message_id])}
               else
@@ -43,11 +44,12 @@ defmodule Pigeon.GCM do
   end
 
   defp do_sync_push(notification, opts) do
+    ref = :erlang.make_ref
     pid = self()
-    on_response = fn(x) -> send pid, {:ok, x} end
+    on_response = fn(x) -> send pid, {ref, x} end
     send_push(notification, on_response, opts)
     receive do
-      {:ok, x} -> x
+      {^ref, x} -> x
     after
       @default_timeout -> {:error, :timeout, notification}
     end
