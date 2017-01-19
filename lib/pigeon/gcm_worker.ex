@@ -27,7 +27,8 @@ defmodule Pigeon.GCMWorker do
           gcm_socket: socket,
           key: config[:key],
           stream_id: 1,
-          queue: %{}
+          queue: %{},
+          config: config
         }}
       {:closed, _socket} ->
         Logger.error """
@@ -162,7 +163,13 @@ defmodule Pigeon.GCMWorker do
 
   def handle_info({:ping, _from}, state), do: {:noreply, state}
 
-  def handle_info({:closed, _from}, state), do: {:noreply, state}
+  def handle_info({:closed, _from}, %{config: config} = state) do
+    Logger.info "Reconnecting FCM client (Closed due to probable session_timed_out GOAWAY error)"
+    case initialize_worker(config) do
+      {:ok, newstate} -> {:noreply, newstate}
+      error -> error
+    end
+  end
 
   def handle_info({:ok, _from}, state), do: {:noreply, state}
 
