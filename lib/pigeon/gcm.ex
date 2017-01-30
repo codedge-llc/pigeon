@@ -6,7 +6,6 @@ defmodule Pigeon.GCM do
   import Supervisor.Spec
 
   alias Pigeon.GCM.NotificationResponse
-  alias Pigeon.GCM.Notification
 
   @default_timeout 5_000
 
@@ -14,13 +13,13 @@ defmodule Pigeon.GCM do
   def push(notification, opts) when is_list(notification) do
     case opts[:on_response] do
       nil ->
-        ref = :erlang.make_ref
+        ref = make_ref
         pid = self()
         for n <- notification do
           on_response = fn(x) -> send pid, {ref, x} end
           send_push(n, on_response, opts)
         end
-        Enum.foldl(notification, %{}, fn(n, acc) ->
+        List.foldl(notification, %{}, fn(_n, acc) ->
           receive do
             {^ref, %NotificationResponse{message_id: id} = response} ->
               if Map.has_key?(acc, id) do
@@ -105,26 +104,6 @@ defmodule Pigeon.GCM do
   def generate_envelope(payload, on_response, opts) do
     {:push, :gcm, payload, on_response, Map.new(opts)}
   end
-
-  # def merge(%NotificationResponse{ok: ok1,
-  #                                 retry: retry1,
-  #                                 update: update1,
-  #                                 remove: remove1,
-  #                                 error: error1}, %NotificationResponse{ok: ok2,
-  #                                                                       retry: retry2,
-  #                                                                       update: update2,
-  #                                                                       remove: remove2,
-  #                                                                       error: error2}) do
-
-  #   error3 = Map.merge(error1, error2, fn(m, a, b) ->  a ++ b end)
-  #   %NotificationResponse{
-  #     ok: ok1 ++ ok2,
-  #     retry: retry1 ++ retry2,
-  #     update: update1 ++ update2,
-  #     remove: remove1 ++ remove2,
-  #     error: error3
-  #   }
-  # end
 
   def merge(response_1, response_2) do
     Map.merge(response_1, response_2, fn(key, value_1, value_2) ->
