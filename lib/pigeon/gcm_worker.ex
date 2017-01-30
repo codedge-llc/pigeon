@@ -76,7 +76,6 @@ defmodule Pigeon.GCMWorker do
 
   def handle_cast(:stop, state), do: { :noreply, state }
 
-
   def handle_cast({:push, :gcm, notification, on_response, %{gcm_key: key}}, state) do
     send_push(state, notification, on_response, key)
   end
@@ -89,6 +88,15 @@ defmodule Pigeon.GCMWorker do
     Logger.debug "Recv: #{inspect(msg)}"
     {:noreply, state}
   end
+
+  def send_push(%{gcm_socket: nil, config: config}, notification, on_reponse) do
+    Logger.info "Reconnecting FCM client before request"
+    case initialize_worker(config) do
+      {:ok, newstate} -> send_push(newstate, notification, on_reponse)
+      error -> error
+    end
+  end
+
 
   def send_push(%{key: key } = state, payload, on_response) do
     send_push(state, payload, on_response, key)
@@ -152,12 +160,9 @@ defmodule Pigeon.GCMWorker do
 
   def handle_info({:ping, _from}, state), do: {:noreply, state}
 
-  def handle_info({:closed, _from}, %{config: config} = state) do
-    Logger.info "Reconnecting FCM client (Closed due to probable session_timed_out GOAWAY error)"
-    case initialize_worker(config) do
-      {:ok, newstate} -> {:noreply, newstate}
-      error -> error
-    end
+  def handle_info({:closed, _from}, state) do
+    Logger.info "FCM client connection closed "
+    {:noreply, %{state | gcm_socket: nil}}
   end
 
   def handle_info({:ok, _from}, state), do: {:noreply, state}
@@ -226,10 +231,6 @@ defmodule Pigeon.GCMWorker do
     end
   end
 
-  def parse_result1(regs, [%{"error" => error} | _r] = results, on_response,
-      %NotificationResponse{error: errors} = resp) do
-
-  end
 
   defp get_status(headers) do
     case Enum.find(headers, fn({key, _val}) -> key == ":status" end) do
