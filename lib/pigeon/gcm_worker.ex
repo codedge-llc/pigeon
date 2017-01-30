@@ -7,8 +7,6 @@ defmodule Pigeon.GCMWorker do
 
   alias Pigeon.GCM.NotificationResponse
 
-  @ping_period 600_000 # 10 minutes
-
   defp gcm_uri(config), do: config[:endpoint] || 'fcm.googleapis.com'
 
   def start_link(name, config) do
@@ -22,7 +20,6 @@ defmodule Pigeon.GCMWorker do
   def initialize_worker(config) do
     case connect_socket(config, 0) do
       {:ok, socket} ->
-        Process.send_after(self(), :ping, @ping_period)
         {:ok, %{
           gcm_socket: socket,
           key: config[:key],
@@ -119,14 +116,6 @@ defmodule Pigeon.GCMWorker do
 
   defp log_error(code, reason) do
     Logger.error("#{reason}: #{code}")
-  end
-
-
-  def handle_info(:ping, state) do
-    Kadabra.ping(state.gcm_socket)
-    Process.send_after(self(), :ping, @ping_period)
-
-    { :noreply, state }
   end
 
   def handle_info({:end_stream, %Kadabra.Stream{id: stream_id, headers: headers, body: body}},
