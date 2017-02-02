@@ -7,6 +7,10 @@ defmodule Pigeon.APNS.Config do
 
   def config(name) do
     config = Application.get_env(:pigeon, :apns)[name]
+    config(name, config)
+  end
+
+  def config(name, config) do
     %{
       production_endpoint: config[:production_endpoint] ||  "api.push.apple.com",
       development_endpoint: config[:development_endpoint] ||  "api.development.push.apple.com",
