@@ -7,6 +7,8 @@ defmodule Pigeon.GCMWorker do
 
   alias Pigeon.GCM.NotificationResponse
 
+  def default_name, do: :gcm_default
+
   defp gcm_uri(config), do: config[:endpoint] || 'fcm.googleapis.com'
 
   def start_link(name, config) do

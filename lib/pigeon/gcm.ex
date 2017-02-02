@@ -83,9 +83,10 @@ defmodule Pigeon.GCM do
     Sends a push over GCM.
   """
   def send_push(notification, on_response, opts) do
+    worker = opts[:name] || Pigeon.GCMWorker.default_name()
     notification
     |> encode_requests()
-    |> Enum.map(& GenServer.cast(:gcm_worker, generate_envelope(&1, on_response, opts)))
+    |> Enum.map(& GenServer.cast(worker, generate_envelope(&1, on_response, opts)))
   end
 
   def start_connection(name) do

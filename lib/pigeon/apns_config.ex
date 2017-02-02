@@ -3,7 +3,7 @@ defmodule Pigeon.APNS.Config do
     Validates configuration settings that initialize APNSWorkers.
   """
 
-  def default_name, do: :default
+  def default_name, do: :apns_default
 
   def config(name) do
     config = Application.get_env(:pigeon, :apns)[name]

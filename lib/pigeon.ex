@@ -40,9 +40,10 @@ defmodule Pigeon do
   end
 
   defp gcm_workers do
+    name = Pigeon.GCMWorker.default_name()
     cond do
       config = Application.get_env(:pigeon, :gcm) ->
-        [worker(Pigeon.GCMWorker, [:gcm_worker, config], id: :gcm_worker)]
+        [worker(Pigeon.GCMWorker, [name, config], id: name)]
       true -> []
     end
   end
