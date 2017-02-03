@@ -25,7 +25,7 @@ defmodule Pigeon.APNS.Notification do
     %Pigeon.APNS.Notification{
       device_token: token,
       topic: topic,
-      payload: %{"aps" => %{"alert" => msg}}
+      payload: %{"aps" => msg}
     }
   end
 
@@ -33,7 +33,7 @@ defmodule Pigeon.APNS.Notification do
     %Pigeon.APNS.Notification{
       device_token: token,
       topic: topic,
-      payload: %{"aps" => %{"alert" => msg}},
+      payload: %{"aps" => msg},
       id: id
     }
   end
