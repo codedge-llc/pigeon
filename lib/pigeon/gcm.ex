@@ -67,13 +67,13 @@ defmodule Pigeon.GCM do
     to_send = Map.merge(%{"to" => reg_id, "priority" => to_string(priority)}, payload)
     [{reg_id, Poison.encode!(to_send)}]
   end
-  def encode_requests(registration_ids, payload) do
-    Enum.map(registration_ids, fn(x) -> encode_payload(x, payload) end)
+  def encode_requests(registration_ids, %{payload: payload, priority: priority}) do
+    Enum.map(registration_ids, fn(x) -> encode_payload(x, priority, payload) end)
   end
 
-  defp encode_payload(x, payload) do
+  defp encode_payload(x, priority, payload) do
     encoded =
-      %{"registration_ids" => x}
+      %{"registration_ids" => x, "priority" => to_string(priority)}
       |> Map.merge(payload)
       |> Poison.encode!
     {x, encoded}
