@@ -111,7 +111,9 @@ defmodule Pigeon.GCMWorker do
       {":path", "/fcm/send"},
       { "authorization", "key=#{key}" },
       { "content-type", "application/json" },
-      { "accept", "application/json" }]
+      { "accept", "application/json" },
+      { "content-length", "#{byte_size(payload)}" }
+    ]
     Kadabra.request(socket, req_headers, payload)
 
     new_q = Map.put(queue, "#{stream_id}", {registration_ids, on_response})

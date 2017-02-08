@@ -214,7 +214,7 @@ defmodule Pigeon.APNSWorker do
       :missing_provider_token ->
         """
         No provider certificate was used to connect to APNs and Authorization header was missing
-        or no provider token was specified." 
+        or no provider token was specified."
         """
 
       # 404
