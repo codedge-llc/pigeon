@@ -73,7 +73,6 @@ defmodule Pigeon.APNSWorker do
           {:packet, 0},
           {:reuseaddr, true},
           {:active, true},
-          {:port, config[:port]},
           :binary]
           |> optional_add_2197(config)
         {:ok, options}
@@ -85,7 +84,7 @@ defmodule Pigeon.APNSWorker do
   defp optional_add_2197(options, config) do
     case config[:use_2197] do
       true -> options ++ [{:port, 2197}]
-      _ -> options
+      _ -> options ++ [{:port, config[:port]}]
     end
   end
 
