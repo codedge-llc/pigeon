@@ -96,7 +96,7 @@ defmodule Pigeon.APNS do
       key: Config.key(opts[:key]),
       keyfile: Config.file_path(opts[:key])
     }
-    Supervisor.start_child(:pigeon, worker(Pigeon.APNSWorker, [config], id: opts[:name]))
+    Pigeon.APNSWorker.start_link(config)
   end
 
   def stop_connection(name) do

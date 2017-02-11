@@ -17,6 +17,9 @@ defmodule Pigeon.APNSTest do
 
       {:ok, pid} = Pigeon.APNS.start_connection(opts)
       assert is_pid(pid)
+
+      {:ok, pid} = Pigeon.APNS.start_connection(opts)
+      assert is_pid(pid)
     end
   end
 
