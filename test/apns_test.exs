@@ -7,6 +7,19 @@ defmodule Pigeon.APNSTest do
   def bad_token, do: "00fc13adff785122b4ad28809a3420982341241421348097878e577c991de8f0"
   def bad_id, do: "123e4567-e89b-12d3-a456-42665544000"
 
+  describe "start_connection/1" do
+    test "starts connection with opts keyword list" do
+      opts = [
+        cert: Application.get_env(:pigeon, :test)[:apns_cert],
+        key: Application.get_env(:pigeon, :test)[:apns_key],
+        mode: :dev
+      ]
+
+      {:ok, pid} = Pigeon.APNS.start_connection(opts)
+      assert is_pid(pid)
+    end
+  end
+
   describe "push/1" do
     test "returns {:ok, notification} on successful push" do
       n = Pigeon.APNS.Notification.new(test_message("push/1"), test_token(), test_topic())
