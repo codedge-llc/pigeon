@@ -78,7 +78,7 @@ defmodule Pigeon.APNS do
     for n <- notification, do: push(n, on_response, opts)
   end
   def push(notification, on_response, opts) do
-    worker_name = opts[:name] || Config.default_name
+    worker_name = opts[:to] || Config.default_name
     GenServer.cast(worker_name, {:push, :apns, notification, on_response})
   end
 

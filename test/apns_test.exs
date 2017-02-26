@@ -46,6 +46,49 @@ defmodule Pigeon.APNSTest do
     end
   end
 
+  describe "push/1 with custom worker" do
+    test "pushes to worker pid" do
+      n =
+        Pigeon.APNS.Notification.new(
+          test_message("push/1, custom worker"),
+          test_token(), test_topic()
+        )
+
+      Pigeon.APNS.stop_connection(:default)
+      opts = [
+        cert: Application.get_env(:pigeon, :test)[:apns_cert],
+        key: Application.get_env(:pigeon, :test)[:apns_key],
+        mode: :dev
+      ]
+      {:ok, worker_pid} = Pigeon.APNS.start_connection(opts)
+
+      assert {:ok, _notif} = Pigeon.APNS.push(n, to: worker_pid)
+
+      Pigeon.APNS.start_connection(:default)
+    end
+
+    test "pushes to worker's atom name" do
+      n =
+        Pigeon.APNS.Notification.new(
+          test_message("push/1, custom worker"),
+          test_token(), test_topic()
+        )
+
+      Pigeon.APNS.stop_connection(:default)
+      opts = [
+        cert: Application.get_env(:pigeon, :test)[:apns_cert],
+        key: Application.get_env(:pigeon, :test)[:apns_key],
+        mode: :dev,
+        name: :custom
+      ]
+      {:ok, worker_pid} = Pigeon.APNS.start_connection(opts)
+
+      assert {:ok, _notif} = Pigeon.APNS.push(n, to: :custom)
+
+      Pigeon.APNS.start_connection(:default)
+    end
+  end
+
   describe "push/1 with :on_response" do
     test "returns {:ok, notification} on successful push" do
       pid = self()
@@ -98,6 +141,57 @@ defmodule Pigeon.APNSTest do
       assert Pigeon.APNS.push(n, on_response: on_response) == :ok
 
       assert_receive({:error, :missing_topic, _n}, 5_000)
+    end
+  end
+
+  describe "push/1 with :on_response to custom worker" do
+    test "sends to pid if specified" do
+      pid = self()
+      on_response = fn(x) -> send pid, x end
+
+      n =
+        "push/2 :ok, custom worker"
+        |> test_message()
+        |> Pigeon.APNS.Notification.new(test_token(), test_topic())
+
+      Pigeon.APNS.stop_connection(:default)
+      opts = [
+        cert: Application.get_env(:pigeon, :test)[:apns_cert],
+        key: Application.get_env(:pigeon, :test)[:apns_key],
+        mode: :dev
+      ]
+      {:ok, worker_pid} = Pigeon.APNS.start_connection(opts)
+
+      assert Pigeon.APNS.push(n, on_response: on_response, to: worker_pid) == :ok
+
+      assert_receive({:ok, _notif}, 5_000)
+
+      Pigeon.APNS.start_connection(:default)
+    end
+
+    test "sends to worker's atom name if specified" do
+      pid = self()
+      on_response = fn(x) -> send pid, x end
+
+      n =
+        "push/2 :ok, custom worker"
+        |> test_message()
+        |> Pigeon.APNS.Notification.new(test_token(), test_topic())
+
+      Pigeon.APNS.stop_connection(:default)
+      opts = [
+        cert: Application.get_env(:pigeon, :test)[:apns_cert],
+        key: Application.get_env(:pigeon, :test)[:apns_key],
+        mode: :dev,
+        name: :custom
+      ]
+      {:ok, worker_pid} = Pigeon.APNS.start_connection(opts)
+
+      assert Pigeon.APNS.push(n, on_response: on_response, to: :custom) == :ok
+
+      assert_receive({:ok, _notif}, 5_000)
+
+      Pigeon.APNS.start_connection(:default)
     end
   end
 end
