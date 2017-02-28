@@ -235,7 +235,7 @@ defmodule Pigeon.GCMWorker do
     end
   end
 
-
+  defp get_status(nil), do: nil
   defp get_status(headers) do
     case Enum.find(headers, fn({key, _val}) -> key == ":status" end) do
       {":status", status} -> status
