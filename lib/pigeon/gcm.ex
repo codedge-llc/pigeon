@@ -45,12 +45,12 @@ defmodule Pigeon.GCM do
       case on_response do
         nil ->
           fn({_reg_ids, payload}) ->
-            HTTPoison.post(gcm_uri(), payload, gcm_headers(gcm_key))
+            :hackney.request(:post, gcm_uri(), gcm_headers(gcm_key), payload, [:with_body, pool: false])
           end
         _ ->
           fn({reg_ids, payload}) ->
-            {:ok, %HTTPoison.Response{status_code: status, body: body}} =
-              HTTPoison.post(gcm_uri(), payload, gcm_headers(gcm_key))
+            {:ok, status, _headers, body} =
+              :hackney.request(:post, gcm_uri(), gcm_headers(gcm_key), payload, [:with_body, pool: false])
 
             notification = %{ notification | registration_id: reg_ids }
             process_response(status, body, notification, on_response)

@@ -24,13 +24,13 @@ defmodule Pigeon.Mixfile do
   end
 
   def application do
-    [applications: [:logger, :httpoison, :poolboy, :kadabra],
+    [applications: [:logger, :hackney, :poolboy, :kadabra],
     mod: {Pigeon, []}]
   end
 
   defp deps do
     [{:poison, "~> 2.0 or ~> 3.0"},
-    {:httpoison, "~> 0.7"},
+    {:hackney, "~> 1.6"},
     {:kadabra, "~> 0.1.0"},
     {:poolboy, "~> 1.5"},
     {:dogma, "~> 0.1", only: :dev},

@@ -86,8 +86,8 @@ defmodule Pigeon.ADMWorker do
   end
 
   defp refresh_access_token(state) do
-    case HTTPoison.post(@token_refresh_uri, token_refresh_body(state), token_refresh_headers()) do
-      {:ok, %{status_code: 200, body: response_body}} ->
+    case :hackney.request(:post, @token_refresh_uri, token_refresh_headers(), token_refresh_body(state), [:with_body, pool: false]) do
+      {:ok, 200, _headers, response_body} ->
         {:ok, response_json} = Poison.decode(response_body)
         %{
           "access_token" => access_token,
@@ -103,7 +103,7 @@ defmodule Pigeon.ADMWorker do
                         access_token_expiration_seconds: expiration_seconds,
                         access_token_type: token_type}}
 
-      {:ok, %{body: response_body}} ->
+      {:ok, _status, _headers, response_body} ->
         {:ok, response_json} = Poison.decode(response_body)
         Logger.error "Refresh token response: #{inspect response_json}"
         {:error, response_json["reason"]}
@@ -131,12 +131,12 @@ defmodule Pigeon.ADMWorker do
       case on_response do
         nil ->
           fn({reg_id, payload}) ->
-            HTTPoison.post(adm_uri(reg_id), payload, adm_headers(state))
+            :hackney.request(:post, adm_uri(reg_id), adm_headers(state), payload, [:with_body, pool: false])
           end
         _ ->
           fn({reg_id, payload}) ->
-            {:ok, %HTTPoison.Response{status_code: status, body: body}} =
-              HTTPoison.post(adm_uri(reg_id), payload, adm_headers(state))
+            {:ok, status, _headers, body} =
+              :hackney.request(:post, adm_uri(reg_id), adm_headers(state), payload, [:with_body, pool: false])
 
             notification = %{ notification | registration_id: reg_id }
             process_response(status, body, notification, on_response)
@@ -242,5 +242,5 @@ defmodule Pigeon.ADMWorker do
     end
   end
 
-  def handle_info({_from, {:ok, %HTTPoison.Response{status_code: 200}}}, state), do: {:noreply, state}
+  def handle_info({_from, {:ok, 200, _headers, _body}}, state), do: {:noreply, state}
 end
