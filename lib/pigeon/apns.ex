@@ -12,11 +12,12 @@ defmodule Pigeon.APNS do
 
   def push(notification, opts \\ [])
   def push(notification, opts) when is_list(notification) do
+    timeout = opts[:timeout] || @default_timeout
     case opts[:on_response] do
       nil ->
         tasks = for n <- notification, do: Task.async(fn -> do_sync_push(n, opts) end)
         tasks
-        |> Task.yield_many(@default_timeout + 500)
+        |> Task.yield_many(timeout + 500)
         |> Enum.map(fn {task, response} -> response || Task.shutdown(task, :brutal_kill) end)
         |> group_responses
       on_response -> push(notification, on_response, opts)
@@ -33,6 +34,7 @@ defmodule Pigeon.APNS do
     pid = self()
     ref = :erlang.make_ref
     on_response = fn(x) -> send pid, {ref, x} end
+    timeout = opts[:timeout] || @default_timeout
 
     worker_name = opts[:name] || Config.default_name
     GenServer.cast(worker_name, {:push, :apns, notification, on_response})
@@ -40,7 +42,7 @@ defmodule Pigeon.APNS do
     receive do
       {^ref, x} -> x
     after
-      @default_timeout -> {:error, :timeout, notification}
+      timeout -> {:error, :timeout, notification}
     end
   end
 

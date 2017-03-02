@@ -11,6 +11,7 @@ defmodule Pigeon.GCM do
 
   def push(notification, opts \\ [])
   def push(notification, opts) when is_list(notification) do
+    timeout = opts[:timeout] || @default_timeout
     case opts[:on_response] do
       nil ->
         ref = make_ref
@@ -27,7 +28,7 @@ defmodule Pigeon.GCM do
               else
                 Map.merge(%{id => response}, acc)
               end
-          after 5_000 ->
+          after timeout ->
             acc
           end
         end)
@@ -45,12 +46,13 @@ defmodule Pigeon.GCM do
   defp do_sync_push(notification, opts) do
     ref = :erlang.make_ref
     pid = self()
+    timeout = opts[:timeout] || @default_timeout
     on_response = fn(x) -> send pid, {ref, x} end
     send_push(notification, on_response, opts)
     receive do
       {^ref, x} -> x
     after
-      @default_timeout -> {:error, :timeout, notification}
+      timeout -> {:error, :timeout, notification}
     end
   end
 
