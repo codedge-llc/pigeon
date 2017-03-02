@@ -49,11 +49,14 @@ defmodule Pigeon.GCM do
           end
         _ ->
           fn({reg_ids, payload}) ->
-            {:ok, %HTTPoison.Response{status_code: status, body: body}} =
-              HTTPoison.post(gcm_uri(), payload, gcm_headers(gcm_key))
+            case HTTPoison.post(gcm_uri(), payload, gcm_headers(gcm_key)) do
+              {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
+                notification = %{ notification | registration_id: reg_ids }
+                process_response(status, body, notification, on_response)
+              _ ->
+                process_response(:unknown, "", notification, on_response)
+            end
 
-            notification = %{ notification | registration_id: reg_ids }
-            process_response(status, body, notification, on_response)
           end
       end
     for r <- requests, do: Task.async(fn -> response.(r) end)
