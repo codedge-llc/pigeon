@@ -33,7 +33,7 @@ defmodule Pigeon.APNS do
     pid = self()
     on_response = fn(x) -> send pid, {:ok, x} end
 
-    worker_name = opts[:name] || Config.default_name
+    worker_name = opts[:to] || Config.default_name
     GenServer.cast(worker_name, {:push, :apns, notification, on_response})
 
     receive do
@@ -78,25 +78,25 @@ defmodule Pigeon.APNS do
     for n <- notification, do: push(n, on_response, opts)
   end
   def push(notification, on_response, opts) do
-    worker_name = opts[:name] || Config.default_name
+    worker_name = opts[:to] || Config.default_name
     GenServer.cast(worker_name, {:push, :apns, notification, on_response})
   end
 
-  def start_connection(name) do
+  def start_connection(opts \\ [])
+  def start_connection(name) when is_atom(name) do
     config = Config.config(name)
     Supervisor.start_child(:pigeon, worker(Pigeon.APNSWorker, [config], id: name))
   end
-
-  def start_connection(name, opts) do
+  def start_connection(opts) do
     config = %{
-      name: name,
+      name: opts[:name],
       mode: opts[:mode],
       cert: Config.cert(opts[:cert]),
       certfile: Config.file_path(opts[:cert]),
       key: Config.key(opts[:key]),
       keyfile: Config.file_path(opts[:key])
     }
-    Supervisor.start_child(:pigeon, worker(Pigeon.APNSWorker, [config], id: name))
+    Pigeon.APNSWorker.start_link(config)
   end
 
   def stop_connection(name) do
