@@ -24,14 +24,14 @@ defmodule Pigeon.Mixfile do
   end
 
   def application do
-    [applications: [:logger, :httpoison, :poolboy, :kadabra],
+    [applications: [:logger, :httpoison, :poolboy, :chatterbox, :hpack],
     mod: {Pigeon, []}]
   end
 
   defp deps do
     [{:poison, "~> 2.0 or ~> 3.0"},
     {:httpoison, "~> 0.7"},
-    {:kadabra, git: "https://github.com/rslota/kadabra.git", tag: "9f6e4107"},
+    {:chatterbox, github: "joedevivo/chatterbox"},
     {:poolboy, "~> 1.5"},
     {:dogma, "~> 0.1", only: :dev},
     {:earmark, "~> 1.0", only: :dev},

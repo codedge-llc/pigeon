@@ -97,7 +97,7 @@ defmodule Pigeon.APNSWorker do
   end
 
   defp do_connect_socket(config, uri, options, tries) do
-    case Kadabra.open(uri, :https, options) do
+    case :h2_client.start_link(:https, uri, options[:port]) do
       {:ok, socket} -> {:ok, socket}
       {:error, reason} ->
         Logger.error(inspect(reason))
@@ -121,19 +121,20 @@ defmodule Pigeon.APNSWorker do
   end
 
   def send_push(state, notification, on_response) do
-    %{apns_socket: socket, stream_id: stream_id, queue: queue} = state
+    %{apns_socket: socket, queue: queue} = state
     json = Pigeon.Notification.json_payload(notification.payload)
     req_headers = [
       {":method", "POST"},
       {":path", "/3/device/#{notification.device_token}"},
+      {":scheme", "https"},
+      {":authority", push_uri(state[:config])},
       {"content-length", "#{byte_size(json)}"}]
       |> put_apns_id(notification)
       |> put_apns_topic(notification)
 
-    Kadabra.request(socket, req_headers, json)
+    {:ok, stream_id} = :h2_client.send_request(socket, req_headers, json)
     new_q = Map.put(queue, "#{stream_id}", {notification, on_response})
-    new_stream_id = stream_id + 2
-    { :noreply, %{state | stream_id: new_stream_id, queue: new_q } }
+    { :noreply, %{state | queue: new_q } }
   end
 
   defp put_apns_id(headers, notification) do
@@ -256,15 +257,15 @@ defmodule Pigeon.APNSWorker do
   end
 
   def handle_info(:ping, state) do
-    Kadabra.ping(state.apns_socket)
+    # Kadabra.ping(state.apns_socket)
     Process.send_after(self, :ping, @ping_period)
 
     { :noreply, state }
   end
 
-  def handle_info({:end_stream, %Kadabra.Stream{id: stream_id, headers: headers, body: body}},
-                                                %{apns_socket: _socket, queue: queue} = state) do
-
+  def handle_info({:END_STREAM, stream_id}, %{apns_socket: socket, queue: queue} = state) do
+    {:ok, {headers, body}} = :h2_connection.get_response(socket, stream_id)
+    body = Enum.join(body)
     {notification, on_response} = queue["#{stream_id}"]
 
     case get_status(headers) do

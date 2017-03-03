@@ -9,6 +9,7 @@ defmodule Pigeon do
 
   def start(_type, _args) do
     opts = [strategy: :one_for_one, name: :pigeon]
+    Application.put_env(:chatterbox, :ssl_options, [])
     Supervisor.start_link(workers(), opts)
   end
 

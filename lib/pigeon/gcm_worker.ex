@@ -9,7 +9,8 @@ defmodule Pigeon.GCMWorker do
 
   def default_name, do: :gcm_default
 
-  defp gcm_uri(config), do: config[:endpoint] || 'fcm.googleapis.com'
+  defp gcm_uri(config),   do: config[:endpoint] || "fcm.googleapis.com"
+  defp gcm_port(config),  do: config[:port]     || 443
 
   def start_link(name, config) do
     GenServer.start_link(__MODULE__, {:ok, config}, name: name)
@@ -22,10 +23,10 @@ defmodule Pigeon.GCMWorker do
   def initialize_worker(config) do
     case connect_socket(config, 0) do
       {:ok, socket} ->
+        Process.monitor(socket)
         {:ok, %{
           gcm_socket: socket,
           key: config[:key],
-          stream_id: 1,
           queue: %{},
           config: config
         }}
@@ -49,26 +50,13 @@ defmodule Pigeon.GCMWorker do
 
   def connect_socket(_config, 3), do: {:error, :timeout}
   def connect_socket(config, tries) do
-    uri = config |> gcm_uri() |> to_char_list
-    case connect_socket_options(config) do
-      {:ok, options} -> do_connect_socket(config, uri, options, tries)
-      error -> error
-    end
+    uri = config |> gcm_uri()
+    port = config |> gcm_port()
+    do_connect_socket(config, uri, port, tries)
   end
 
-  def connect_socket_options(config) do
-      {:ok,  [
-        {:packet, 0},
-        {:reuseaddr, true},
-        {:active, true},
-        {:port, config[:port] || 443 },
-        :binary]
-      }
-  end
-
-
-  defp do_connect_socket(config, uri, options, tries) do
-    case Kadabra.open(uri, :https, options) do
+  defp do_connect_socket(config, uri, port, tries) do
+    case Pigeon.H2.open(uri, port) do
       {:ok, socket} -> {:ok, socket}
       {:error, reason} ->
         Logger.error(inspect(reason))
@@ -104,21 +92,22 @@ defmodule Pigeon.GCMWorker do
     send_push(state, payload, on_response, key)
   end
 
-  def send_push(%{gcm_socket: socket, stream_id: stream_id, queue: queue} = state,
+  def send_push(%{gcm_socket: socket, queue: queue} = state,
       {registration_ids, payload}, on_response, key) do
     req_headers = [
-      {":method", "POST"},
-      {":path", "/fcm/send"},
       { "authorization", "key=#{key}" },
       { "content-type", "application/json" },
       { "accept", "application/json" },
-      { "content-length", "#{byte_size(payload)}" }
     ]
-    Kadabra.request(socket, req_headers, payload)
-
-    new_q = Map.put(queue, "#{stream_id}", {registration_ids, on_response})
-    new_stream_id = stream_id + 2
-    { :noreply, %{state | stream_id: new_stream_id, queue: new_q } }
+    uri = gcm_uri(state[:config])
+    case Pigeon.H2.post(socket, uri, "/fcm/send", req_headers, payload) do
+      {:ok, stream_id} ->
+        new_q = Map.put(queue, "#{stream_id}", {registration_ids, on_response})
+        {:noreply, %{state | queue: new_q }}
+      {:error, reason} ->
+        unless on_response == nil do on_response.({:error, reason}) end
+        {:noreply, state}
+    end
   end
 
   defp parse_error(data) do
@@ -130,8 +119,8 @@ defmodule Pigeon.GCMWorker do
     Logger.error("#{reason}: #{code}")
   end
 
-  def handle_info({:end_stream, %Kadabra.Stream{id: stream_id, headers: headers, body: body}},
-                                                %{gcm_socket: _socket, queue: queue} = state) do
+  def handle_info({:END_STREAM, stream_id}, %{gcm_socket: socket, queue: queue} = state) do
+    {:ok, {headers, body}} = Pigeon.H2.receive(socket, stream_id)
 
     {registration_ids, on_response} = queue["#{stream_id}"]
     Logger.debug("#{inspect body} and #{inspect headers}")
@@ -170,6 +159,10 @@ defmodule Pigeon.GCMWorker do
   end
 
   def handle_info({:ok, _from}, state), do: {:noreply, state}
+  def handle_info(unknown, state) do
+    Logger.warn(~s"Unknown info #{inspect unknown}")
+    {:noreply, state}
+  end
 
   # no on_response callback, ignore
   def parse_result(_, _, nil), do: :ok
