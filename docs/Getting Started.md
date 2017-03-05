@@ -3,7 +3,7 @@
 ## Installation
 **Note: Pigeon's API will likely change until v1.0**
 
-Add pigeon and chatterbox as `mix.exs` dependencies:
+Add pigeon as a `mix.exs` dependency:
   ```elixir
   def deps do
     [
@@ -12,7 +12,8 @@ Add pigeon and chatterbox as `mix.exs` dependencies:
   end
   ```
   
-After running `mix deps.get`, configure `mix.exs` to start the application automatically.
+After running `mix deps.get`, if running Elixir `v1.3` or earlier, configure `mix.exs`
+to start the application automatically.
   ```elixir
   def application do
     [applications: [:pigeon]]

@@ -300,7 +300,8 @@ defmodule Pigeon.GCM.Notification do
 
   ## Examples
 
-      iex> Pigeon.GCM.Notification.put_notification(%Pigeon.GCM.Notification{}, %{"body" => "message"})
+      iex> Pigeon.GCM.Notification.put_notification(%Pigeon.GCM.Notification{},
+      ...> %{"body" => "message"})
       %Pigeon.GCM.Notification{
         message_id: nil,
         payload: %{"notification" => %{"body" => "message"}},

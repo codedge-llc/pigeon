@@ -105,7 +105,8 @@ Define custom payload data like so:
 
 ## Custom Worker Connections
 
-Multiple APNS worker connections can be configured simultaneously. Useful for supporting multiple apps and/or certificates at once.
+Multiple APNS worker connections can be configured simultaneously. Useful for supporting
+multiple apps and/or certificates at once.
 
   ```elixir
   config :pigeon, :apns,
@@ -128,6 +129,16 @@ Send pushes with a `to` option in your second parameter.
   Pigeon.APNS.push(n, to: :custom_worker)
   ```
 
+You can also start connections manually.
+
+  ```elixir
+  {:ok, pid} = Pigeon.APNS.start_connection(cert: "cert.pem", key: "key.pem", mode: :dev)
+  Pigeon.APNS.push(notif, to: pid)
+
+  Pigeon.APNS.start_connection(cert: "cert.pem", key: "key.pem", mode: :dev, name: :custom)
+  Pigeon.APNS.push(notif, to: :custom)
+  ```
+
 ## Asynchronous Pushing
 
 1. Pass an `on_response` option with an anonymous function in your second parameter.
@@ -137,7 +148,8 @@ Send pushes with a `to` option in your second parameter.
   Pigeon.APNS.push(n, on_response: fn(x) -> IO.inspect(x) end)
   ```
 
-2. Responses return a tuple of either `{:ok, notification}` or `{:error, reason, notification}`. You could handle responses like so:
+2. Responses return a tuple of either `{:ok, notification}` or `{:error, reason, notification}`.
+You could handle responses like so:
 
     ```elixir
   handler = fn(x) ->

@@ -63,7 +63,7 @@ defmodule Pigeon.GCM do
   def chunk_registration_ids(reg_ids) when is_binary(reg_ids), do: [[reg_ids]]
   def chunk_registration_ids(reg_ids), do: Enum.chunk(reg_ids, 1000, 1000, [])
 
-  def encode_requests([[reg_id]|_rest], payload) do
+  def encode_requests([[reg_id] | _rest], payload) do
     to_send = Map.merge(%{"to" => reg_id}, payload)
     [{reg_id, Poison.encode!(to_send)}]
   end
