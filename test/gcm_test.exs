@@ -1,5 +1,6 @@
 defmodule Pigeon.GCMTest do
   use ExUnit.Case
+  doctest Pigeon.GCM.Notification
 
   @data %{"message" => "Test push"}
   @payload %{"data" => @data}

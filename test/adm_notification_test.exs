@@ -1,5 +1,6 @@
 defmodule Pigeon.ADMNotificationTest do
   use ExUnit.Case
+  doctest Pigeon.ADM.Notification
 
   def test_registration_id, do: "test1234"
   def test_data, do: %{ message: "your message" }

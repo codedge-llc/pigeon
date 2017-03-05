@@ -16,7 +16,8 @@ Add pigeon as a `mix.exs` dependency:
   end
   ```
   
-After running `mix deps.get`, configure `mix.exs` to start the application automatically.
+After running `mix deps.get`, if running Elixir `v1.3` or earlier, configure `mix.exs`
+to start the application automatically.
   ```elixir
   def application do
     [applications: [:pigeon]]
