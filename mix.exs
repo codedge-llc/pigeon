@@ -24,7 +24,7 @@ defmodule Pigeon.Mixfile do
   end
 
   def application do
-    [applications: [:logger, :httpoison, :poolboy, :kadabra],
+    [applications: [:logger, :httpoison, :kadabra],
     mod: {Pigeon, []}]
   end
 
@@ -32,7 +32,6 @@ defmodule Pigeon.Mixfile do
     [{:poison, "~> 2.0 or ~> 3.0"},
     {:httpoison, "~> 0.7"},
     {:kadabra, "~> 0.1.0"},
-    {:poolboy, "~> 1.5"},
     {:dogma, "~> 0.1", only: :dev},
     {:earmark, "~> 1.0", only: :dev},
     {:ex_doc, "~> 0.2", only: :dev},
