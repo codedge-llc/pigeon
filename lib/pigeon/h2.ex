@@ -1,6 +1,11 @@
 defmodule Pigeon.H2 do
   def open(uri, port, opts \\ []) do
-    :h2_client.start_link(:https, to_charlist(uri), port, opts)
+    try do
+      :h2_client.start_link(:https, to_charlist(uri), port, opts)
+    catch
+      _, reason ->
+        {:error, reason}
+    end
   end
 
   def close(conn) do

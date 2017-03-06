@@ -31,7 +31,7 @@ defmodule Pigeon.Mixfile do
   defp deps do
     [{:poison, "~> 2.0 or ~> 3.0"},
     {:httpoison, "~> 0.7"},
-    {:chatterbox, github: "joedevivo/chatterbox"},
+    {:chatterbox, github: "rslota/chatterbox"},
     {:poolboy, "~> 1.5"},
     {:dogma, "~> 0.1", only: :dev},
     {:earmark, "~> 1.0", only: :dev},

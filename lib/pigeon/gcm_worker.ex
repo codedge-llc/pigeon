@@ -18,28 +18,34 @@ defmodule Pigeon.GCMWorker do
 
   def stop, do: :gen_server.cast(self(), :stop)
 
-  def init({:ok, config}), do: initialize_worker(config)
+  def init({:ok, config}) do
+    Process.flag(:trap_exit, true)
+    {:ok, new_state(config)}
+  end
+
+  defp new_state(config, socket \\ nil) do
+    %{
+      gcm_socket: socket,
+      key: config[:key],
+      queue: %{},
+      config: config
+    }
+  end
 
   def initialize_worker(config) do
     case connect_socket(config, 0) do
       {:ok, socket} ->
-        Process.monitor(socket)
-        {:ok, %{
-          gcm_socket: socket,
-          key: config[:key],
-          queue: %{},
-          config: config
-        }}
+        {:ok, new_state(config, socket)}
       {:closed, _socket} ->
         Logger.error """
           Socket closed unexpectedly.
           """
-        {:stop, {:error, :bad_connection}}
+        {:ok, new_state(config)}
       {:error, :timeout} ->
         Logger.error """
           Failed to establish SSL connection.
           """
-        {:stop, {:error, :timeout}}
+        {:ok, new_state(config)}
       {:error, :invalid_config} ->
         Logger.error """
           Invalid configuration.
@@ -59,7 +65,7 @@ defmodule Pigeon.GCMWorker do
     case Pigeon.H2.open(uri, port) do
       {:ok, socket} -> {:ok, socket}
       {:error, reason} ->
-        Logger.error(inspect(reason))
+        Logger.error(~s"Unable to open connection to FCM server due to #{inspect(reason)}")
         connect_socket(config, tries + 1)
     end
   end
@@ -123,7 +129,6 @@ defmodule Pigeon.GCMWorker do
     {:ok, {headers, body}} = Pigeon.H2.receive(socket, stream_id)
 
     {registration_ids, on_response} = queue["#{stream_id}"]
-    Logger.debug("#{inspect body} and #{inspect headers}")
     case get_status(headers) do
       "200" ->
         result =  Poison.decode! body
@@ -159,6 +164,13 @@ defmodule Pigeon.GCMWorker do
   end
 
   def handle_info({:ok, _from}, state), do: {:noreply, state}
+  def handle_info({:EXIT, socket, _}, %{gcm_socket: socket} = state) do
+    {:noreply, %{state | gcm_socket: nil}}
+  end
+  def handle_info({:EXIT, _socket, _}, state) do
+    {:noreply, state}
+  end
+
   def handle_info(unknown, state) do
     Logger.warn(~s"Unknown info #{inspect unknown}")
     {:noreply, state}
