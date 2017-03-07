@@ -5,23 +5,23 @@
 1. Set your environment variables.
 
     ```elixir
-  config :pigeon, :gcm,
-    key: "your_gcm_key_here"
-  ```
-  
+    config :pigeon, :gcm,
+      key: "your_gcm_key_here"
+    ```
+
 2. Create a notification packet. 
 
     ```elixir
-  msg = %{ "body" => "your message" }
-  n = Pigeon.GCM.Notification.new("your device registration ID", msg)
-  ```
+    msg = %{ "body" => "your message" }
+    n = Pigeon.GCM.Notification.new("your device registration ID", msg)
+    ```
  
 3. Send the packet.
 
     ```elixir
-  Pigeon.GCM.push(n)
-  ```
-  
+    Pigeon.GCM.push(n)
+    ```
+
 ## Sending to Multiple Registration IDs
 
 Pass in a list of registration IDs, as many as you want. IDs will automatically be chunked into sets of 1000 before sending the push (as per GCM guidelines).
@@ -67,37 +67,37 @@ or
 1. Pass an optional anonymous function as your second parameter. This function will get called on each registration ID assuming some of them were successful.
 
     ```elixir
-  data = %{ message: "your message" }
-  n = Pigeon.GCM.Notification.new(data, "device registration ID")
-  Pigeon.GCM.push(n, fn(x) -> IO.inspect(x) end)
-  ```
-  
+    data = %{ message: "your message" }
+    n = Pigeon.GCM.Notification.new(data, "device registration ID")
+    Pigeon.GCM.push(n, fn(x) -> IO.inspect(x) end)
+    ```
+
 2. Reponses return a tuple of either `{:ok, notification}` or `{:error, reason, notification}`. You could handle responses like so:
 
     ```elixir
-  on_response = fn(x) ->
-    case x do
-      {:ok, notification} ->
-        # Push successful, check to see if the registration ID changed
-        if !is_nil(notification.updated_registration_id) do
-          # Update the registration ID in the database
-        end
-      {:error, :invalid_registration, notification} ->
-        # Remove the bad ID from the database
-      {:error, reason, notification} ->
-        # Handle other errors
+    on_response = fn(x) ->
+      case x do
+        {:ok, notification} ->
+          # Push successful, check to see if the registration ID changed
+          if !is_nil(notification.updated_registration_id) do
+            # Update the registration ID in the database
+          end
+        {:error, :invalid_registration, notification} ->
+          # Remove the bad ID from the database
+        {:error, reason, notification} ->
+          # Handle other errors
+      end
     end
-  end
-  
-  data = %{ message: "your message" }
-  n = Pigeon.GCM.Notification.new(data, "your device token")
-  Pigeon.GCM.push(n, on_response)
-  ```
-  
+    
+    data = %{ message: "your message" }
+    n = Pigeon.GCM.Notification.new(data, "your device token")
+    Pigeon.GCM.push(n, on_response)
+    ```
+
 Notification structs returned as `{:ok, notification}` will always contain exactly one registration ID for the `registration_id` key. 
 
 For `{:error, reason, notification}` tuples, this key can be one or many IDs depending on the error. `:invalid_registration` will return exactly one, whereas `:authentication_error` and `:internal_server_error` will return up to 1000 IDs (and the callback called for each failed 1000-chunked request).
-  
+
 ## Error Responses
 
 *Slightly modified from [GCM Server Reference](https://developers.google.com/cloud-messaging/http-server-ref#error-codes)*

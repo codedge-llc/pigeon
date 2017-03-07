@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.11.0
+* APNS workers can be started and referenced with pids and/or atom names
+* Fix: Push `:name` option renamed to `:to`
+* Fix: GCM/ADM async pushes now use `spawn/1` instead of `Task.async/1`
+
 ## v0.10.3
 * Fix: cleaned up Elixir v1.4 warnings
 

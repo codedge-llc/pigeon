@@ -11,7 +11,7 @@ Add pigeon as a `mix.exs` dependency:
   ```elixir
   def deps do
     [
-      {:pigeon, "~> 0.10.0"}
+      {:pigeon, "~> 0.11.0"}
     ]
   end
   ```
