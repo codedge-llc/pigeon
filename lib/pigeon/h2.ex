@@ -33,6 +33,10 @@ defmodule Pigeon.H2 do
     end
   end
 
+  def ping(conn) do
+    :h2_client.send_ping(conn)
+  end
+
   defp make_headers(method, uri, path, headers, body) do
     [
       {":method", String.upcase(Atom.to_string(method))},

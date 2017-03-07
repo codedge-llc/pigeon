@@ -2,7 +2,7 @@ defmodule Pigeon.GCMWorker do
   @moduledoc """
     Handles all FCM request and response parsing over an HTTP2 connection.
   """
-  use Pigeon.GenericH2Worker
+  use Pigeon.GenericH2Worker, ping_interval: 60_000
   alias Pigeon.GCM.NotificationResponse
   require Logger
 
@@ -17,11 +17,17 @@ defmodule Pigeon.GCMWorker do
   end
 
   def socket_options(_config) do
-    []
+    {:ok, []}
+  end
+
+  def encode_notification({_registration_ids, notification}) do
+    notification
   end
 
   def req_headers(config, _notification) do
-    [{"authorization", "key=#{config[:key]}"}]
+    [{"authorization", "key=#{config[:key]}"},
+     {"content-type", "application/json"},
+     {"accept", "application/json"}]
   end
 
   def req_path(_notification) do
@@ -33,9 +39,9 @@ defmodule Pigeon.GCMWorker do
     response["reason"] |> Macro.underscore |> String.to_existing_atom
   end
 
-  defp parse_response(notification, _headers, body) do
+  defp parse_response({registration_ids, payload}, _headers, body) do
     result = Poison.decode! body
-    parse_result(notification.registration_ids, result)
+    parse_result(registration_ids, result)
   end
 
   def parse_result(ids, %{"results" => results}) do

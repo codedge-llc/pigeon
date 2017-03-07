@@ -2,7 +2,7 @@ defmodule Pigeon.APNSWorker do
   @moduledoc """
     Handles all APNS request and response parsing over an HTTP2 connection.
   """
-  use Pigeon.GenericH2Worker
+  use Pigeon.GenericH2Worker, ping_interval: 600_000
   require Logger
 
   def host(config) do
@@ -17,6 +17,10 @@ defmodule Pigeon.APNSWorker do
       true -> 2197
       _ -> config[:port]
     end
+  end
+
+  def encode_notification(notification) do
+    Pigeon.Notification.json_payload(notification.payload)
   end
 
   def socket_options(config) do
@@ -43,7 +47,8 @@ defmodule Pigeon.APNSWorker do
   end
 
   def req_headers(_config, notification) do
-    []
+    [{"content-type", "application/json"},
+     {"accept", "application/json"}]
     |> put_apns_id(notification)
     |> put_apns_topic(notification)
   end
