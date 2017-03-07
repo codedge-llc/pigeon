@@ -29,9 +29,10 @@ defmodule Pigeon.GCMTest do
     reg_id = valid_gcm_reg_id()
     n = Pigeon.GCM.Notification.new(reg_id, %{}, @data)
 
-    Pigeon.GCM.push(n, fn(x) -> send self(), x end)
+    pid = self()
+    Pigeon.GCM.push(n, fn(x) -> send(pid, x) end)
 
-    assert_receive {_ref, [{:ok, notification}]}, 5000
+    assert_receive {:ok, notification}, 5000
     assert notification.registration_id == reg_id
     assert notification.payload == %{"data" => @data}
   end
@@ -40,9 +41,10 @@ defmodule Pigeon.GCMTest do
     reg_id = "bad_registration_id"
     n = Pigeon.GCM.Notification.new(reg_id, %{}, @data)
 
-    Pigeon.GCM.push(n, fn(x) -> send self(), x end)
+    pid = self()
+    Pigeon.GCM.push(n, fn(x) -> send(pid, x) end)
 
-    assert_receive {_ref, [{:error, :invalid_registration, n}]}, 5000
+    assert_receive {:error, :invalid_registration, n}, 5000
     assert n.registration_id == reg_id
     assert n.payload == %{"data" => @data}
   end

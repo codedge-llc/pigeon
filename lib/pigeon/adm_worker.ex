@@ -142,7 +142,7 @@ defmodule Pigeon.ADMWorker do
             process_response(status, body, notification, on_response)
           end
       end
-    spawn(fn -> response.(request) end)
+    Task.start_link(fn -> response.(request) end)
     :ok
   end
 

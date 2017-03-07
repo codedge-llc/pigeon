@@ -56,7 +56,7 @@ defmodule Pigeon.GCM do
             process_response(status, body, notification, on_response)
           end
       end
-    for r <- requests, do: spawn(fn -> response.(r) end)
+    for r <- requests, do: Task.start_link(fn -> response.(r) end)
     :ok
   end
 
