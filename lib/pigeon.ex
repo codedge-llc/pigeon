@@ -13,7 +13,11 @@ defmodule Pigeon do
   end
 
   defp workers do
-    adm_worker() ++ apns_workers()
+    adm_worker() ++ apns_workers() ++ task_supervisors()
+  end
+
+  def task_supervisors do
+    [supervisor(Task.Supervisor, [[name: Pigeon.Tasks]])]
   end
 
   def adm_worker do
