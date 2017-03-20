@@ -26,6 +26,8 @@ defmodule Pigeon.H2 do
 
   def receive(conn, stream_id) do
     case :h2_connection.get_response(conn, stream_id) do
+      {:ok, {headers, :undefined}} ->
+        {:ok, {headers, ""}}
       {:ok, {headers, body}} ->
         {:ok, {headers, Enum.join(body)}}
       {:error, reason} ->

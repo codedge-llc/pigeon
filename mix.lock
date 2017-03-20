@@ -1,5 +1,5 @@
 %{"certifi": {:hex, :certifi, "1.0.0", "1c787a85b1855ba354f0b8920392c19aa1d06b0ee1362f9141279620a5be2039", [:rebar3], []},
-  "chatterbox": {:git, "https://github.com/rslota/chatterbox.git", "054edf85227be59c5a8bc85d02212240977f0325", [tag: "054edf8"]},
+  "chatterbox": {:git, "https://github.com/rslota/chatterbox.git", "20f00960127a5ffd1f2b79cf9f7b4b8fe85bc97b", [tag: "20f0096"]},
   "dogma": {:hex, :dogma, "0.1.14", "561abecb25a2408738e7d2bc34cc565a07e6fadbc4fb91b2cbb35a5a9234cf1c", [:mix], [{:poison, ">= 2.0.0", [hex: :poison, optional: false]}]},
   "earmark": {:hex, :earmark, "1.1.1", "433136b7f2e99cde88b745b3a0cfc3fbc81fe58b918a09b40fce7f00db4d8187", [:mix], []},
   "ex_doc": {:hex, :ex_doc, "0.15.0", "e73333785eef3488cf9144a6e847d3d647e67d02bd6fdac500687854dd5c599f", [:mix], [{:earmark, "~> 1.1", [hex: :earmark, optional: false]}]},

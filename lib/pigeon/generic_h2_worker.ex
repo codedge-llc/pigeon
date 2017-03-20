@@ -155,7 +155,8 @@ defmodule Pigeon.GenericH2Worker do
               maybe_respond({:ok, notification}, on_response)
               new_queue = Map.delete(queue, "#{stream_id}")
             nil ->
-              :ok
+              maybe_respond({:error, :no_respose, notification},
+                            on_response)
             code ->
               reason =
                 try do
