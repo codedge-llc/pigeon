@@ -2,20 +2,26 @@ defmodule Pigeon.Http2.Client.Kadabra do
   @behaviour Pigeon.Http2.Client
 
   def connect(uri, scheme, opts) do
-    Kadabra.open(uri, scheme, opts)
+    if Code.ensure_loaded?(Kadabra) do
+      Kadabra.open(uri, scheme, opts)
+    end
   end
 
   def send_request(pid, headers, data) do
-    Kadabra.request(pid, headers, data)
+    if Code.ensure_loaded?(Kadabra) do
+      Kadabra.request(pid, headers, data)
+    end
   end
 
   def send_ping(pid) do
-    Kadabra.ping(pid)
+    if Code.ensure_loaded?(Kadabra) do
+      Kadabra.ping(pid)
+    end
   end
 
-  def handle_end_stream({:end_stream, %Kadabra.Stream{id: id,
-                                                      headers: headers,
-                                                      body: body}}, _state) do
+  def handle_end_stream({:end_stream, %{id: id,
+                                        headers: headers,
+                                        body: body}}, _state) do
 
     {:ok, %Pigeon.Http2.Stream{id: id, headers: headers, body: body}}
   end
