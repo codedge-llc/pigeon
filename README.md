@@ -11,8 +11,8 @@ Add pigeon and kadabra as `mix.exs` dependencies:
   ```elixir
   def deps do
     [
-      {:pigeon, "~> 0.11.0"},
-      {:kadabra, "~> 0.1.0"}
+      {:pigeon, "~> 0.12.0"},
+      {:kadabra, "~> 0.2.0"}
     ]
   end
   ```
@@ -25,6 +25,22 @@ to start the applications automatically.
   end
   ```
   
+
+Prefer `chatterbox` as your http2 client?
+  ```elixir
+  def deps do
+    [
+      {:pigeon, "~> 0.12.0"},
+      {:chatterbox, "~> 0.4.0"}
+    ]
+  end
+  ```
+
+Specify it in your `config.exs`
+  ```elixir
+  :config, :pigeon, http2_client: Pigeon.Http2.Client.Chatterbox
+  ```
+
 ## Getting Started
 For usage and configuration, see the docs:
 * [APNS (Apple iOS)](https://hexdocs.pm/pigeon/apns-apple-ios.html)

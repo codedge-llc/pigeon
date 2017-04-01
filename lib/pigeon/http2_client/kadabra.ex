@@ -1,5 +1,5 @@
 defmodule Pigeon.Http2.Client.Kadabra do
-  @behaviour Pigeon.Http2Client
+  @behaviour Pigeon.Http2.Client
 
   def connect(uri, scheme, opts) do
     Kadabra.open(uri, scheme, opts)
