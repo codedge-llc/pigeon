@@ -103,7 +103,7 @@ defmodule Pigeon.APNSWorker do
   end
 
   defp do_connect_socket(config, uri, options, tries) do
-    case Kadabra.open(uri, :https, options) do
+    case Pigeon.Http2.Client.default().connect(uri, :https, options) do
       {:ok, socket} -> {:ok, socket}
       {:error, reason} ->
         Logger.error(inspect(reason))
@@ -136,10 +136,10 @@ defmodule Pigeon.APNSWorker do
       |> put_apns_id(notification)
       |> put_apns_topic(notification)
 
-    Kadabra.request(socket, req_headers, json)
+    Pigeon.Http2.Client.default().send_request(socket, req_headers, json)
     new_q = Map.put(queue, "#{stream_id}", {notification, on_response})
     new_stream_id = stream_id + 2
-    { :noreply, %{state | stream_id: new_stream_id, queue: new_q } }
+    {:noreply, %{state | stream_id: new_stream_id, queue: new_q}}
   end
 
   defp put_apns_id(headers, notification) do
@@ -219,7 +219,7 @@ defmodule Pigeon.APNSWorker do
       :missing_provider_token ->
         """
         No provider certificate was used to connect to APNs and Authorization header was missing
-        or no provider token was specified." 
+        or no provider token was specified."
         """
 
       # 404
@@ -262,14 +262,21 @@ defmodule Pigeon.APNSWorker do
   end
 
   def handle_info(:ping, state) do
-    Kadabra.ping(state.apns_socket)
+    Pigeon.Http2.Client.default().ping(state.apns_socket)
     Process.send_after(self(), :ping, @ping_period)
 
-    { :noreply, state }
+    {:noreply, state}
   end
 
-  def handle_info({:end_stream, %Kadabra.Stream{id: stream_id, headers: headers, body: body}},
-                                                %{apns_socket: _socket, queue: queue} = state) do
+  def handle_info(msg, state) do
+    case Pigeon.Http2.Client.default().handle_end_stream(msg, state) do
+      {:ok, %Pigeon.Http2.Stream{} = stream} -> process_end_stream(stream, state)
+      _else -> {:noreply, state}
+    end
+  end
+
+  def process_end_stream(%Pigeon.Http2.Stream{id: stream_id, headers: headers, body: body},
+                                            %{apns_socket: _socket, queue: queue} = state) do
 
     {notification, on_response} = queue["#{stream_id}"]
 
@@ -289,10 +296,6 @@ defmodule Pigeon.APNSWorker do
         {:noreply, %{state | queue: new_queue}}
     end
   end
-
-  def handle_info({:ping, _from}, state), do: {:noreply, state}
-
-  def handle_info({:ok, _from}, state), do: {:noreply, state}
 
   defp get_status(headers) do
     case Enum.find(headers, fn({key, _val}) -> key == ":status" end) do
