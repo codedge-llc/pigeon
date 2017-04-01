@@ -4,7 +4,7 @@ defmodule Pigeon.Mixfile do
   def project do
     [app: :pigeon,
      name: "Pigeon",
-     version: "0.11.0",
+     version: "0.12.0",
      elixir: "~> 1.2",
      source_url: "https://github.com/codedge-llc/pigeon",
      description: description(),
@@ -24,7 +24,7 @@ defmodule Pigeon.Mixfile do
   end
 
   def application do
-    [applications: [:logger, :httpoison, :kadabra],
+    [applications: [:logger, :httpoison],
     mod: {Pigeon, []}]
   end
 
