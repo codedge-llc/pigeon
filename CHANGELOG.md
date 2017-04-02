@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.12.1
+* Various `chatterbox` client adapter fixes
+
+## V0.12.0
+* Configurable `Pigeon.Http2.Client`. Currently supports `kadabra` and `chatterbox`
+* `kadabra` bumped to `v0.2.0`
+
 ## v0.11.0
 * APNS workers can be started and referenced with pids and/or atom names
 * Fix: Push `:name` option renamed to `:to`
