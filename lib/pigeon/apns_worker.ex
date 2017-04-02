@@ -262,7 +262,7 @@ defmodule Pigeon.APNSWorker do
   end
 
   def handle_info(:ping, state) do
-    Pigeon.Http2.Client.default().ping(state.apns_socket)
+    Pigeon.Http2.Client.default().send_ping(state.apns_socket)
     Process.send_after(self(), :ping, @ping_period)
 
     {:noreply, state}

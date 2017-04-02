@@ -18,7 +18,7 @@ defmodule Pigeon.Http2.Client.Chatterbox do
     body = IO.iodata_to_binary(body)
     {:ok, %Pigeon.Http2.Stream{id: stream, headers: headers, body: body}}
   end
-  def handle_end_stream(msg) do
+  def handle_end_stream(msg, _state) do
     IO.inspect(msg)
   end
 end
