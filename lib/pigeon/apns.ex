@@ -96,7 +96,8 @@ defmodule Pigeon.APNS do
       cert: Config.cert(opts[:cert]),
       certfile: Config.file_path(opts[:cert]),
       key: Config.key(opts[:key]),
-      keyfile: Config.file_path(opts[:key])
+      keyfile: Config.file_path(opts[:key]),
+      ping_period: opts[:ping_period] || 600_000
     }
     Pigeon.APNSWorker.start_link(config)
   end
