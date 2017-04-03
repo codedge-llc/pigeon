@@ -1,11 +1,9 @@
 defmodule Pigeon.APNSWorker do
   @moduledoc """
-    Handles all APNS request and response parsing over an HTTP2 connection.
+  Handles all APNS request and response parsing over an HTTP2 connection.
   """
   use GenServer
   require Logger
-
-  @ping_period 600_000 # 10 minutes
 
   defp apns_production_api_uri, do: "api.push.apple.com"
   defp apns_development_api_uri, do: "api.development.push.apple.com"
@@ -32,7 +30,7 @@ defmodule Pigeon.APNSWorker do
     mode = config[:mode]
     case connect_socket(config, 0) do
       {:ok, socket} ->
-        Process.send_after(self(), :ping, @ping_period)
+        Process.send_after(self(), :ping, config[:ping_period])
         {:ok, %{
           apns_socket: socket,
           mode: mode,
@@ -263,7 +261,7 @@ defmodule Pigeon.APNSWorker do
 
   def handle_info(:ping, state) do
     Pigeon.Http2.Client.default().send_ping(state.apns_socket)
-    Process.send_after(self(), :ping, @ping_period)
+    Process.send_after(self(), :ping, state.config.ping_period)
 
     {:noreply, state}
   end

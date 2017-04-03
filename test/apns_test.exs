@@ -19,8 +19,25 @@ defmodule Pigeon.APNSTest do
       {:ok, pid} = Pigeon.APNS.start_connection(opts)
       assert is_pid(pid)
 
+      state = :sys.get_state(pid)
+      assert state.mode == :dev
+      assert state.config.ping_period == 600_000
+
       {:ok, pid} = Pigeon.APNS.start_connection(opts)
       assert is_pid(pid)
+    end
+
+    test "configures ping_period if specified" do
+      opts = [
+        cert: Application.get_env(:pigeon, :test)[:apns_cert],
+        key: Application.get_env(:pigeon, :test)[:apns_key],
+        mode: :dev,
+        ping_period: 30_000
+      ]
+
+      {:ok, pid} = Pigeon.APNS.start_connection(opts)
+      state = :sys.get_state(pid)
+      assert state.config.ping_period == 30_000
     end
   end
 
@@ -82,7 +99,7 @@ defmodule Pigeon.APNSTest do
         mode: :dev,
         name: :custom
       ]
-      {:ok, worker_pid} = Pigeon.APNS.start_connection(opts)
+      {:ok, _worker_pid} = Pigeon.APNS.start_connection(opts)
 
       assert {:ok, _notif} = Pigeon.APNS.push(n, to: :custom)
 
@@ -186,7 +203,7 @@ defmodule Pigeon.APNSTest do
         mode: :dev,
         name: :custom
       ]
-      {:ok, worker_pid} = Pigeon.APNS.start_connection(opts)
+      {:ok, _worker_pid} = Pigeon.APNS.start_connection(opts)
 
       assert Pigeon.APNS.push(n, on_response: on_response, to: :custom) == :ok
 
