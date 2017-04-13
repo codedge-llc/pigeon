@@ -21,11 +21,11 @@ defmodule Pigeon.APNS.Notification do
   """
   defstruct device_token: nil, payload: %{"aps" => %{}}, expiration: nil, topic: nil, id: nil
 
-  def new(msg, token, topic \\ nil) do
+  def new(msg, token, topic \\ nil, data \\ nil) do
     %Pigeon.APNS.Notification{
       device_token: token,
       topic: topic,
-      payload: %{"aps" => msg}
+      payload: Map.merge(%{"aps" => msg}, data || %{}),
     }
   end
 
