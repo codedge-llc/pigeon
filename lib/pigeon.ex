@@ -13,7 +13,7 @@ defmodule Pigeon do
   end
 
   defp workers do
-    adm_worker() ++ apns_workers() ++ task_supervisors()
+    adm_worker() ++ apns_workers() ++ ++ gcm_workers() ++ task_supervisors()
   end
 
   def task_supervisors do
@@ -39,6 +39,14 @@ defmodule Pigeon do
           config = Pigeon.APNS.Config.config(worker_name)
           worker(Pigeon.APNSWorker, [config], id: worker_name)
         end)
+      true -> []
+    end
+  end
+
+  defp gcm_workers do
+    cond do
+      config = Application.get_env(:pigeon, :gcm) ->
+        [worker(Pigeon.GCMWorker, [:gcm_worker, config], id: :gcm_worker)]
       true -> []
     end
   end
