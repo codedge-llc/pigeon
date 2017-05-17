@@ -13,7 +13,7 @@ defmodule Pigeon do
   end
 
   defp workers do
-    adm_worker() ++ apns_workers() ++ ++ gcm_workers() ++ task_supervisors()
+    adm_worker() ++ apns_workers() ++ gcm_workers() ++ task_supervisors()
   end
 
   def task_supervisors do

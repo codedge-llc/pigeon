@@ -36,7 +36,7 @@ defmodule Pigeon.APNS.Notification do
   Push payload is constructed in the form of `%{"aps" => %{"alert" => msg}}`
 
   ## Examples
-  
+
       iex> Pigeon.APNS.Notification.new("push message", "device token")
       %Pigeon.APNS.Notification{
         device_token: "device token",
@@ -62,14 +62,14 @@ defmodule Pigeon.APNS.Notification do
   Push payload is constructed in the form of `%{"aps" => %{"alert" => msg}}`
 
   ## Examples
-  
+
       iex> Pigeon.APNS.Notification.new("push message", "device token", "topic", "id_1234")
       %Pigeon.APNS.Notification{
         device_token: "device token",
         expiration: nil,
         id: "id_1234",
         payload: %{"aps" => %{"alert" => "push message"}},
-        topic: "topic" 
+        topic: "topic"
       }
   """
   @spec new(String.t, String.t, String.t, String.t) :: t
@@ -84,11 +84,11 @@ defmodule Pigeon.APNS.Notification do
 
   @doc """
   Updates `"alert"` key in push payload.
-  
+
   This is the alert message displayed on the device.
 
   ## Examples
-  
+
       iex> Pigeon.APNS.Notification.put_alert(%Pigeon.APNS.Notification{}, "push message")
       %Pigeon.APNS.Notification{
         device_token: nil,
@@ -103,11 +103,11 @@ defmodule Pigeon.APNS.Notification do
 
   @doc """
   Updates `"badge"` key in push payload.
-  
+
   This is the badge number displayed on the application.
 
   ## Examples
-  
+
       iex> Pigeon.APNS.Notification.put_badge(%Pigeon.APNS.Notification{}, 5)
       %Pigeon.APNS.Notification{
         device_token: nil,
@@ -127,7 +127,7 @@ defmodule Pigeon.APNS.Notification do
   be the name of the custom sound file in the application's binary.
 
   ## Examples
-  
+
       iex> Pigeon.APNS.Notification.put_sound(%Pigeon.APNS.Notification{}, "custom.aiff")
       %Pigeon.APNS.Notification{
         device_token: nil,
@@ -147,7 +147,7 @@ defmodule Pigeon.APNS.Notification do
   are not configured.
 
   ## Examples
-  
+
       iex> Pigeon.APNS.Notification.put_content_available(%Pigeon.APNS.Notification{})
       %Pigeon.APNS.Notification{
         device_token: nil,
@@ -164,7 +164,7 @@ defmodule Pigeon.APNS.Notification do
   Updates `"category"` key in push payload.
 
   ## Examples
-  
+
       iex> Pigeon.APNS.Notification.put_category(%Pigeon.APNS.Notification{}, "category")
       %Pigeon.APNS.Notification{
         device_token: nil,
@@ -183,7 +183,7 @@ defmodule Pigeon.APNS.Notification do
   Used for notification service extensions (such as displaying custom media).
 
   ## Examples
-  
+
       iex> Pigeon.APNS.Notification.put_mutable_content(%Pigeon.APNS.Notification{})
       %Pigeon.APNS.Notification{
         device_token: nil,
@@ -209,7 +209,7 @@ defmodule Pigeon.APNS.Notification do
   Puts custom data in push payload.
 
   ## Examples
-  
+
       iex> n = Pigeon.APNS.Notification.new("test message", "device token")
       iex> Pigeon.APNS.Notification.put_custom(n, %{"custom-key" => 1234})
       %Pigeon.APNS.Notification{
@@ -245,7 +245,7 @@ defmodule Pigeon.GCM.Notification do
   notification and data payloads.
 
   ## Examples
-  
+
       iex> Pigeon.GCM.Notification.new("reg ID")
       %Pigeon.GCM.Notification{
         message_id: nil,
@@ -322,10 +322,9 @@ end
 
 defmodule Pigeon.GCM.NotificationResponse do
   @moduledoc """
-    Passed to the GCM on_response callback
+  Passed to the GCM on_response callback
   """
   defstruct message_id: nil, ok: [], retry: [], update: [], remove: [], error: %{}
-
 end
 
 defmodule Pigeon.ADM.Notification do
@@ -348,7 +347,7 @@ defmodule Pigeon.ADM.Notification do
   Creates `ADM.Notification` struct with device registration ID and optional data payload.
 
   ## Examples
-  
+
       iex> Pigeon.ADM.Notification.new("reg ID")
       %Pigeon.ADM.Notification{
         consolidation_key: nil,
@@ -379,7 +378,7 @@ defmodule Pigeon.ADM.Notification do
   Updates `"data"` key on push payload and calculates `md5` hash.
 
   ## Examples
-  
+
       iex> n = %Pigeon.ADM.Notification{}
       iex> Pigeon.ADM.Notification.put_data(n, %{"message" => "your message"})
       %Pigeon.ADM.Notification{
