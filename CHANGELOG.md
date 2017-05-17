@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.13.0
+* Configurable `:ping_period` for APNS connections
+
 ## v0.12.1
 * Various `chatterbox` client adapter fixes
 
