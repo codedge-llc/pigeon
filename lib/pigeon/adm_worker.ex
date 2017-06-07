@@ -142,7 +142,7 @@ defmodule Pigeon.ADMWorker do
             process_response(status, body, notification, on_response)
           end
       end
-    Task.async(fn -> response.(request) end)
+    Task.Supervisor.start_child(Pigeon.Tasks, fn -> response.(request) end)
     :ok
   end
 
@@ -240,5 +240,9 @@ defmodule Pigeon.ADMWorker do
     else
       {:ok, registration_id}
     end
+  end
+
+  def handle_info({_from, {:ok, %HTTPoison.Response{status_code: 200}}}, state) do
+    {:noreply, state}
   end
 end

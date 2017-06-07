@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.13.0
+* Configurable `:ping_period` for APNS connections
+
+## v0.12.1
+* Various `chatterbox` client adapter fixes
+
+## V0.12.0
+* Configurable `Pigeon.Http2.Client`. Currently supports `kadabra` and `chatterbox`
+* `kadabra` bumped to `v0.2.0`
+
+## v0.11.0
+* APNS workers can be started and referenced with pids and/or atom names
+* Fix: Push `:name` option renamed to `:to`
+* Fix: GCM/ADM async pushes now use `spawn/1` instead of `Task.async/1`
+
 ## v0.10.3
 * Fix: cleaned up Elixir v1.4 warnings
 

@@ -6,7 +6,7 @@ defmodule Pigeon.APNS do
   require Logger
   import Supervisor.Spec
 
-  alias Pigeon.APNS.Config
+  alias Pigeon.APNS.{Config, Notification}
 
   @default_timeout 5_000
 
@@ -31,13 +31,14 @@ defmodule Pigeon.APNS do
 
   defp do_sync_push(notification, opts) do
     pid = self()
-    on_response = fn(x) -> send pid, {:ok, x} end
+    ref = :erlang.make_ref
+    on_response = fn(x) -> send pid, {ref, x} end
 
-    worker_name = opts[:name] || Config.default_name
+    worker_name = opts[:to] || Config.default_name
     GenServer.cast(worker_name, {:push, :apns, notification, on_response})
 
     receive do
-      {:ok, x} -> x
+      {^ref, x} -> x
     after
       @default_timeout -> {:error, :timeout, notification}
     end
@@ -72,31 +73,34 @@ defmodule Pigeon.APNS do
   end
 
   @doc """
-    Sends a push over APNS.
+  Sends a push over APNS.
   """
+  @spec push([Notification.t], ((Notification.t) -> ()), Keyword.t) :: no_return
   def push(notification, on_response, opts) when is_list(notification) do
     for n <- notification, do: push(n, on_response, opts)
   end
+  @spec push(Notification.t, ((Notification.t) -> ()), Keyword.t) :: no_return
   def push(notification, on_response, opts) do
-    worker_name = opts[:name] || Config.default_name
+    worker_name = opts[:to] || Config.default_name
     GenServer.cast(worker_name, {:push, :apns, notification, on_response})
   end
 
-  def start_connection(name) do
+  def start_connection(opts \\ [])
+  def start_connection(name) when is_atom(name) do
     config = Config.config(name)
     Supervisor.start_child(:pigeon, worker(Pigeon.APNSWorker, [config], id: name))
   end
-
-  def start_connection(name, opts) do
+  def start_connection(opts) do
     config = %{
-      name: name,
+      name: opts[:name],
       mode: opts[:mode],
       cert: Config.cert(opts[:cert]),
       certfile: Config.file_path(opts[:cert]),
       key: Config.key(opts[:key]),
-      keyfile: Config.file_path(opts[:key])
+      keyfile: Config.file_path(opts[:key]),
+      ping_period: opts[:ping_period] || 600_000
     }
-    Supervisor.start_child(:pigeon, worker(Pigeon.APNSWorker, [config], id: name))
+    Pigeon.APNSWorker.start_link(config)
   end
 
   def stop_connection(name) do

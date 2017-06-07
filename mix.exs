@@ -4,7 +4,7 @@ defmodule Pigeon.Mixfile do
   def project do
     [app: :pigeon,
      name: "Pigeon",
-     version: "0.10.3",
+     version: "0.13.0",
      elixir: "~> 1.2",
      source_url: "https://github.com/codedge-llc/pigeon",
      description: description(),
@@ -24,15 +24,15 @@ defmodule Pigeon.Mixfile do
   end
 
   def application do
-    [applications: [:logger, :httpoison, :poolboy, :hpack, :kadabra],
+    [applications: [:logger, :httpoison],
     mod: {Pigeon, []}]
   end
 
   defp deps do
     [{:poison, "~> 2.0 or ~> 3.0"},
     {:httpoison, "~> 0.7"},
-    {:kadabra, github: "mkaszubowski/kadabra", branch: "test"},
-    {:poolboy, "~> 1.5"},
+    {:kadabra, "~> 0.2.0", optional: true},
+    {:chatterbox, "~> 0.4.0", optional: true},
     {:dogma, "~> 0.1", only: :dev},
     {:earmark, "~> 1.0", only: :dev},
     {:ex_doc, "~> 0.2", only: :dev},
