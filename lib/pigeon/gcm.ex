@@ -6,7 +6,6 @@ defmodule Pigeon.GCM do
   import Supervisor.Spec
 
   alias Pigeon.GCM.NotificationResponse
-  alias Pigeon.GCM.Notification
 
   @default_timeout 5_000
 
@@ -63,8 +62,10 @@ defmodule Pigeon.GCM do
         regid
         |> recipient_attr()
         |> Map.merge(notification.payload)
+        |> Map.put("priority", to_string(notification.priority))
         |> Poison.encode!
-        formatted_regid = regid
+
+      formatted_regid = regid
         |> List.wrap
 
       [{formatted_regid, res}]
