@@ -90,13 +90,13 @@ defmodule Pigeon.GCMTest do
     registration_id = "123456"
     payload = Notification.new(registration_id, %{},@data)
     assert Pigeon.GCM.encode_requests(payload) ==
-      [{["123456"], ~S({"to":"123456","data":{"message":"Test push"}})}]
+      [{["123456"], ~S({"to":"123456","priority":"normal","data":{"message":"Test push"}})}]
   end
 
   test "encode_requests with multiple registration_ids" do
     registration_id = ["aaaaaa", "bbbbbb", "cccccc"]
     payload = Notification.new(registration_id, %{},@data)
-    expected = ~S({"registration_ids":["aaaaaa","bbbbbb","cccccc"],"data":{"message":"Test push"}})
+    expected = ~S({"registration_ids":["aaaaaa","bbbbbb","cccccc"],"priority":"normal","data":{"message":"Test push"}})
     assert Pigeon.GCM.encode_requests(payload) == [{registration_id, expected}]
   end
 
