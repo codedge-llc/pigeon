@@ -10,6 +10,7 @@ defmodule Pigeon.APNS.Config do
     %{
       name: name,
       mode: config[:mode],
+      reconnect: Map.get(config, :reconnect, true),
       cert: cert(config[:cert]),
       certfile: file_path(config[:cert]),
       key: key(config[:key]),

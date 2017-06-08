@@ -28,6 +28,7 @@ defmodule Pigeon.APNSWorkerTest do
       {:ok, %{
         apns_socket: _socket,
         mode: mode,
+        reconnect: true,
         config: config,
         stream_id: stream_id,
         queue: _queue

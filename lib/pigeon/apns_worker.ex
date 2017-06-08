@@ -34,6 +34,7 @@ defmodule Pigeon.APNSWorker do
         {:ok, %{
           apns_socket: socket,
           mode: mode,
+          reconnect: Map.get(config, :reconnect, true),
           config: config,
           stream_id: 1,
           queue: %{}
@@ -264,6 +265,15 @@ defmodule Pigeon.APNSWorker do
     Process.send_after(self(), :ping, state.config.ping_period)
 
     {:noreply, state}
+  end
+
+  def handle_info({:closed, _}, state) do
+    case state[:reconnect] do
+      false ->
+        Process.exit(state.apns_socket, :kill)
+        {:stop, :normal, state}
+      _     -> {:noreply, state}
+    end
   end
 
   def handle_info(msg, state) do
