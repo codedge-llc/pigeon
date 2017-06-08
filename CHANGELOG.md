@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.0 (Unreleased)
+* GCM migrated to FCM API (http2)
+* Disable auto-reconnect for APNS workers with `reconnect: false`
+* Set priority of FCM notifications
+
 ## v0.13.0
 * Configurable `:ping_period` for APNS connections
 
