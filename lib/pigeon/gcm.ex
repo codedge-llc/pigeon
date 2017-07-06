@@ -90,11 +90,17 @@ defmodule Pigeon.GCM do
     |> Enum.map(& GenServer.cast(:gcm_worker, generate_envelope(&1, on_response, opts)))
   end
 
+  defp named_config(name) when is_atom(name) do
+    Application.get_env(:pigeon, :gcm)[name] || %{}
+  end
+  defp named_config(_), do: %{}
+
   def start_connection(name) do
     config = %{
       name: name,
       gcm_key:  Application.get_env(:pigeon, :gcm)[:key]
-    }
+    } |> Map.merge(named_config(name))
+
     Supervisor.start_child(:pigeon, worker(Pigeon.GCMWorker, [config], id: name))
   end
 
