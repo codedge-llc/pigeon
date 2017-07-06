@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.0.0 (Unreleased)
+## v1.0.0
 * GCM migrated to FCM API (http2)
 * `GCM` modules renamed to `FCM`
 * Set priority of FCM notifications
