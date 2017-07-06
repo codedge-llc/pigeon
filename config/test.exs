@@ -1,7 +1,5 @@
 use Mix.Config
 
-#config :pigeon, http2_client: Pigeon.Http2.Client.Chatterbox
-
 config :pigeon, :test,
   fcm_key: System.get_env("GCM_KEY"),
   valid_fcm_reg_id: System.get_env("VALID_GCM_REG_ID"),

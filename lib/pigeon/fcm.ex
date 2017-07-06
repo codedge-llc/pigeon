@@ -8,6 +8,7 @@ defmodule Pigeon.FCM do
   alias Pigeon.FCM.NotificationResponse
 
   @default_timeout 5_000
+  @default_worker :fcm_default
 
   def push(notification, opts \\ [])
   def push(notification, opts) when is_list(notification) do
@@ -84,7 +85,7 @@ defmodule Pigeon.FCM do
   Sends a push over FCM.
   """
   def send_push(notification, on_response, opts) do
-    worker_name = opts[:to] || :fcm_default
+    worker_name = opts[:to] || @default_worker
     notification
     |> encode_requests()
     |> Enum.map(& GenServer.cast(worker_name, generate_envelope(&1, on_response, opts)))

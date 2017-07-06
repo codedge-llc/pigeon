@@ -10,6 +10,35 @@ defmodule Pigeon.FCMTest do
 
   defp valid_fcm_reg_id, do: Application.get_env(:pigeon, :test)[:valid_fcm_reg_id]
 
+  describe "push/1 with custom worker" do
+    test "pushes to worker pid" do
+      n =
+        valid_fcm_reg_id()
+        |> Notification.new(%{}, @data)
+
+      opts = [
+        key: Application.get_env(:pigeon, :test)[:fcm_key]
+      ]
+      {:ok, worker_pid} = Pigeon.FCM.start_connection(opts)
+
+      assert {:ok, _notif} = Pigeon.FCM.push(n, to: worker_pid)
+    end
+
+    test "pushes to worker's atom name" do
+      n =
+        valid_fcm_reg_id()
+        |> Notification.new(%{}, @data)
+
+      opts = [
+        key: Application.get_env(:pigeon, :test)[:fcm_key],
+        name: :custom
+      ]
+      {:ok, _worker_pid} = Pigeon.FCM.start_connection(opts)
+
+      assert {:ok, _notif} = Pigeon.FCM.push(n, to: :custom)
+    end
+  end
+
   test "successfully sends a valid push" do
     {:ok, notification} =
       valid_fcm_reg_id()
@@ -98,5 +127,4 @@ defmodule Pigeon.FCMTest do
     expected = ~S({"registration_ids":["aaaaaa","bbbbbb","cccccc"],"priority":"normal","data":{"message":"Test push"}})
     assert Pigeon.FCM.encode_requests(payload) == [{registration_id, expected}]
   end
-
 end
