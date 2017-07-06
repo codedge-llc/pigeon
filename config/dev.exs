@@ -1,10 +1,12 @@
 use Mix.Config
 
-config :pigeon, :gcm,
-  key: System.get_env("GCM_KEY")
+config :pigeon, :fcm,
+  fcm_default: %{
+    key: System.get_env("GCM_KEY")
+  }
 
 config :pigeon, :apns,
-  default: %{
+  apns_default: %{
     cert: "cert.pem",
     key: "key_unencrypted.pem",
     mode: :dev

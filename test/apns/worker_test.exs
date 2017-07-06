@@ -1,20 +1,20 @@
-defmodule Pigeon.APNSWorkerTest do
+defmodule Pigeon.APNS.WorkerTest do
   use ExUnit.Case
 
-  alias Pigeon.{APNS, APNSWorker}
+  alias Pigeon.APNS
 
   describe "push_uri/1" do
     test ":dev returns api.development.push.apple.com" do
-      assert APNSWorker.push_uri(:dev) == "api.development.push.apple.com"
+      assert APNS.Worker.push_uri(:dev) == "api.development.push.apple.com"
     end
 
     test ":prod returns api.development.push.apple.com" do
-      assert APNSWorker.push_uri(:prod) == "api.push.apple.com"
+      assert APNS.Worker.push_uri(:prod) == "api.push.apple.com"
     end
 
     test "anything else throws error" do
       :whatever
-      |> APNSWorker.push_uri()
+      |> APNS.Worker.push_uri()
       |> catch_error()
     end
   end
@@ -22,9 +22,9 @@ defmodule Pigeon.APNSWorkerTest do
   describe "initialize_worker/1" do
     test "returns {:ok, config} on successful initialization" do
       result =
-        :default
+        :apns_default
         |> APNS.Config.config
-        |> APNSWorker.initialize_worker
+        |> APNS.Worker.initialize_worker
       {:ok, %{
         apns_socket: _socket,
         mode: mode,
@@ -35,13 +35,13 @@ defmodule Pigeon.APNSWorkerTest do
       }} = result
 
       assert mode == :dev
-      assert config == APNS.Config.config(:default)
+      assert config == APNS.Config.config(:apns_default)
       assert stream_id == 1
     end
 
     test "returns {:stop, {:error, :invalid_config}} if certificate or key are invalid" do
       apns = Application.get_env(:pigeon, :apns)
-      bad_config = %{ apns[:default] | cert: "bad_cert.pem"}
+      bad_config = %{apns[:apns_default] | cert: "bad_cert.pem"}
       bad_apns = Keyword.put(apns, :default, bad_config)
 
       Application.put_env(:pigeon, :apns, bad_apns)
@@ -49,7 +49,7 @@ defmodule Pigeon.APNSWorkerTest do
       result =
         :default
         |> APNS.Config.config
-        |> APNSWorker.initialize_worker
+        |> APNS.Worker.initialize_worker
 
       assert result == {:stop, {:error, :invalid_config}}
 
@@ -65,7 +65,7 @@ defmodule Pigeon.APNSWorkerTest do
         cert: cert,
         key: key
       }
-      actual = APNSWorker.connect_socket_options(config)
+      actual = APNS.Worker.connect_socket_options(config)
       expected = {:ok, [{:cert, cert},
                   {:key, key},
                   {:password, ''},
@@ -85,7 +85,7 @@ defmodule Pigeon.APNSWorkerTest do
         key: key,
         use_2197: true
       }
-      actual = APNSWorker.connect_socket_options(config)
+      actual = APNS.Worker.connect_socket_options(config)
       expected = {:ok, [{:cert, cert},
                   {:key, key},
                   {:password, ''},

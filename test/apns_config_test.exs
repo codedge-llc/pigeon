@@ -4,6 +4,6 @@ defmodule Pigeon.APNS.ConfigTest do
   alias Pigeon.APNS.Config
 
   test "valid? returns true if proper ssl config keys present" do
-    assert Config.valid?(Config.config(:default))
+    assert Config.valid?(Config.config(:apns_default))
   end
 end

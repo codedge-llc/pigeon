@@ -1,11 +1,11 @@
-defmodule Pigeon.GCM do
+defmodule Pigeon.FCM do
   @moduledoc """
-  Handles all Google Cloud Messaging (GCM) request and response functionality.
+  Handles all Firebase Cloud Messaging (FCM) request and response functionality.
   """
   require Logger
   import Supervisor.Spec
 
-  alias Pigeon.GCM.NotificationResponse
+  alias Pigeon.FCM.NotificationResponse
 
   @default_timeout 5_000
 
@@ -58,44 +58,49 @@ defmodule Pigeon.GCM do
     encode_requests(%{notification | registration_id: [regid]})
   end
   def encode_requests(%{registration_id: regid} = notification) when length(regid) < 1001 do
-      res =
-        regid
-        |> recipient_attr()
-        |> Map.merge(notification.payload)
-        |> Map.put("priority", to_string(notification.priority))
-        |> Poison.encode!
+    res =
+      regid
+      |> recipient_attr()
+      |> Map.merge(notification.payload)
+      |> Map.put("priority", to_string(notification.priority))
+      |> Poison.encode!
 
-      formatted_regid = regid
-        |> List.wrap
+    formatted_regid = regid
+      |> List.wrap
 
-      [{formatted_regid, res}]
+    [{formatted_regid, res}]
   end
-
   def encode_requests(notification) do
-      notification.registration_id
-      |> Enum.chunk(1000, 1000, [])
-      |> Enum.map(& encode_requests(%{notification | registration_id: &1}))
-      |> List.flatten
+    notification.registration_id
+    |> Enum.chunk(1000, 1000, [])
+    |> Enum.map(& encode_requests(%{notification | registration_id: &1}))
+    |> List.flatten
   end
 
   defp recipient_attr([regid]), do: %{"to" => regid}
   defp recipient_attr(regid) when is_list(regid), do: %{"registration_ids" => regid}
 
   @doc """
-    Sends a push over GCM.
+  Sends a push over FCM.
   """
   def send_push(notification, on_response, opts) do
+    worker_name = opts[:to] || :fcm_default
     notification
     |> encode_requests()
-    |> Enum.map(& GenServer.cast(:gcm_worker, generate_envelope(&1, on_response, opts)))
+    |> Enum.map(& GenServer.cast(worker_name, generate_envelope(&1, on_response, opts)))
   end
 
-  def start_connection(name) do
+  def start_connection(opts \\ [])
+  def start_connection(name) when is_atom(name) do
+    config = Application.get_env(:pigeon, :fcm)[name]
+    Supervisor.start_child(:pigeon, worker(Pigeon.FCM.Worker, [config], id: name))
+  end
+  def start_connection(opts) do
     config = %{
-      name: name,
-      gcm_key:  Application.get_env(:pigeon, :gcm)[:key]
+      name: opts[:name],
+      key:  opts[:key]
     }
-    Supervisor.start_child(:pigeon, worker(Pigeon.GCMWorker, [config], id: name))
+    Pigeon.FCM.Worker.start_link(config)
   end
 
   def stop_connection(name) do
@@ -104,28 +109,8 @@ defmodule Pigeon.GCM do
   end
 
   def generate_envelope(payload, on_response, opts) do
-    {:push, :gcm, payload, on_response, Map.new(opts)}
+    {:push, :fcm, payload, on_response, Map.new(opts)}
   end
-
-  # def merge(%NotificationResponse{ok: ok1,
-  #                                 retry: retry1,
-  #                                 update: update1,
-  #                                 remove: remove1,
-  #                                 error: error1}, %NotificationResponse{ok: ok2,
-  #                                                                       retry: retry2,
-  #                                                                       update: update2,
-  #                                                                       remove: remove2,
-  #                                                                       error: error2}) do
-
-  #   error3 = Map.merge(error1, error2, fn(m, a, b) ->  a ++ b end)
-  #   %NotificationResponse{
-  #     ok: ok1 ++ ok2,
-  #     retry: retry1 ++ retry2,
-  #     update: update1 ++ update2,
-  #     remove: remove1 ++ remove2,
-  #     error: error3
-  #   }
-  # end
 
   def merge(response_1, response_2) do
     Map.merge(response_1, response_2, fn(key, value_1, value_2) ->

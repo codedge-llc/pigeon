@@ -2,8 +2,10 @@
 
 ## v1.0.0 (Unreleased)
 * GCM migrated to FCM API (http2)
-* Disable auto-reconnect for APNS workers with `reconnect: false`
+* `GCM` modules renamed to `FCM`
 * Set priority of FCM notifications
+* `APNSWorker` and `ADMWorker` renamed to `APNS.Worker` and `ADM.Worker`
+* Disable auto-reconnect for APNS workers with `reconnect: false`
 
 ## v0.13.0
 * Configurable `:ping_period` for APNS connections

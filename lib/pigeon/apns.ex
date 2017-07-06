@@ -1,7 +1,7 @@
 defmodule Pigeon.APNS do
   @moduledoc """
-    Defines publically-exposed Apple Push Notification Service (APNS) functions. For implementation
-    see APNSWorker.
+  Defines publically-exposed Apple Push Notification Service (APNS) functions. For implementation
+  see APNS.Worker.
   """
   require Logger
   import Supervisor.Spec
@@ -88,7 +88,7 @@ defmodule Pigeon.APNS do
   def start_connection(opts \\ [])
   def start_connection(name) when is_atom(name) do
     config = Config.config(name)
-    Supervisor.start_child(:pigeon, worker(Pigeon.APNSWorker, [config], id: name))
+    Supervisor.start_child(:pigeon, worker(Pigeon.APNS.Worker, [config], id: name))
   end
   def start_connection(opts) do
     config = %{
@@ -100,7 +100,7 @@ defmodule Pigeon.APNS do
       keyfile: Config.file_path(opts[:key]),
       ping_period: opts[:ping_period] || 600_000
     }
-    Pigeon.APNSWorker.start_link(config)
+    Pigeon.APNS.Worker.start_link(config)
   end
 
   def stop_connection(name) do
