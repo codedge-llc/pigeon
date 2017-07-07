@@ -8,8 +8,11 @@ defmodule Pigeon.ADM.Worker do
 
   @token_refresh_uri "https://api.amazon.com/auth/O2/token"
 
-  def start_link(name, config) do
-    GenServer.start_link(__MODULE__, {:ok, config}, name: name)
+  def start_link(config) do
+    case config[:name] do
+      nil -> GenServer.start_link(__MODULE__, {:ok, config})
+      name -> GenServer.start_link(__MODULE__, {:ok, config}, name: name)
+    end
   end
 
   def stop, do: :gen_server.cast(self(), :stop)
@@ -18,8 +21,7 @@ defmodule Pigeon.ADM.Worker do
 
   def initialize_worker(config) do
     {:ok, %{
-      client_id: config[:client_id],
-      client_secret: config[:client_secret],
+      config: config,
       access_token: nil,
       access_token_refreshed_datetime_erl: {{0, 0, 0}, {0, 0, 0}},
       access_token_expiration_seconds: 0,
@@ -110,7 +112,7 @@ defmodule Pigeon.ADM.Worker do
     end
   end
 
-  defp token_refresh_body(%{client_id: client_id, client_secret: client_secret}) do
+  defp token_refresh_body(%{config: %{client_id: client_id, client_secret: client_secret}}) do
     %{
       "grant_type" => "client_credentials",
       "scope" => "messaging:push",

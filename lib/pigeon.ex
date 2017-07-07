@@ -13,22 +13,21 @@ defmodule Pigeon do
   end
 
   defp workers do
-    adm_worker() ++ apns_workers() ++ fcm_workers() ++ task_supervisors()
+    adm_workers() ++ apns_workers() ++ fcm_workers() ++ task_supervisors()
   end
 
   def task_supervisors do
     [supervisor(Task.Supervisor, [[name: Pigeon.Tasks]])]
   end
 
-  def adm_worker do
+  def adm_workers do
     cond do
-      !Pigeon.ADM.Config.configured? ->
-        []
-      Pigeon.ADM.Config.valid?(config = Pigeon.ADM.Config.default_config) ->
-        [worker(Pigeon.ADM.Worker, [:adm_worker, config], id: :adm_worker)]
-      true ->
-        Logger.error "Error starting :adm_worker. Invalid OAuth2 configuration."
-        []
+      workers = Application.get_env(:pigeon, :adm) ->
+        Enum.map(workers, fn({worker_name, _config}) ->
+          config = Pigeon.ADM.Config.config(worker_name)
+          worker(Pigeon.ADM.Worker, [config], id: worker_name)
+        end)
+      true -> []
     end
   end
 
