@@ -17,7 +17,7 @@ defmodule Pigeon.Mixfile do
      docs: [main: "getting-started",
             extras: ["docs/Getting Started.md",
                      "docs/APNS Apple iOS.md",
-                     "docs/GCM Android.md",
+                     "docs/FCM Android.md",
                      "docs/ADM Amazon Android.md",
                      "CHANGELOG.md"]],
      deps: deps()]
@@ -40,7 +40,7 @@ defmodule Pigeon.Mixfile do
 
   defp description do
     """
-    HTTP2-compliant wrapper for sending iOS (APNS), Android (GCM), and Amazon Android (ADM) push notifications.
+    HTTP2-compliant wrapper for sending iOS (APNS), Android (FCM), and Amazon Android (ADM) push notifications.
     """
   end
 

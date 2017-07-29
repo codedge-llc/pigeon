@@ -13,30 +13,6 @@ Add pigeon and kadabra as `mix.exs` dependencies:
     ]
   end
   ```
-  
-After running `mix deps.get`, if running Elixir `v1.3` or earlier, configure `mix.exs`
-to start the applications automatically.
-  ```elixir
-  def application do
-    [applications: [:pigeon, :kadabra]]
-  end
-  ```
-  
-
-Prefer `chatterbox` as your http2 client?
-  ```elixir
-  def deps do
-    [
-      {:pigeon, "~> 1.0.0"},
-      {:chatterbox, "~> 0.4.0"}
-    ]
-  end
-  ```
-
-Specify it in your `config.exs`
-  ```elixir
-  config, :pigeon, http2_client: Pigeon.Http2.Client.Chatterbox
-  ```
 
 ## Getting Started
 For usage and configuration, see the docs:

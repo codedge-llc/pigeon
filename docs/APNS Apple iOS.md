@@ -6,12 +6,12 @@
 
     ```elixir
     config :pigeon, :apns,
-      default: %{
+      apns_default: %{
         cert: "cert.pem",
         key: "key_unencrypted.pem",
         mode: :dev
         use_2197: true (optional)
-    }
+      }
     ```
 
     This config sets up a `default` socket connection to send to APNS servers. `cert` and `key` can be any of the following:
