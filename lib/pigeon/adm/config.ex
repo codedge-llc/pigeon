@@ -3,20 +3,15 @@ defmodule Pigeon.ADM.Config do
   Validates configuration settings that initialize ADM.Worker instances.
   """
 
-  defp config_adm_client_id, do: Application.get_env(:pigeon, :adm)[:client_id]
-  defp config_adm_client_secret, do: Application.get_env(:pigeon, :adm)[:client_secret]
+  def default_name, do: :adm_default
 
-  def default_config do
+  def config(name) do
+    config = Application.get_env(:pigeon, :adm)[name]
     %{
-      client_id: config_adm_client_id(),
-      client_secret: config_adm_client_secret()
+      name: name,
+      client_id: config[:client_id],
+      client_secret: config[:client_secret]
     }
-  end
-
-  def configured? do
-    client_id = Application.get_env(:pigeon, :adm)[:client_id]
-    client_secret = Application.get_env(:pigeon, :adm)[:client_secret]
-    !is_nil(client_id) and !is_nil(client_secret)
   end
 
   def valid?(config) do
