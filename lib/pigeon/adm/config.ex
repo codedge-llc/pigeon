@@ -1,6 +1,6 @@
 defmodule Pigeon.ADM.Config do
   @moduledoc """
-    Validates configuration settings that initialize ADMWorkers.
+  Validates configuration settings that initialize ADM.Worker instances.
   """
 
   defp config_adm_client_id, do: Application.get_env(:pigeon, :adm)[:client_id]

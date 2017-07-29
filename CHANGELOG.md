@@ -1,9 +1,12 @@
 # Changelog
 
-## v1.0.0 (Unreleased)
+## v1.0.0
 * GCM migrated to FCM API (http2)
-* Disable auto-reconnect for APNS workers with `reconnect: false`
+* `GCM` modules renamed to `FCM`
 * Set priority of FCM notifications
+* `APNSWorker` and `ADMWorker` renamed to `APNS.Worker` and `ADM.Worker`
+* Disable auto-reconnect for APNS workers with `reconnect: false`
+* Removed Chatterbox http2 client adapter
 
 ## v0.13.0
 * Configurable `:ping_period` for APNS connections

@@ -82,7 +82,7 @@ defmodule Pigeon.APNSTest do
 
       assert {:ok, _notif} = Pigeon.APNS.push(n, to: worker_pid)
 
-      Pigeon.APNS.start_connection(:default)
+      Pigeon.APNS.start_connection(:apns_default)
     end
 
     test "pushes to worker's atom name" do
@@ -103,7 +103,7 @@ defmodule Pigeon.APNSTest do
 
       assert {:ok, _notif} = Pigeon.APNS.push(n, to: :custom)
 
-      Pigeon.APNS.start_connection(:default)
+      Pigeon.APNS.start_connection(:apns_default)
     end
   end
 
@@ -184,7 +184,7 @@ defmodule Pigeon.APNSTest do
 
       assert_receive({:ok, _notif}, 5_000)
 
-      Pigeon.APNS.start_connection(:default)
+      Pigeon.APNS.start_connection(:apns_default)
     end
 
     test "sends to worker's atom name if specified" do
@@ -209,7 +209,7 @@ defmodule Pigeon.APNSTest do
 
       assert_receive({:ok, _notif}, 5_000)
 
-      Pigeon.APNS.start_connection(:default)
+      Pigeon.APNS.start_connection(:apns_default)
     end
   end
 end

@@ -1,4 +1,4 @@
-defmodule Pigeon.APNSNotificationTest do
+defmodule Pigeon.APNS.NotificationTest do
   use ExUnit.Case
 
   def test_device_token, do: "test1234"

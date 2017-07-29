@@ -11,5 +11,7 @@ defmodule Pigeon.Http2.Client do
 
   @callback send_request(pid, headers :: Keyword.t, data :: String.t) :: :ok
 
-  @callback handle_end_stream(msg :: term, state :: term) :: {:ok, %Pigeon.Http2.Stream{}} | term
+  @callback handle_end_stream(msg :: term, state :: term)
+    :: {:ok, %Pigeon.Http2.Stream{}}
+     | term
 end
