@@ -26,7 +26,7 @@ defmodule Pigeon.APNS.WorkerTest do
         |> APNS.Config.config
         |> APNS.Worker.initialize_worker
       {:ok, %{
-        apns_socket: _socket,
+        socket: _socket,
         mode: mode,
         reconnect: true,
         config: config,

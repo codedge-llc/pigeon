@@ -30,7 +30,7 @@ defmodule Pigeon.FCM.Worker do
       {:ok, socket} ->
         Process.send_after(self(), :ping, @ping_period)
         {:ok, %{
-          fcm_socket: socket,
+          socket: socket,
           key: config[:key],
           stream_id: 1,
           queue: %{},
@@ -116,7 +116,7 @@ defmodule Pigeon.FCM.Worker do
     send_push(state, payload, on_response, key)
   end
 
-  def send_push(%{fcm_socket: socket, stream_id: stream_id, queue: queue} = state,
+  def send_push(%{socket: socket, stream_id: stream_id, queue: queue} = state,
                 {registration_ids, payload},
                 on_response,
                 key) do
@@ -146,17 +146,33 @@ defmodule Pigeon.FCM.Worker do
   end
 
   def handle_info(:ping, state) do
-    Pigeon.Http2.Client.default().send_ping(state.fcm_socket)
+    Pigeon.Http2.Client.default().send_ping(state.socket)
     Process.send_after(self(), :ping, @ping_period)
 
     {:noreply, state}
   end
 
+  def handle_info({:ping, _from}, state), do: {:noreply, state}
+
+  def handle_info({:closed, _from}, %{config: config} = state) do
+    Logger.info "Reconnecting FCM client (Closed due to probable session_timed_out GOAWAY error)"
+    case initialize_worker(config) do
+      {:ok, newstate} -> {:noreply, newstate}
+      error -> error
+    end
+  end
+
+  def handle_info(msg, state) do
+    case Pigeon.Http2.Client.default().handle_end_stream(msg, state) do
+      {:ok, %Pigeon.Http2.Stream{} = stream} -> process_end_stream(stream, state)
+      _else -> {:noreply, state}
+    end
+  end
+
   def process_end_stream(%Pigeon.Http2.Stream{id: stream_id, headers: headers, body: body},
-                                            %{fcm_socket: _socket, queue: queue} = state) do
+                                            %{socket: _socket, queue: queue} = state) do
 
     {registration_ids, on_response} = queue["#{stream_id}"]
-    Logger.debug("#{inspect body} and #{inspect headers}")
     case get_status(headers) do
       "200" ->
         result =  Poison.decode! body
@@ -181,23 +197,6 @@ defmodule Pigeon.FCM.Worker do
         unless on_response == nil do on_response.({:error, reason}) end
         new_queue = Map.delete(queue, "#{stream_id}")
         {:noreply, %{state | queue: new_queue}}
-    end
-  end
-
-  def handle_info({:ping, _from}, state), do: {:noreply, state}
-
-  def handle_info({:closed, _from}, %{config: config} = state) do
-    Logger.info "Reconnecting FCM client (Closed due to probable session_timed_out GOAWAY error)"
-    case initialize_worker(config) do
-      {:ok, newstate} -> {:noreply, newstate}
-      error -> error
-    end
-  end
-
-  def handle_info(msg, state) do
-    case Pigeon.Http2.Client.default().handle_end_stream(msg, state) do
-      {:ok, %Pigeon.Http2.Stream{} = stream} -> process_end_stream(stream, state)
-      _else -> {:noreply, state}
     end
   end
 

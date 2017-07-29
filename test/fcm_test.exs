@@ -10,6 +10,21 @@ defmodule Pigeon.FCMTest do
 
   defp valid_fcm_reg_id, do: Application.get_env(:pigeon, :test)[:valid_fcm_reg_id]
 
+  describe "start_connection/1" do
+    test "starts conneciton with opts keyword list" do
+      fcm_key = Application.get_env(:pigeon, :test)[:fcm_key]
+      opts = [
+        key: fcm_key
+      ]
+      {:ok, pid} = Pigeon.FCM.start_connection(opts)
+      assert is_pid(pid)
+
+      state = :sys.get_state(pid)
+      assert state.key == fcm_key
+      assert is_pid(state.socket)
+    end
+  end
+
   describe "push/1 with custom worker" do
     test "pushes to worker pid" do
       n =

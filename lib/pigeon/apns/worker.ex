@@ -34,7 +34,7 @@ defmodule Pigeon.APNS.Worker do
       {:ok, socket} ->
         Process.send_after(self(), :ping, config[:ping_period])
         {:ok, %{
-          apns_socket: socket,
+          socket: socket,
           mode: mode,
           reconnect: Map.get(config, :reconnect, true),
           config: config,
@@ -128,7 +128,7 @@ defmodule Pigeon.APNS.Worker do
   end
 
   def send_push(state, notification, on_response) do
-    %{apns_socket: socket, stream_id: stream_id, queue: queue} = state
+    %{socket: socket, stream_id: stream_id, queue: queue} = state
     json = Pigeon.Notification.json_payload(notification.payload)
     req_headers = [
       {":method", "POST"},
@@ -158,7 +158,7 @@ defmodule Pigeon.APNS.Worker do
   end
 
   def handle_info(:ping, state) do
-    Pigeon.Http2.Client.default().send_ping(state.apns_socket)
+    Pigeon.Http2.Client.default().send_ping(state.socket)
     Process.send_after(self(), :ping, state.config.ping_period)
 
     {:noreply, state}
@@ -167,7 +167,7 @@ defmodule Pigeon.APNS.Worker do
   def handle_info({:closed, _}, state) do
     case state[:reconnect] do
       false ->
-        Process.exit(state.apns_socket, :kill)
+        Process.exit(state.socket, :kill)
         {:stop, :normal, state}
       _     -> {:noreply, state}
     end
@@ -181,7 +181,7 @@ defmodule Pigeon.APNS.Worker do
   end
 
   def process_end_stream(%Pigeon.Http2.Stream{id: stream_id, headers: headers, body: body},
-                                            %{apns_socket: _socket, queue: queue} = state) do
+                                            %{socket: _socket, queue: queue} = state) do
 
     {notification, on_response} = queue["#{stream_id}"]
 
