@@ -17,5 +17,7 @@ Add pigeon and kadabra as `mix.exs` dependencies:
 ## Getting Started
 For usage and configuration, see the docs:
 * [APNS (Apple iOS)](https://hexdocs.pm/pigeon/apns-apple-ios.html)
-* [GCM (Android)](https://hexdocs.pm/pigeon/gcm-android.html)
+* [FCM (Android)](https://hexdocs.pm/pigeon/fcm-android.html)
 * [ADM (Amazon Android)](https://hexdocs.pm/pigeon/adm-amazon-android.html)
+
+Looking for GCM? Try `v0.13` or earlier.
