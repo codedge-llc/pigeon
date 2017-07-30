@@ -96,11 +96,11 @@ Registration IDs are conveniently grouped based on their response. `:error` is a
   ```elixir
   %Pigeon.FCM.NotificationResponse{
       message_id: nil,
-      ok: ["reg_id"],
-      update: ["reg_id"],
-      retry: ["reg_id"],
-      remove: ["reg_id"],
-      error: %{atom => ["reg_id"]}
+      ok: ["reg_id", ...],
+      update: [{"old_reg_id", "new_reg_id"}, ...],
+      retry: ["reg_id", ...],
+      remove: ["reg_id", ...],
+      error: %{atom => ["reg_id", ...]}
   }
   ```
 
