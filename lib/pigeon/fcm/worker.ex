@@ -5,7 +5,7 @@ defmodule Pigeon.FCM.Worker do
   use GenServer
   require Logger
 
-  alias Pigeon.FCM.NotificationResponse
+  alias Pigeon.FCM.{NotificationResponse, ResultParser}
 
   @ping_period 600_000 # 10 minutes
 
@@ -169,7 +169,7 @@ defmodule Pigeon.FCM.Worker do
     {registration_ids, on_response} = queue["#{stream_id}"]
     case get_status(headers) do
       "200" ->
-        result =  Poison.decode! body
+        result = Poison.decode!(body)
         parse_result(registration_ids, result, on_response)
         new_queue = Map.delete(queue, "#{stream_id}")
         {:noreply, %{state | queue: new_queue}}
@@ -194,76 +194,12 @@ defmodule Pigeon.FCM.Worker do
     end
   end
 
-  #def handle_info({:ok, _from}, state), do: {:noreply, state}
-
   # no on_response callback, ignore
   def parse_result(_, _, nil), do: :ok
 
   def parse_result(ids, %{"results" => results}, on_response) do
-    parse_result1(ids, results, on_response, %NotificationResponse{})
+    ResultParser.parse(ids, results, on_response, %NotificationResponse{})
   end
-
-  def parse_result1([], [], on_response, result) do
-    on_response.({:ok, result})
-  end
-
-  def parse_result1(regid, results, on_response, result) when is_binary(regid) do
-    parse_result1([regid], results, on_response, result)
-  end
-
-  def parse_result1([regid | reg_res],
-                    [%{"message_id" => id, "registration_id" => new_regid} | rest_results],
-                    on_response,
-                    %NotificationResponse{ update: update} =  resp) do
-
-    new_updates = [{regid, new_regid} | update]
-    parse_result1(reg_res, rest_results, on_response, %{resp | message_id: id, update: new_updates})
-  end
-
-  def parse_result1([regid | reg_res],
-                    [%{"message_id" => id} | rest_results],
-                    on_response,
-                    %NotificationResponse{ok: ok} = resp) do
-
-    parse_result1(reg_res, rest_results, on_response, %{resp | message_id: id, ok: [regid | ok]})
-  end
-
-  def parse_result1([regid | reg_res],
-                    [%{"error" => "Unavailable"} | rest_results],
-                    on_response,
-                    %NotificationResponse{retry: retry} = resp) do
-
-    parse_result1(reg_res, rest_results, on_response, %{resp | retry: [regid | retry]})
-  end
-
-  def parse_result1([regid | reg_res],
-                    [%{"error" => invalid } | rest_results],
-                    on_response,
-                    %NotificationResponse{remove: remove} = resp) when invalid == "NotRegistered"
-                                                                    or invalid == "InvalidRegistration" do
-
-    parse_result1(reg_res, rest_results, on_response, %{resp | remove: [regid | remove]})
-  end
-
-  def parse_result1([regid | reg_res] = regs,
-                    [%{"error" => error} | rest_results] = results,
-                    on_response,
-                    %NotificationResponse{error: regs_in_error} = resp) do
-
-    case Map.has_key?(regs_in_error, error) do
-      true ->
-        parse_result1(reg_res, rest_results, on_response,
-          %{resp | error: %{regs_in_error | error => regid}})
-      false -> # create map key if required.
-         parse_result1(regs, results, on_response,
-          %{resp | error: Map.merge(%{error => []}, regs_in_error)})
-    end
-  end
-
-  # def parse_result1(regs, [%{"error" => _error} | _r] = _results, on_response,
-  #     %NotificationResponse{error: _errors} = resp) do
-
-  # end
 
   defp get_status(headers) do
     case Enum.find(headers, fn({key, _val}) -> key == ":status" end) do
