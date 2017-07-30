@@ -6,9 +6,7 @@ defmodule Pigeon.NotificationTest do
   test "FCM new with one registration_id" do
     expected_result = %Pigeon.FCM.Notification{
       registration_id: @reg_id,
-      payload: %{},
-      message_id: nil,
-      updated_registration_id: nil
+      payload: %{}
     }
     assert Pigeon.FCM.Notification.new(@reg_id) == expected_result
   end
@@ -18,9 +16,7 @@ defmodule Pigeon.NotificationTest do
 
     expected_result = %Pigeon.FCM.Notification{
       registration_id: reg_ids,
-      payload: %{},
-      message_id: nil,
-      updated_registration_id: nil
+      payload: %{}
     }
     assert Pigeon.FCM.Notification.new(reg_ids) == expected_result
   end
@@ -33,9 +29,7 @@ defmodule Pigeon.NotificationTest do
     }
     expected_result = %Pigeon.FCM.Notification{
       registration_id: @reg_id,
-      payload: %{"notification" => n},
-      message_id: nil,
-      updated_registration_id: nil
+      payload: %{"notification" => n}
     }
     assert Pigeon.FCM.Notification.new(@reg_id, n) == expected_result
   end
@@ -46,9 +40,7 @@ defmodule Pigeon.NotificationTest do
     }
     expected_result = %Pigeon.FCM.Notification{
       registration_id: @reg_id,
-      payload: %{"data" => data},
-      message_id: nil,
-      updated_registration_id: nil
+      payload: %{"data" => data}
     }
     assert Pigeon.FCM.Notification.new(@reg_id, %{}, data) == expected_result
   end
@@ -64,9 +56,7 @@ defmodule Pigeon.NotificationTest do
     }
     expected_result = %Pigeon.FCM.Notification{
       registration_id: @reg_id,
-      payload: %{"notification" => n, "data" => data},
-      message_id: nil,
-      updated_registration_id: nil
+      payload: %{"notification" => n, "data" => data}
     }
     assert Pigeon.FCM.Notification.new(@reg_id, n, data) == expected_result
   end
