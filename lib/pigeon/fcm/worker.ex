@@ -71,15 +71,9 @@ defmodule Pigeon.FCM.Worker do
       {:alpn_advertised_protocols, [<<"h2">>]},
       :binary
     ]
-    # opts = [
-    #   {:packet, 0},
-    #   {:reuseaddr, true},
-    #   {:active, true},
-    #   :binary
-    # ]
     |> optional_add_port(config)
 
-    {:ok, []}
+    {:ok, opts}
   end
 
   def optional_add_port(opts, config) do
@@ -154,7 +148,7 @@ defmodule Pigeon.FCM.Worker do
 
   def handle_info({:ping, _from}, state), do: {:noreply, state}
 
-  def handle_info({:closed, _from}, %{config: config} = state) do
+  def handle_info({:closed, _from}, %{config: config}) do
     Logger.info "Reconnecting FCM client (Closed due to probable session_timed_out GOAWAY error)"
     case initialize_worker(config) do
       {:ok, newstate} -> {:noreply, newstate}
@@ -266,10 +260,10 @@ defmodule Pigeon.FCM.Worker do
     end
   end
 
-  def parse_result1(regs, [%{"error" => error} | _r] = results, on_response,
-      %NotificationResponse{error: errors} = resp) do
+  # def parse_result1(regs, [%{"error" => _error} | _r] = _results, on_response,
+  #     %NotificationResponse{error: _errors} = resp) do
 
-  end
+  # end
 
   defp get_status(headers) do
     case Enum.find(headers, fn({key, _val}) -> key == ":status" end) do

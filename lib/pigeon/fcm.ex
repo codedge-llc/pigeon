@@ -20,7 +20,7 @@ defmodule Pigeon.FCM do
           on_response = fn(x) -> send pid, {ref, x} end
           send_push(n, on_response, opts)
         end
-        Enum.foldl(notification, %{}, fn(n, acc) ->
+        Enum.foldl(notification, %{}, fn(_n, acc) ->
           receive do
             {^ref, %NotificationResponse{message_id: id} = response} ->
               if Map.has_key?(acc, id) do
