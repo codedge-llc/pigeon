@@ -35,14 +35,11 @@ Pass in a list of registration IDs, as many as you want. IDs will automatically 
 
 ## Notification Struct
 
-When using `Pigeon.FCM.Notification.new/2`, `message_id` and `updated_registration` will always be `nil`. These keys are set in the response callback. `registration_id` can either be a single string or a list of strings.
-
   ```elixir
   %Pigeon.FCM.Notification{
-      payload: %{},
-      message_id: nil,
-      registration_id: nil,
-      updated_registration_id: nil
+      payload: %{...},
+      registration_id: String.t | [String.t],
+      priority: :normal | :high
   }
   ```
 
@@ -66,28 +63,24 @@ or
  
 ## Handling Push Responses
 
-1. Pass an optional anonymous function as your second parameter. This function will get called on each registration ID assuming some of them were successful.
+1. Pass an optional anonymous function as your second parameter.
 
     ```elixir
     data = %{ message: "your message" }
     n = Pigeon.FCM.Notification.new(data, "device registration ID")
     Pigeon.FCM.push(n, fn(x) -> IO.inspect(x) end)
+    {:ok, %Pigeon.FCM.NotificationResponse{...}}
     ```
 
-2. Reponses return a tuple of either `{:ok, notification}` or `{:error, reason, notification}`. You could handle responses like so:
+2. Reponses return a tuple of either `{:ok, notification_response}` or `{:error, reason, notification}`. You could handle responses like so:
 
     ```elixir
     on_response = fn(x) ->
       case x do
-        {:ok, notification} ->
-          # Push successful, check to see if the registration ID changed
-          if !is_nil(notification.updated_registration_id) do
-            # Update the registration ID in the database
-          end
-        {:error, :invalid_registration, notification} ->
-          # Remove the bad ID from the database
-        {:error, reason, notification} ->
-          # Handle other errors
+        {:ok, notification_response} ->
+          # Handle updated registration ID's, etc.
+        {:error, :timeout, notification} ->
+          # Maybe bad connection or the port is blocked?
       end
     end
     
@@ -96,9 +89,20 @@ or
     Pigeon.FCM.push(n, on_response)
     ```
 
-Notification structs returned as `{:ok, notification}` will always contain exactly one registration ID for the `registration_id` key. 
+## NotificationResponse Struct
 
-For `{:error, reason, notification}` tuples, this key can be one or many IDs depending on the error. `:invalid_registration` will return exactly one, whereas `:authentication_error` and `:internal_server_error` will return up to 1000 IDs (and the callback called for each failed 1000-chunked request).
+Registration IDs are conveniently grouped based on their response. `:error` is a map of all other miscellaneous errors, with their corresponding registration IDs.
+
+  ```elixir
+  %Pigeon.FCM.NotificationResponse{
+      message_id: nil,
+      ok: ["reg_id"],
+      update: ["reg_id"],
+      retry: ["reg_id"],
+      remove: ["reg_id"],
+      error: %{atom => ["reg_id"]}
+  }
+  ```
 
 ## Error Responses
 
