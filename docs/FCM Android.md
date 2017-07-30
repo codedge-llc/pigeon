@@ -26,7 +26,7 @@
 
 ## Sending to Multiple Registration IDs
 
-Pass in a list of registration IDs, as many as you want. IDs will automatically be chunked into sets of 1000 before sending the push (as per GCM guidelines).
+Pass in a list of registration IDs, as many as you want.
 
   ```elixir
   msg = %{ "body" => "your message" }
