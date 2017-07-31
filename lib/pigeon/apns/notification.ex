@@ -5,11 +5,11 @@ defmodule Pigeon.APNS.Notification do
   defstruct device_token: nil, payload: %{"aps" => %{}}, expiration: nil, topic: nil, id: nil
 
   @type t :: %__MODULE__{
-    device_token: String.t,
-    expiration: String.t,
-    id: String.t,
-    payload: %{},
-    topic: String.t
+    device_token: String.t | nil,
+    expiration: String.t | nil,
+    id: String.t | nil,
+    payload: %{String.t => String.t},
+    topic: String.t | nil
   }
 
   @doc """
@@ -203,7 +203,7 @@ defmodule Pigeon.APNS.Notification do
         topic: nil
       }
   """
-  @spec put_custom(t, String.t) :: t
+  @spec put_custom(t, %{String.t => String.t}) :: t
   def put_custom(notification, data) do
     new_payload = Map.merge(notification.payload, data)
     %{notification | payload: new_payload}

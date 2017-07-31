@@ -3,7 +3,7 @@ defmodule Pigeon.Http2.Client do
     Application.get_env(:pigeon, :http2_client, Pigeon.Http2.Client.Kadabra)
   end
 
-  @callback connect(uri :: List.t, scheme :: :https, options :: Keyword.t)
+  @callback connect(uri :: charlist, scheme :: :https, options :: Keyword.t)
     :: {:ok, term}
      | {:error, term}
 

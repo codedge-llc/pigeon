@@ -1,6 +1,6 @@
 defmodule Pigeon.FCM.Worker do
   @moduledoc """
-    Handles all APNS request and response parsing over an HTTP2 connection.
+  Handles all FCM request and response parsing over an HTTP2 connection.
   """
   use GenServer
   require Logger
@@ -11,9 +11,6 @@ defmodule Pigeon.FCM.Worker do
 
   defp fcm_uri(config), do: config[:endpoint] || 'fcm.googleapis.com'
 
-  # def start_link(name, config) do
-  #   GenServer.start_link(__MODULE__, {:ok, config}, name: name)
-  # end
   def start_link(config) do
     case config[:name] do
       nil -> GenServer.start_link(__MODULE__, {:ok, config})
@@ -59,7 +56,6 @@ defmodule Pigeon.FCM.Worker do
     uri = config |> fcm_uri() |> to_char_list
     case connect_socket_options(config) do
       {:ok, options} -> do_connect_socket(config, uri, options, tries)
-      error -> error
     end
   end
 
