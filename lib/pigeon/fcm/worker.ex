@@ -137,10 +137,8 @@ defmodule Pigeon.FCM.Worker do
 
     Pigeon.Http2.Client.default().send_request(state.socket, req_headers, payload)
 
-    IO.inspect(state, label: "fcm state")
-
-    new_q = Map.put(queue, "#{stream_id}", {registration_ids, on_response})
-    new_stream_id = stream_id + 2
+    new_q = Map.put(queue, "#{state.stream_id}", {registration_ids, on_response})
+    new_stream_id = state.stream_id + 2
     {:noreply, %{state | stream_id: new_stream_id, queue: new_q}}
   end
 
