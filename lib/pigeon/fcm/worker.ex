@@ -113,10 +113,21 @@ defmodule Pigeon.FCM.Worker do
     send_push(state, payload, on_response, key)
   end
 
-  def send_push(%{socket: socket, stream_id: stream_id, queue: queue} = state,
+  def send_push(%{socket: socket, stream_id: stream_id, queue: queue, config: config} = state,
                 {registration_ids, payload},
                 on_response,
                 key) do
+
+    if socket == nil do
+      case connect_socket(config, 0) do
+        {:ok, new_socket} ->
+          Process.send_after(self(), :ping, config.ping_period)
+          state = Map.put(config, :socket, new_socket)
+        error ->
+          IO.inspect(error, label: "reconnect error")
+          :error
+      end
+    end
 
     req_headers = [
       {":method", "POST"},
@@ -126,7 +137,7 @@ defmodule Pigeon.FCM.Worker do
       {"accept", "application/json"}
     ]
 
-    Pigeon.Http2.Client.default().send_request(socket, req_headers, payload)
+    Pigeon.Http2.Client.default().send_request(state.socket, req_headers, payload)
 
     new_q = Map.put(queue, "#{stream_id}", {registration_ids, on_response})
     new_stream_id = stream_id + 2
@@ -152,7 +163,7 @@ defmodule Pigeon.FCM.Worker do
   def handle_info({:ping, _from}, state), do: {:noreply, state}
 
   def handle_info({:closed, _from}, %{config: config}) do
-    Logger.info "Reconnecting FCM client (Closed due to probable session_timed_out GOAWAY error)"
+    Logger.info "FCM client Closed due to probable session_timed_out GOAWAY error)"
     case initialize_worker(config) do
       {:ok, newstate} -> {:noreply, newstate}
       error -> error
