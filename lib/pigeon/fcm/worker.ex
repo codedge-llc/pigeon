@@ -114,7 +114,7 @@ defmodule Pigeon.FCM.Worker do
     send_push(state, payload, on_response, key)
   end
 
-  def send_push(%{socket: socket, stream_id: stream_id, queue: queue} = state,
+  def send_push(%{socket: socket, queue: queue} = state,
                 {registration_ids, payload},
                 on_response,
                 key) do
@@ -148,7 +148,7 @@ defmodule Pigeon.FCM.Worker do
         Process.send_after(self(), :ping, config.ping_period)
         {:ok, %{state | socket: new_socket, queue: %{}, stream_id: 1}}
       error ->
-        IO.inspect(error, label: "reconnect error")
+        error |> inspect() |> Logger.error
         {:error, state}
     end
   end
@@ -173,8 +173,7 @@ defmodule Pigeon.FCM.Worker do
 
   def handle_info({:ping, _from}, state), do: {:noreply, state}
 
-  def handle_info({:closed, _from}, %{config: config} = state) do
-    Logger.info "FCM client closed due to probable session_timed_out GOAWAY error)"
+  def handle_info({:closed, _from}, state) do
     {:noreply, %{state | socket: nil}}
   end
 
