@@ -122,7 +122,7 @@ defmodule Pigeon.FCM.Worker do
       case connect_socket(config, 0) do
         {:ok, new_socket} ->
           Process.send_after(self(), :ping, config.ping_period)
-          state = Map.put(config, :socket, new_socket)
+          state = Map.put(state, :socket, new_socket)
         error ->
           IO.inspect(error, label: "reconnect error")
           :error
