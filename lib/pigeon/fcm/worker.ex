@@ -154,20 +154,19 @@ defmodule Pigeon.FCM.Worker do
   end
 
   def handle_info(:ping, state) do
-    Pigeon.Http2.Client.default().send_ping(state.socket)
-    Process.send_after(self(), :ping, state.config.ping_period)
+    if state.socket != nil do
+      Pigeon.Http2.Client.default().send_ping(state.socket)
+      Process.send_after(self(), :ping, state.config.ping_period)
+    end
 
     {:noreply, state}
   end
 
   def handle_info({:ping, _from}, state), do: {:noreply, state}
 
-  def handle_info({:closed, _from}, %{config: config}) do
-    Logger.info "FCM client Closed due to probable session_timed_out GOAWAY error)"
-    case initialize_worker(config) do
-      {:ok, newstate} -> {:noreply, newstate}
-      error -> error
-    end
+  def handle_info({:closed, _from}, %{config: config} = state) do
+    Logger.info "FCM client closed due to probable session_timed_out GOAWAY error)"
+    {:noreply, %{state | socket: nil}}
   end
 
   def handle_info(msg, state) do
