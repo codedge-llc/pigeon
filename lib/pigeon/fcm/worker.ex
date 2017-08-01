@@ -72,6 +72,7 @@ defmodule Pigeon.FCM.Worker do
       {:packet, :raw},
       {:reuseaddr, true},
       {:alpn_advertised_protocols, [<<"h2">>]},
+      {:reconnect, false},
       :binary
     ]
     |> optional_add_port(config)
@@ -118,16 +119,19 @@ defmodule Pigeon.FCM.Worker do
                 on_response,
                 key) do
 
-    if socket == nil do
-      case connect_socket(config, 0) do
-        {:ok, new_socket} ->
-          Process.send_after(self(), :ping, config.ping_period)
-          state = Map.put(state, :socket, new_socket)
-        error ->
-          IO.inspect(error, label: "reconnect error")
-          :error
+    socket =
+      case socket do
+        nil ->
+          case connect_socket(config, 0) do
+            {:ok, new_socket} ->
+              Process.send_after(self(), :ping, config.ping_period)
+              new_socket
+            error ->
+              IO.inspect(error, label: "reconnect error")
+              :error
+          end
+        socket -> socket
       end
-    end
 
     req_headers = [
       {":method", "POST"},
@@ -137,11 +141,13 @@ defmodule Pigeon.FCM.Worker do
       {"accept", "application/json"}
     ]
 
-    Pigeon.Http2.Client.default().send_request(state.socket, req_headers, payload)
+    Pigeon.Http2.Client.default().send_request(socket, req_headers, payload)
+
+    IO.inspect(state, label: "fcm state")
 
     new_q = Map.put(queue, "#{stream_id}", {registration_ids, on_response})
     new_stream_id = stream_id + 2
-    {:noreply, %{state | stream_id: new_stream_id, queue: new_q}}
+    {:noreply, %{state | stream_id: new_stream_id, queue: new_q, socket: socket}}
   end
 
   defp parse_error(data) do
