@@ -7,7 +7,7 @@ defmodule Pigeon.FCM.Worker do
 
   alias Pigeon.FCM.{NotificationResponse, ResultParser}
 
-  @ping_period 600_000 # 10 minutes
+  @default_ping_period 600_000 # 10 minutes
 
   defp fcm_uri(config), do: config[:endpoint] || 'fcm.googleapis.com'
 
@@ -25,7 +25,10 @@ defmodule Pigeon.FCM.Worker do
   def initialize_worker(config) do
     case connect_socket(config, 0) do
       {:ok, socket} ->
-        Process.send_after(self(), :ping, @ping_period)
+        ping = config[:ping_period] || @default_ping_period
+        config = Map.put(config, :ping_period, ping)
+        Process.send_after(self(), :ping, ping)
+
         {:ok, %{
           socket: socket,
           key: config[:key],
@@ -137,7 +140,7 @@ defmodule Pigeon.FCM.Worker do
 
   def handle_info(:ping, state) do
     Pigeon.Http2.Client.default().send_ping(state.socket)
-    Process.send_after(self(), :ping, @ping_period)
+    Process.send_after(self(), :ping, state.config.ping_period)
 
     {:noreply, state}
   end

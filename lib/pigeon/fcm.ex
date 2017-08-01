@@ -99,7 +99,8 @@ defmodule Pigeon.FCM do
   def start_connection(opts) do
     config = %{
       name: opts[:name],
-      key:  opts[:key]
+      key:  opts[:key],
+      ping_period: opts[:ping_period]
     }
     Pigeon.FCM.Worker.start_link(config)
   end

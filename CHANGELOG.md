@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.0.1
+* Configurable `:ping_period` for FCM connections
+
 ## v1.0.0
 * GCM migrated to FCM API (http2)
 * `GCM` modules renamed to `FCM`
