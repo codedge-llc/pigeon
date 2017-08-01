@@ -68,6 +68,7 @@ defmodule Pigeon.FCM.Worker do
       {:packet, :raw},
       {:reuseaddr, true},
       {:alpn_advertised_protocols, [<<"h2">>]},
+      {:reconnect, false},
       :binary
     ]
     |> optional_add_port(config)
@@ -109,10 +110,18 @@ defmodule Pigeon.FCM.Worker do
     send_push(state, payload, on_response, key)
   end
 
-  def send_push(%{socket: socket, stream_id: stream_id, queue: queue} = state,
+  def send_push(%{socket: socket, queue: queue} = state,
                 {registration_ids, payload},
                 on_response,
                 key) do
+
+    state =
+      case socket do
+        nil ->
+          {_, state} = reconnect(state)
+          state
+        _socket -> state
+      end
 
     req_headers = [
       {":method", "POST"},
@@ -122,11 +131,22 @@ defmodule Pigeon.FCM.Worker do
       {"accept", "application/json"}
     ]
 
-    Pigeon.Http2.Client.default().send_request(socket, req_headers, payload)
+    Pigeon.Http2.Client.default().send_request(state.socket, req_headers, payload)
 
-    new_q = Map.put(queue, "#{stream_id}", {registration_ids, on_response})
-    new_stream_id = stream_id + 2
+    new_q = Map.put(queue, "#{state.stream_id}", {registration_ids, on_response})
+    new_stream_id = state.stream_id + 2
     {:noreply, %{state | stream_id: new_stream_id, queue: new_q}}
+  end
+
+  def reconnect(%{config: config} = state) do
+    case connect_socket(config, 0) do
+      {:ok, new_socket} ->
+        Process.send_after(self(), :ping, config.ping_period)
+        {:ok, %{state | socket: new_socket, queue: %{}, stream_id: 1}}
+      error ->
+        error |> inspect() |> Logger.error
+        {:error, state}
+    end
   end
 
   defp parse_error(data) do
@@ -139,20 +159,18 @@ defmodule Pigeon.FCM.Worker do
   end
 
   def handle_info(:ping, state) do
-    Pigeon.Http2.Client.default().send_ping(state.socket)
-    Process.send_after(self(), :ping, state.config.ping_period)
+    if state.socket != nil do
+      Pigeon.Http2.Client.default().send_ping(state.socket)
+      Process.send_after(self(), :ping, state.config.ping_period)
+    end
 
     {:noreply, state}
   end
 
   def handle_info({:ping, _from}, state), do: {:noreply, state}
 
-  def handle_info({:closed, _from}, %{config: config}) do
-    Logger.info "Reconnecting FCM client (Closed due to probable session_timed_out GOAWAY error)"
-    case initialize_worker(config) do
-      {:ok, newstate} -> {:noreply, newstate}
-      error -> error
-    end
+  def handle_info({:closed, _from}, state) do
+    {:noreply, %{state | socket: nil}}
   end
 
   def handle_info(msg, state) do
