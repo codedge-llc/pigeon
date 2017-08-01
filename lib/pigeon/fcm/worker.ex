@@ -114,23 +114,17 @@ defmodule Pigeon.FCM.Worker do
     send_push(state, payload, on_response, key)
   end
 
-  def send_push(%{socket: socket, stream_id: stream_id, queue: queue, config: config} = state,
+  def send_push(%{socket: socket, stream_id: stream_id, queue: queue} = state,
                 {registration_ids, payload},
                 on_response,
                 key) do
 
-    socket =
+    state =
       case socket do
         nil ->
-          case connect_socket(config, 0) do
-            {:ok, new_socket} ->
-              Process.send_after(self(), :ping, config.ping_period)
-              new_socket
-            error ->
-              IO.inspect(error, label: "reconnect error")
-              :error
-          end
-        socket -> socket
+          {_, state} = reconnect(state)
+          state
+        _socket -> state
       end
 
     req_headers = [
@@ -141,13 +135,24 @@ defmodule Pigeon.FCM.Worker do
       {"accept", "application/json"}
     ]
 
-    Pigeon.Http2.Client.default().send_request(socket, req_headers, payload)
+    Pigeon.Http2.Client.default().send_request(state.socket, req_headers, payload)
 
     IO.inspect(state, label: "fcm state")
 
     new_q = Map.put(queue, "#{stream_id}", {registration_ids, on_response})
     new_stream_id = stream_id + 2
-    {:noreply, %{state | stream_id: new_stream_id, queue: new_q, socket: socket}}
+    {:noreply, %{state | stream_id: new_stream_id, queue: new_q}}
+  end
+
+  def reconnect(%{config: config} = state) do
+    case connect_socket(config, 0) do
+      {:ok, new_socket} ->
+        Process.send_after(self(), :ping, config.ping_period)
+        {:ok, %{state | socket: new_socket, queue: %{}, stream_id: 1}}
+      error ->
+        IO.inspect(error, label: "reconnect error")
+        {:error, state}
+    end
   end
 
   defp parse_error(data) do
