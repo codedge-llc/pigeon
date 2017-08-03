@@ -49,7 +49,7 @@ defmodule Pigeon.FCMTest do
       ]
       {:ok, worker_pid} = Pigeon.FCM.start_connection(opts)
 
-      assert {:ok, notif} = Pigeon.FCM.push(n, to: worker_pid)
+      assert {:ok, _notif} = Pigeon.FCM.push(n, to: worker_pid)
     end
 
     test "pushes to worker's atom name" do

@@ -80,9 +80,17 @@ defmodule Pigeon.FCM do
   end
   def encode_requests(notification) do
     notification.registration_id
-    |> Enum.chunk_every(@chunk_size, @chunk_size, [])
+    |> chunk(@chunk_size, @chunk_size, [])
     |> Enum.map(& encode_requests(%{notification | registration_id: &1}))
     |> List.flatten
+  end
+
+  defp chunk(collection, chunk_size, step, padding) do
+    if Kernel.function_exported?(Enum, :chunk_every, 4) do
+      Enum.chunk_every(collection, chunk_size, step, padding)
+    else
+      Enum.chunk(collection, chunk_size, step, padding)
+    end
   end
 
   defp recipient_attr([regid]), do: %{"to" => regid}
