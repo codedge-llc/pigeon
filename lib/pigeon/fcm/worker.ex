@@ -184,32 +184,46 @@ defmodule Pigeon.FCM.Worker do
     end
   end
 
-  def process_end_stream(%Pigeon.Http2.Stream{id: stream_id, headers: headers, body: body},
+  def process_end_stream(%Pigeon.Http2.Stream{id: stream_id, headers: headers, body: body, error: error} = stream,
                                             %{socket: _socket, queue: queue} = state) do
 
-    {registration_ids, on_response} = queue["#{stream_id}"]
-    case get_status(headers) do
-      "200" ->
-        result = Poison.decode!(body)
-        parse_result(registration_ids, result, on_response)
-        new_queue = Map.delete(queue, "#{stream_id}")
-        {:noreply, %{state | queue: new_queue}}
-      nil ->
+    cond do
+      queue["#{stream_id}"] == nil ->
+        Logger.error("Unknown stream_id: #{stream_id}, Error: #{inspect(error)}")
         {:noreply, state}
-      "401" ->
-        log_error("401", "Unauthorized")
-        unless on_response == nil do on_response.({:error, :unauthorized}) end
-        new_queue = Map.delete(queue, "#{stream_id}")
-        {:noreply, %{state | queue: new_queue}}
-      "400" ->
-        log_error("400", "Malformed JSON")
-        unless on_response == nil do on_response.({:error, :malformed_json}) end
-        new_queue = Map.delete(queue, "#{stream_id}")
-        {:noreply, %{state | queue: new_queue}}
-      code ->
-        reason = parse_error(body)
-        log_error(code, reason)
-        unless on_response == nil do on_response.({:error, reason}) end
+      error == nil ->
+        {registration_ids, on_response} = queue["#{stream_id}"]
+        case get_status(headers) do
+          nil ->
+            stream |> inspect() |> Logger.error
+            new_queue = Map.delete(queue, "#{stream_id}")
+            {:noreply, %{state | queue: new_queue}}
+          "200" ->
+            result = Poison.decode!(body)
+            parse_result(registration_ids, result, on_response)
+            new_queue = Map.delete(queue, "#{stream_id}")
+            {:noreply, %{state | queue: new_queue}}
+          "401" ->
+            log_error("401", "Unauthorized")
+            unless on_response == nil do on_response.({:error, :unauthorized}) end
+            new_queue = Map.delete(queue, "#{stream_id}")
+            {:noreply, %{state | queue: new_queue}}
+          "400" ->
+            log_error("400", "Malformed JSON")
+            unless on_response == nil do on_response.({:error, :malformed_json}) end
+            new_queue = Map.delete(queue, "#{stream_id}")
+            {:noreply, %{state | queue: new_queue}}
+          code ->
+            reason = parse_error(body)
+            log_error(code, reason)
+            unless on_response == nil do on_response.({:error, reason}) end
+            new_queue = Map.delete(queue, "#{stream_id}")
+            {:noreply, %{state | queue: new_queue}}
+        end
+      true ->
+        {_registration_ids, on_response} = queue["#{stream_id}"]
+        error |> inspect() |> Logger.error
+        unless on_response == nil do on_response.({:error, :unavailable}) end
         new_queue = Map.delete(queue, "#{stream_id}")
         {:noreply, %{state | queue: new_queue}}
     end
@@ -222,6 +236,9 @@ defmodule Pigeon.FCM.Worker do
     ResultParser.parse(ids, results, on_response, %NotificationResponse{})
   end
 
+  defp get_status(nil) do
+    nil
+  end
   defp get_status(headers) do
     case Enum.find(headers, fn({key, _val}) -> key == ":status" end) do
       {":status", status} -> status
