@@ -9,7 +9,7 @@ defmodule Pigeon.APNS.Config do
     config = Application.get_env(:pigeon, :apns)[name]
     %{
       name: name,
-      mode: config[:mode],
+      mode: mode(config[:mode]),
       reconnect: Map.get(config, :reconnect, true),
       cert: cert(config[:cert]),
       certfile: file_path(config[:cert]),
@@ -19,6 +19,16 @@ defmodule Pigeon.APNS.Config do
       ping_period: config[:ping_period] || 600_000
     }
   end
+
+  def mode({:system, env_var}), do: to_mode(System.get_env(env_var))
+  def mode(mode), do: mode
+
+  def to_mode(nil), do: raise "APNS.Config mode is nil"
+  def to_mode("dev"), do: :dev
+  def to_mode(":dev"), do: :dev
+  def to_mode("prod"), do: :prod
+  def to_mode(":prod"), do: :prod
+  def to_mode(other), do: raise "APNS.Config mode is #{inspect(other)}"
 
   def file_path(nil), do: nil
   def file_path(path) when is_binary(path) do

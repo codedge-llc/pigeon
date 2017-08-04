@@ -5,42 +5,49 @@ defmodule Pigeon.FCM do
   require Logger
   import Supervisor.Spec
 
-  alias Pigeon.FCM.NotificationResponse
+  alias Pigeon.FCM.{Notification, NotificationResponse}
 
   @default_timeout 5_000
   @default_worker :fcm_default
+  @chunk_size 1_000
 
+  @spec push(Notification.t, Keyword.t) :: {:ok, NotificationResponse.t}
+  @spec push([Notification.t, ...], Keyword.t) :: [NotificationResponse.t, ...]
   def push(notification, opts \\ [])
   def push(notification, opts) when is_list(notification) do
     case opts[:on_response] do
       nil ->
-        ref = :erlang.make_ref
-        pid = self()
-        for n <- notification do
-          on_response = fn(x) -> send pid, {ref, x} end
-          send_push(n, on_response, opts)
-        end
-        Enum.foldl(notification, %{}, fn(_n, acc) ->
-          receive do
-            {^ref, %NotificationResponse{message_id: id} = response} ->
-              if Map.has_key?(acc, id) do
-                %{acc | id => merge(response, acc[:message_id])}
-              else
-                Map.merge(%{id => response}, acc)
-              end
-          after 5_000 ->
-            acc
-          end
-        end)
-      on_response -> send_push(notification, on_response, opts)
+        tasks = for n <- notification, do: Task.async(fn -> do_sync_push(n, opts) end)
+        tasks
+        |> Task.yield_many(@default_timeout + 10_000)
+        |> Enum.map(&task_mapper(&1))
+      on_response ->
+        for n <- notification, do: send_push(n, on_response, opts)
     end
   end
-
   def push(notification, opts) do
     case opts[:on_response] do
       nil -> do_sync_push(notification, opts)
       on_response -> send_push(notification, on_response, opts)
     end
+  end
+
+  defp task_mapper({task, result}) do
+    case result do
+      nil -> Task.shutdown(task, :brutal_kill)
+      {:ok, {:ok, response}} -> {:ok, response}
+      {:ok, {:error, :timeout, notification}} -> {:error, notification}
+    end
+  end
+
+  @doc """
+  Sends a push over FCM.
+  """
+  def send_push(notification, on_response, opts) do
+    worker_name = opts[:to] || @default_worker
+    notification
+    |> encode_requests()
+    |> Enum.map(& GenServer.cast(worker_name, generate_envelope(&1, on_response, opts)))
   end
 
   defp do_sync_push(notification, opts) do
@@ -73,23 +80,21 @@ defmodule Pigeon.FCM do
   end
   def encode_requests(notification) do
     notification.registration_id
-    |> Enum.chunk(1000, 1000, [])
+    |> chunk(@chunk_size, @chunk_size, [])
     |> Enum.map(& encode_requests(%{notification | registration_id: &1}))
     |> List.flatten
   end
 
+  defp chunk(collection, chunk_size, step, padding) do
+    if Kernel.function_exported?(Enum, :chunk_every, 4) do
+      Enum.chunk_every(collection, chunk_size, step, padding)
+    else
+      Enum.chunk(collection, chunk_size, step, padding)
+    end
+  end
+
   defp recipient_attr([regid]), do: %{"to" => regid}
   defp recipient_attr(regid) when is_list(regid), do: %{"registration_ids" => regid}
-
-  @doc """
-  Sends a push over FCM.
-  """
-  def send_push(notification, on_response, opts) do
-    worker_name = opts[:to] || @default_worker
-    notification
-    |> encode_requests()
-    |> Enum.map(& GenServer.cast(worker_name, generate_envelope(&1, on_response, opts)))
-  end
 
   def start_connection(opts \\ [])
   def start_connection(name) when is_atom(name) do
@@ -121,7 +126,8 @@ defmodule Pigeon.FCM do
         is_map(value_1) -> merge(value_1, value_2)
         is_nil(value_1) -> value_2
         is_nil(value_2) -> value_1
-        true -> value_1 ++ value_2
+        is_list(value_1) && is_list(value_2) -> value_1 ++ value_2
+        true -> [value_1] ++ [value_2]
       end
     end)
   end

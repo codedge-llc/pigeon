@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.0.2
+* Fixed FCM infinite `GOAWAY session_timed_out` loop
+
 ## v1.0.1
 * Configurable `:ping_period` for FCM connections
 
