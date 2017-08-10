@@ -86,10 +86,3 @@ defmodule Pigeon.FCM.Notification do
     %{notification | payload: payload}
   end
 end
-
-defmodule Pigeon.FCM.NotificationResponse do
-  @moduledoc """
-  Passed to the FCM on_response callback
-  """
-  defstruct message_id: nil, ok: [], retry: [], update: [], remove: [], error: %{}
-end

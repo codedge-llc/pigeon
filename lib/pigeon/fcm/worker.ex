@@ -56,7 +56,7 @@ defmodule Pigeon.FCM.Worker do
 
   def connect_socket(_config, 3), do: {:error, :timeout}
   def connect_socket(config, tries) do
-    uri = config |> fcm_uri() |> to_char_list
+    uri = config |> fcm_uri() |> to_char_list()
     case connect_socket_options(config) do
       {:ok, options} -> do_connect_socket(config, uri, options, tries)
     end

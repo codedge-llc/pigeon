@@ -15,10 +15,8 @@ defmodule Pigeon.Http2.Client.Kadabra do
 
   def handle_end_stream({:end_stream, %{id: id,
                                         headers: headers,
-                                        body: body,
-                                        error: error}}, _state) do
-
-    {:ok, %Pigeon.Http2.Stream{id: id, headers: headers, body: body, error: error}}
+                                        body: body}}, _state) do
+    {:ok, %Pigeon.Http2.Stream{id: id, headers: headers, body: body}}
   end
   def handle_end_stream(msg, _state), do: msg
 end

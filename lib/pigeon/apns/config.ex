@@ -3,6 +3,16 @@ defmodule Pigeon.APNS.Config do
   Validates configuration settings that initialize APNS.Workers.
   """
 
+  defstruct name: nil,
+            mode: nil,
+            reconnect: true,
+            cert: nil,
+            certfile: nil,
+            key: nil,
+            keyfile: nil,
+            use_2197: false,
+            ping_period: 600_000
+
   def default_name, do: :apns_default
 
   def config(name) do
