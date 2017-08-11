@@ -1,7 +1,7 @@
 language: elixir
 matrix:
   include:
-    - otp_release: 19.0
+    - otp_release: 19.2
       elixir: 1.4.5
     - otp_release: 20.0
       elixir: 1.4.5
