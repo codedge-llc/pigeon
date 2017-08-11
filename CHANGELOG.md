@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.1.0 (unreleased)
+* Minimum requirements now Elixir v1.4 and OTP 19 (Kadabra bumped to `v0.3.0`)
+
 ## v1.0.2
 * Fixed FCM infinite `GOAWAY session_timed_out` loop
 

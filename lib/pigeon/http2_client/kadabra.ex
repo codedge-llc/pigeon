@@ -1,5 +1,10 @@
+if Code.ensure_loaded?(Kadabra) do
 defmodule Pigeon.Http2.Client.Kadabra do
   @behaviour Pigeon.Http2.Client
+
+  def start do
+    Application.ensure_all_started(:kadabra)
+  end
 
   def connect(uri, scheme, opts) do
     Kadabra.open(uri, scheme, opts)
@@ -19,4 +24,5 @@ defmodule Pigeon.Http2.Client.Kadabra do
     {:ok, %Pigeon.Http2.Stream{id: id, headers: headers, body: body}}
   end
   def handle_end_stream(msg, _state), do: msg
+end
 end

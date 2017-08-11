@@ -8,6 +8,7 @@ defmodule Pigeon do
   """
 
   def start(_type, _args) do
+    Pigeon.Http2.Client.default.start
     opts = [strategy: :one_for_one, name: :pigeon]
     Supervisor.start_link(workers(), opts)
   end
