@@ -1,7 +1,6 @@
 defmodule Pigeon.FCM.Worker do
-  @moduledoc """
-  Handles all FCM request and response parsing over an HTTP2 connection.
-  """
+  @moduledoc false
+
   use GenServer
   require Logger
 

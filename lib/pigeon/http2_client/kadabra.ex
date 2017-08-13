@@ -1,5 +1,7 @@
 if Code.ensure_loaded?(Kadabra) do
 defmodule Pigeon.Http2.Client.Kadabra do
+  @moduledoc false
+
   @behaviour Pigeon.Http2.Client
 
   def start do

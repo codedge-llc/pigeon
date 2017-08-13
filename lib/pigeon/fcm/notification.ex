@@ -52,7 +52,7 @@ defmodule Pigeon.FCM.Notification do
 
   ## Examples
 
-      iex> Pigeon.FCM.Notification.put_data(%Pigeon.FCM.Notification{}, %{"key" => 1234})
+      iex> put_data(%Pigeon.FCM.Notification{}, %{"key" => 1234})
       %Pigeon.FCM.Notification{
         payload: %{"data" => %{"key" => 1234}},
         registration_id: nil
@@ -65,7 +65,7 @@ defmodule Pigeon.FCM.Notification do
 
   ## Examples
 
-      iex> Pigeon.FCM.Notification.put_notification(%Pigeon.FCM.Notification{},
+      iex> put_notification(%Pigeon.FCM.Notification{},
       ...> %{"body" => "message"})
       %Pigeon.FCM.Notification{
         payload: %{"notification" => %{"body" => "message"}},
@@ -74,6 +74,20 @@ defmodule Pigeon.FCM.Notification do
   """
   def put_notification(n, notification), do: update_payload(n, "notification", notification)
 
+  @doc """
+  Updates `"priority"` key.
+
+  ## Examples
+
+      iex> put_priority(%Pigeon.FCM.Notification{}, :normal)
+      %Pigeon.FCM.Notification{priority: :normal}
+
+      iex> put_priority(%Pigeon.FCM.Notification{}, :high)
+      %Pigeon.FCM.Notification{priority: :high}
+
+      iex> put_priority(%Pigeon.FCM.Notification{priority: :normal}, :bad)
+      %Pigeon.FCM.Notification{priority: :normal}
+  """
   def put_priority(n, :normal), do: %{n | priority: :normal}
   def put_priority(n, :high),   do: %{n | priority: :high}
   def put_priority(n, _),       do: n

@@ -1,5 +1,6 @@
 defmodule Pigeon.APNS.Error do
   @moduledoc false
+
   require Logger
 
   def parse(data) do

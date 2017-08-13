@@ -1,7 +1,6 @@
 defmodule Pigeon.APNS.Worker do
-  @moduledoc """
-  Handles all APNS request and response parsing over an HTTP2 connection.
-  """
+  @moduledoc false
+
   use GenServer
   require Logger
 

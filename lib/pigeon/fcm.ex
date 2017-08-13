@@ -2,6 +2,7 @@ defmodule Pigeon.FCM do
   @moduledoc """
   Handles all Firebase Cloud Messaging (FCM) request and response functionality.
   """
+
   require Logger
   import Supervisor.Spec
 

@@ -1,8 +1,6 @@
 defmodule Pigeon.ADM.Worker do
-  @moduledoc """
-  Handles all Amazon ADM request and response parsing.
-  Includes managing OAuth2 tokens.
-  """
+  @moduledoc false
+
   use GenServer
   require Logger
 
