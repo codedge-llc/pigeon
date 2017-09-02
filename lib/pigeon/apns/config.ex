@@ -85,9 +85,6 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
 
   # Configurable Callbacks
 
-  @spec default_name(any) :: atom
-  def default_name(_config), do: :apns_default
-
   @spec worker_name(any) :: atom | nil
   def worker_name(%Config{name: name}), do: name
 
@@ -101,7 +98,7 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
     end
   end
 
-  def push_headers(_config, notification) do
+  def push_headers(_config, notification, _opts) do
     json = Pigeon.Notification.json_payload(notification.payload)
 
     [
@@ -113,8 +110,8 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
     |> put_apns_topic(notification)
   end
 
-  def push_payload(_config, notif) do
-    Pigeon.Notification.json_payload(notif.payload)
+  def push_payload(_config, notification, _opts) do
+    Pigeon.Notification.json_payload(notification.payload)
   end
 
   defp put_apns_id(headers, notification) do
@@ -138,11 +135,11 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
     case status do
       200 ->
         notification = %{notification | id: get_apns_id(headers)}
-        on_response.({:ok, notification})
-      _error -> 
+        unless on_response == nil, do: on_response.({:ok, notification})
+      _error ->
         reason = Error.parse(body)
         Error.log(reason, notification)
-        on_response.({:error, reason, notification})
+        unless on_response == nil, do: on_response.({:error, reason, notification})
     end
   end
 
@@ -165,8 +162,8 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
   @spec ping_period(any) :: pos_integer
   def ping_period(%Config{ping_period: ping}), do: ping
 
-  @spec reconnect(any) :: boolean
-  def reconnect(%Config{reconnect: reconnect}), do: reconnect
+  @spec reconnect?(any) :: boolean
+  def reconnect?(%Config{reconnect: reconnect}), do: reconnect
 
   def close(_config) do
   end

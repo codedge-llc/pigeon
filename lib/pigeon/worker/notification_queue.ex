@@ -1,4 +1,6 @@
 defmodule Pigeon.Worker.NotificationQueue do
+  @moduledoc false
+
   @type queue :: %{required(String.t) => {term, (... -> no_return)}}
 
   @doc ~S"""

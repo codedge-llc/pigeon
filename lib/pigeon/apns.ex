@@ -35,13 +35,17 @@ defmodule Pigeon.APNS do
     on_response = fn(x) -> send pid, {ref, x} end
 
     worker_name = opts[:to] || Config.default_name
-    GenServer.cast(worker_name, {:push, notification, on_response})
+    cast_push(worker_name, notification, on_response: on_response)
 
     receive do
       {^ref, x} -> x
     after
       @default_timeout -> {:error, :timeout, notification}
     end
+  end
+
+  def cast_push(pid, notification, opts) do
+    GenServer.cast(pid, {:push, notification, opts})
   end
 
   defp group_responses(responses) do
@@ -83,7 +87,7 @@ defmodule Pigeon.APNS do
   @spec push(Notification.t, ((Notification.t) -> no_return), Keyword.t) :: no_return
   def push(notification, on_response, opts) do
     worker_name = opts[:to] || Config.default_name
-    GenServer.cast(worker_name, {:push, notification, on_response})
+    cast_push(worker_name, notification, on_response: on_response)
   end
 
   @spec start_connection(atom | Keyword.t) :: {:ok, pid}

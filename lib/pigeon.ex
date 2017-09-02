@@ -44,16 +44,11 @@ defmodule Pigeon do
   end
 
   defp fcm_workers do
-    # cond do
-    #   config = Application.get_env(:pigeon, :fcm) ->
-    #     [worker(Pigeon.FCMWorker, [:fcm_worker, config], id: :fcm_worker)]
-    #   true -> []
-    # end
     cond do
       workers = Application.get_env(:pigeon, :fcm) ->
         Enum.map(workers, fn({worker_name, config}) ->
-          config = Map.put(config, :name, worker_name)
-          worker(Pigeon.FCM.Worker, [config], id: worker_name)
+          config = Pigeon.FCM.Config.config(worker_name)
+          worker(Pigeon.Worker, [config], id: worker_name)
         end)
       true -> []
     end

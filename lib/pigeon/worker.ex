@@ -28,7 +28,6 @@ defmodule Pigeon.Worker do
         Process.send_after(self(), :ping, Configurable.ping_period(config))
         {:ok, %{
           socket: socket,
-          reconnect: Configurable.reconnect(config),
           config: config,
           stream_id: 1,
           queue: %{}
@@ -58,12 +57,11 @@ defmodule Pigeon.Worker do
     {:noreply, state}
   end
 
-  def handle_info({:closed, _}, state) do
-    case state[:reconnect] do
-      false ->
-        Process.exit(state.socket, :kill)
-        {:stop, :normal, state}
-      _     -> {:noreply, state}
+  def handle_info({:closed, _}, %{config: config} = state) do
+    if Configurable.reconnect?(config) do
+      {:noreply, reconnect(state)}
+    else
+      {:noreply, %{state | socket: nil}}
     end
   end
 
@@ -80,9 +78,6 @@ defmodule Pigeon.Worker do
       {nil, new_queue} ->
         # Do nothing if no queued item for stream
         {:noreply, %{state | queue: new_queue}}
-      {{_notification, nil}, new_queue} ->
-        # Do nothing if nil on_response
-        {:noreply, %{state | queue: new_queue}}
       {{notification, on_response}, new_queue} ->
         Configurable.handle_end_stream(config, stream, notification, on_response)
         {:noreply, %{state | queue: new_queue}}
@@ -91,29 +86,44 @@ defmodule Pigeon.Worker do
 
   def send_push(%{socket: socket,
                   config: config,
-                  stream_id: stream_id,
-                  queue: queue} = state, notification, on_response) do
-    headers = Configurable.push_headers(config, notification)
-    payload = Configurable.push_payload(config, notification)
+                  queue: queue} = state, notification, opts) do
 
-    Pigeon.Http2.Client.default().send_request(socket, headers, payload)
+    state =
+      case socket do
+        nil ->
+          reconnect(state)
+        _socket ->
+          state
+      end
 
-    new_q = NotificationQueue.add(queue, stream_id, notification, on_response)
-    new_stream_id = stream_id + 2
+    headers = Configurable.push_headers(config, notification, opts)
+    payload = Configurable.push_payload(config, notification, opts)
+
+    Pigeon.Http2.Client.default().send_request(state.socket, headers, payload)
+
+    new_q = NotificationQueue.add(queue, state.stream_id, notification, opts[:on_response])
+    new_stream_id = state.stream_id + 2
 
     {:noreply, %{state | stream_id: new_stream_id, queue: new_q}}
+  end
+
+  def reconnect(%{config: config} = state) do
+    case connect_socket(config) do
+      {:ok, new_socket} ->
+        Process.send_after(self(), :ping, Configurable.ping_period(config))
+        %{state | socket: new_socket, queue: %{}, stream_id: 1}
+      error ->
+        error |> inspect() |> Logger.error
+        state
+    end
   end
 
   # Cast
 
   def handle_cast(:stop, state), do: { :noreply, state }
 
-  def handle_cast({:push, notification}, state) do
-    send_push(state, notification, nil)
-  end
-
-  def handle_cast({:push, notification, on_response}, state) do
-    send_push(state, notification, on_response)
+  def handle_cast({:push, notification, opts}, state) do
+    send_push(state, notification, opts)
   end
 
   def handle_cast(msg, state) do

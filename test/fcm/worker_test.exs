@@ -16,7 +16,7 @@ defmodule Pigeon.FCM.WorkerTest do
 
     me = self()
     bad = {"toto", "this is not json"}
-    :gen_server.cast(pid, {:push, :fcm, bad, &(send me, &1), %{}})
+    :gen_server.cast(pid, {:push, bad, on_response: &(send me, &1)})
     assert_receive {:error, :malformed_json}, 5000
 
     :gen_server.cast(pid, :stop)

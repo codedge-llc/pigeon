@@ -6,7 +6,7 @@ defmodule Pigeon.FCM do
   require Logger
   import Supervisor.Spec
 
-  alias Pigeon.FCM.{Notification, NotificationResponse}
+  alias Pigeon.FCM.{Config, Notification, NotificationResponse}
 
   @default_timeout 5_000
   @default_worker :fcm_default
@@ -41,9 +41,6 @@ defmodule Pigeon.FCM do
     end
   end
 
-  @doc """
-  Sends a push over FCM.
-  """
   def send_push(notification, on_response, opts) do
     worker_name = opts[:to] || @default_worker
     notification
@@ -99,16 +96,18 @@ defmodule Pigeon.FCM do
 
   def start_connection(opts \\ [])
   def start_connection(name) when is_atom(name) do
-    config = Application.get_env(:pigeon, :fcm)[name]
-    Supervisor.start_child(:pigeon, worker(Pigeon.FCM.Worker, [config], id: name))
+    config = Config.config(name)
+    Supervisor.start_child(:pigeon, worker(Pigeon.Worker, [config], id: name))
   end
   def start_connection(opts) do
-    config = %{
+    config = %Config{
       name: opts[:name],
-      key:  opts[:key],
-      ping_period: opts[:ping_period]
+      key: opts[:key],
+      uri: opts[:uri] || 'fcm.googleapis.com',
+      port: opts[:port] || 443,
+      ping_period: opts[:ping_period] || 600_000
     }
-    Pigeon.FCM.Worker.start_link(config)
+    Pigeon.Worker.start_link(config)
   end
 
   def stop_connection(name) do
@@ -117,7 +116,8 @@ defmodule Pigeon.FCM do
   end
 
   def generate_envelope(payload, on_response, opts) do
-    {:push, :fcm, payload, on_response, Map.new(opts)}
+    opts = Keyword.put(opts, :on_response, on_response)
+    {:push, payload, opts}
   end
 
   def merge(response_1, response_2) do

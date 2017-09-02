@@ -21,7 +21,7 @@ defmodule Pigeon.FCMTest do
       assert is_pid(pid)
 
       state = :sys.get_state(pid)
-      assert state.key == fcm_key
+      assert state.config.key == fcm_key
       assert is_pid(state.socket)
     end
 
@@ -38,7 +38,7 @@ defmodule Pigeon.FCMTest do
     end
   end
 
-  describe "push/1 with custom worker" do
+  describe "push/2 with custom worker" do
     test "pushes to worker pid" do
       n =
         valid_fcm_reg_id()
@@ -112,11 +112,11 @@ defmodule Pigeon.FCMTest do
     assert length(r3) == 534
   end
 
-  test "successfully sends a valid push with an explicit config" do
+  test "successfully sends a valid push with an explicit key" do
     response =
       valid_fcm_reg_id()
       |> Notification.new(%{}, @data)
-      |> Pigeon.FCM.push(%{key: "explicit"})
+      |> Pigeon.FCM.push(key: "explicit")
 
      assert response == {:error, :unauthorized}
   end
@@ -125,7 +125,7 @@ defmodule Pigeon.FCMTest do
     reg_id = valid_fcm_reg_id()
     n = Notification.new(reg_id, %{}, @data)
     pid = self()
-    Pigeon.FCM.send_push(n, fn(x) -> send pid, x end, %{})
+    Pigeon.FCM.push(n, on_response: fn(x) -> send pid, x end)
 
     assert_receive {:ok, notification}, 5000
     assert notification.ok == [reg_id]
@@ -135,7 +135,7 @@ defmodule Pigeon.FCMTest do
     reg_id = "bad_reg_id"
     n = Notification.new(reg_id, %{}, @data)
     pid = self()
-    Pigeon.FCM.send_push(n, fn(x) -> send pid, x end, %{})
+    Pigeon.FCM.push(n, on_response: fn(x) -> send pid, x end)
 
     assert_receive {:ok, %NotificationResponse{remove: [^reg_id]}}, 5000
     assert n.registration_id == reg_id
