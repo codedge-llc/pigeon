@@ -37,7 +37,7 @@ defmodule Pigeon do
       workers = Application.get_env(:pigeon, :apns) ->
         Enum.map(workers, fn({worker_name, _config}) ->
           config = Pigeon.APNS.Config.config(worker_name)
-          worker(Pigeon.APNS.Worker, [config], id: worker_name)
+          worker(Pigeon.Worker, [config], id: worker_name)
         end)
       true -> []
     end

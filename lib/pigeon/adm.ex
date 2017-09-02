@@ -7,7 +7,7 @@ defmodule Pigeon.ADM do
   alias Pigeon.ADM.{Config, Notification}
 
   @doc """
-    Sends a push over ADM.
+  Sends a push over ADM.
   """
   @spec push(Notification.t, Keyword.t) :: no_return
   def push(notification, opts \\ []) do
@@ -16,7 +16,7 @@ defmodule Pigeon.ADM do
   end
 
   @doc """
-    Sends a push over ADM.
+  Sends a push over ADM.
   """
   @spec push(Notification.t, (() -> none), Keyword.t) :: no_return
   def push(notification, on_response, opts) do

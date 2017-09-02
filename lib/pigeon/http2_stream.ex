@@ -1,5 +1,5 @@
 defmodule Pigeon.Http2.Stream do
-  defstruct id: nil, headers: nil, body: nil, error: nil
+  defstruct id: nil, status: nil, headers: nil, body: nil, error: nil
 
   @type t :: %__MODULE__{
     id: pos_integer,
