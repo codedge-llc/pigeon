@@ -15,7 +15,7 @@ defmodule Pigeon.FCM.ResultParser do
   def parse([regid | reg_res],
             [%{"message_id" => id, "registration_id" => new_regid} | rest_results],
             on_response,
-            %NotificationResponse{ update: update} =  resp) do
+            %NotificationResponse{update: update} =  resp) do
 
     new_updates = [{regid, new_regid} | update]
     parse(reg_res, rest_results, on_response, %{resp | message_id: id, update: new_updates})

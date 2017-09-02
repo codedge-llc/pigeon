@@ -1,4 +1,14 @@
 defmodule Pigeon.Http2.Client do
+  @doc ~S"""
+  Default http2 client to use.
+  
+  When not configured, defaults to `Pigeon.Http2.Client.Kadabra`
+
+  ## Examples
+
+      iex> Pigeon.Http2.Client.default
+      Pigeon.Http2.Client.Kadabra
+  """
   def default do
     Application.get_env(:pigeon, :http2_client, Pigeon.Http2.Client.Kadabra)
   end

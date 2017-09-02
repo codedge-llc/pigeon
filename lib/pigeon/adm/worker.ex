@@ -27,7 +27,7 @@ defmodule Pigeon.ADM.Worker do
     }}
   end
 
-  def handle_cast(:stop, state), do: { :noreply, state }
+  def handle_cast(:stop, state), do: {:noreply, state}
 
   def handle_cast({:push, :adm, notification}, state) do
     case refresh_access_token_if_needed(state) do
@@ -138,7 +138,7 @@ defmodule Pigeon.ADM.Worker do
             {:ok, %HTTPoison.Response{status_code: status, body: body}} =
               HTTPoison.post(adm_uri(reg_id), payload, adm_headers(state))
 
-            notification = %{ notification | registration_id: reg_id }
+            notification = %{notification | registration_id: reg_id}
             process_response(status, body, notification, on_response)
           end
       end
@@ -209,16 +209,16 @@ defmodule Pigeon.ADM.Worker do
   defp process_callback({reg_id, response}, notification, on_response) do
     case parse_result(response) do
       :ok ->
-        notification = %{ notification | registration_id: reg_id }
+        notification = %{notification | registration_id: reg_id}
         on_response.({:ok, notification})
 
       {:ok, registration_id} ->
         notification =
-          %{ notification | registration_id: reg_id, updated_registration_id: registration_id }
+          %{notification | registration_id: reg_id, updated_registration_id: registration_id}
         on_response.({:ok, notification})
 
       {:error, reason} ->
-        notification = %{ notification | registration_id: reg_id }
+        notification = %{notification | registration_id: reg_id}
         on_response.({:error, reason, notification})
     end
   end

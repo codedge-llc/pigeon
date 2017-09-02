@@ -50,9 +50,7 @@ defmodule Pigeon.Worker do
   def connect_socket(config, tries) do
     case Configurable.connect(config) do
       {:ok, socket} -> {:ok, socket}
-      {:error, reason} ->
-        IO.inspect reason
-        connect_socket(config, tries + 1)
+      {:error, reason} -> connect_socket(config, tries + 1)
     end
   end
 
@@ -128,14 +126,13 @@ defmodule Pigeon.Worker do
 
   # Cast
 
-  def handle_cast(:stop, state), do: { :noreply, state }
+  def handle_cast(:stop, state), do: {:noreply, state}
 
   def handle_cast({:push, notification, opts}, state) do
     send_push(state, notification, opts)
   end
 
   def handle_cast(msg, state) do
-    Logger.debug "Recv: #{inspect(msg)}"
     {:noreply, state}
   end
 end
