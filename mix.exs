@@ -18,7 +18,10 @@ defmodule Pigeon.Mixfile do
        "coveralls.post": :test,
        "coveralls.html": :test
      ],
-     dialyzer: [plt_add_apps: [:kadabra, :poison]],
+     dialyzer: [
+       plt_add_apps: [:kadabra, :poison],
+       ignore_warnings: "config/dialyzer.ignore-warnings"
+     ],
      docs: [
        main: "getting-started",
        extras: [

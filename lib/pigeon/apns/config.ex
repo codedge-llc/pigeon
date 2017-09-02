@@ -13,6 +13,18 @@ defmodule Pigeon.APNS.Config do
             port: 443,
             ping_period: 600_000
 
+  @type t :: %__MODULE__{
+    name: atom | nil,
+    mode: :dev | :prod,
+    reconnect: boolean,
+    cert: binary | nil,
+    certfile: binary | nil,
+    key: binary | nil,
+    keyfile: binary | nil,
+    port: pos_integer,
+    ping_period: pos_integer
+  }
+
   def default_name, do: :apns_default
 
   def config(name) do

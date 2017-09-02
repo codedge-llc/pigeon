@@ -26,7 +26,7 @@ defmodule Pigeon do
       workers = Application.get_env(:pigeon, :adm) ->
         Enum.map(workers, fn({worker_name, _config}) ->
           config = Pigeon.ADM.Config.config(worker_name)
-          worker(Pigeon.ADM.Worker, [config], id: worker_name)
+          worker(Pigeon.ADM.Worker, [config], id: worker_name, restart: :temporary)
         end)
       true -> []
     end
@@ -37,7 +37,7 @@ defmodule Pigeon do
       workers = Application.get_env(:pigeon, :apns) ->
         Enum.map(workers, fn({worker_name, _config}) ->
           config = Pigeon.APNS.Config.config(worker_name)
-          worker(Pigeon.Worker, [config], id: worker_name)
+          worker(Pigeon.Worker, [config], id: worker_name, restart: :temporary)
         end)
       true -> []
     end
@@ -46,9 +46,9 @@ defmodule Pigeon do
   defp fcm_workers do
     cond do
       workers = Application.get_env(:pigeon, :fcm) ->
-        Enum.map(workers, fn({worker_name, config}) ->
+        Enum.map(workers, fn({worker_name, _config}) ->
           config = Pigeon.FCM.Config.config(worker_name)
-          worker(Pigeon.Worker, [config], id: worker_name)
+          worker(Pigeon.Worker, [config], id: worker_name, restart: :temporary)
         end)
       true -> []
     end

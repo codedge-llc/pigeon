@@ -11,11 +11,19 @@ defmodule Pigeon.Worker do
   alias Pigeon.Http2.Stream
   alias Pigeon.Worker.NotificationQueue
 
+  def cast_push(pid, notification, opts) do
+    GenServer.cast(pid, {:push, notification, opts})
+  end
+
   def start_link(config) do
     case Configurable.worker_name(config) do
       nil -> GenServer.start_link(__MODULE__, {:ok, config})
       name -> GenServer.start_link(__MODULE__, {:ok, config}, name: name)
     end
+  end
+
+  def stop_connection(pid) do
+    GenServer.cast(pid, :stop)
   end
 
   def stop, do: :gen_server.cast(self(), :stop)

@@ -29,7 +29,7 @@ defmodule Pigeon.Worker.NotificationQueue do
       iex> pop(queue, 3)
       {nil, %{"1" => {%Pigeon.APNS.Notification{}, nil}}}
   """
-  @spec pop(queue, pos_integer) :: {{term, term}, queue}
+  @spec pop(queue, pos_integer) :: {nil | {term, term}, queue}
   def pop(queue, stream_id) do
     result = queue["#{stream_id}"]
     new_queue = Map.delete(queue, "#{stream_id}")
