@@ -12,15 +12,9 @@ defmodule Pigeon.ADM do
   @spec push(Notification.t, Keyword.t) :: none
   def push(notification, opts \\ []) do
     worker_name = opts[:to] || Config.default_name
-    GenServer.cast(worker_name, {:push, :adm, notification})
-  end
-
-  @doc """
-    Sends a push over ADM.
-  """
-  @spec push(Notification.t, (() -> none), Keyword.t) :: none
-  def push(notification, on_response, opts) do
-    worker_name = opts[:to] || Config.default_name
-    GenServer.cast(worker_name, {:push, :adm, notification, on_response})
+    case opts[:on_response] do
+      nil -> GenServer.cast(worker_name, {:push, :adm, notification})
+      on_response -> GenServer.cast(worker_name, {:push, :adm, notification, on_response})
+    end
   end
 end

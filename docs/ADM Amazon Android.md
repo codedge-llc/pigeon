@@ -30,13 +30,13 @@
     ```elixir
     data = %{ message: "your message" }
     n = Pigeon.ADM.Notification.new("device registration ID", data)
-    Pigeon.ADM.push(n, fn(x) -> IO.inspect(x) end)
+    Pigeon.ADM.push(n, on_response: fn(x) -> IO.inspect(x) end)
     ```
 
 2. Reponses return a tuple of either `{:ok, notification}` or `{:error, reason, notification}`. You could handle responses like so:
 
     ```elixir
-    on_response = fn(x) ->
+    on_response_handler = fn(x) ->
       case x do
         {:ok, notification} ->
           # Push successful, check to see if the registration ID changed
@@ -52,7 +52,7 @@
 
     data = %{ message: "your message" }
     n = Pigeon.ADM.Notification.new("your registration id", data)
-    Pigeon.ADM.push(n, on_response)
+    Pigeon.ADM.push(n, on_response: on_response_handler)
     ```
 
 ## Error Responses
