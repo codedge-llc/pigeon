@@ -1,6 +1,6 @@
 defmodule Pigeon.APNS do
   @moduledoc """
-  Apple Push Notification Service (APNS).
+  Apple Push Notification Service (APNS)
   """
 
   require Logger
@@ -96,17 +96,16 @@ defmodule Pigeon.APNS do
     Pigeon.Worker.start_link(config)
   end
   def start_connection(opts) do
-    start_connection(
-      %Pigeon.APNS.Config{
-        name: opts[:name],
-        mode: opts[:mode],
-        cert: Config.cert(opts[:cert]),
-        certfile: Config.file_path(opts[:cert]),
-        key: Config.key(opts[:key]),
-        keyfile: Config.file_path(opts[:key]),
-        ping_period: opts[:ping_period] || 600_000
-      }
-    )
+    %Pigeon.APNS.Config{
+      name: opts[:name],
+      mode: opts[:mode],
+      cert: Config.cert(opts[:cert]),
+      certfile: Config.file_path(opts[:cert]),
+      key: Config.key(opts[:key]),
+      keyfile: Config.file_path(opts[:key]),
+      ping_period: opts[:ping_period] || 600_000
+    }
+    |> start_connection()
   end
 
   @doc ~S"""

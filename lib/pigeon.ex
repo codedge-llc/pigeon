@@ -53,4 +53,6 @@ defmodule Pigeon do
         end)
     end
   end
+
+  def debug_log?, do: Application.get_env(:pigeon, :debug_log, false)
 end

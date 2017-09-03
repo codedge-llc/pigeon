@@ -135,6 +135,6 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   end
 
   defp log_error(code, reason) do
-    Logger.error("#{reason}: #{code}")
+    if Pigeon.debug_log?, do: Logger.error("#{reason}: #{code}")
   end
 end

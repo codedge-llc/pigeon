@@ -1,12 +1,26 @@
 defmodule Pigeon.FCM do
   @moduledoc """
-  Handles all Firebase Cloud Messaging (FCM) request and response functionality.
+  Firebase Cloud Messaging (FCM)
   """
 
   require Logger
   import Supervisor.Spec
 
   alias Pigeon.FCM.{Config, Notification, NotificationResponse}
+
+  @type on_response :: ((NotificationResponse.t) -> no_return)
+
+  @typedoc ~S"""
+  Options for sending push notifications.
+
+  - `:to` - Defines worker to process push. Defaults to `:apns_default`
+  - `:on_response` - Optional async callback triggered on receipt of push.
+    See `t:on_response/0`
+  """
+  @type push_opts :: [
+    to: atom | pid | nil,
+    on_response: on_response | nil
+  ]
 
   @default_timeout 5_000
   @default_worker :fcm_default
@@ -18,7 +32,7 @@ defmodule Pigeon.FCM do
   def push(notification, opts) when is_list(notification) do
     case opts[:on_response] do
       nil ->
-        tasks = for n <- notification, do: Task.async(fn -> do_sync_push(n, opts) end)
+        tasks = for n <- notification, do: Task.async(fn -> sync_push(n, opts) end)
         tasks
         |> Task.yield_many(@default_timeout + 10_000)
         |> Enum.map(&task_mapper(&1))
@@ -28,7 +42,7 @@ defmodule Pigeon.FCM do
   end
   def push(notification, opts) do
     case opts[:on_response] do
-      nil -> do_sync_push(notification, opts)
+      nil -> sync_push(notification, opts)
       on_response -> send_push(notification, on_response, opts)
     end
   end
@@ -48,7 +62,7 @@ defmodule Pigeon.FCM do
     |> Enum.map(& GenServer.cast(worker_name, generate_envelope(&1, on_response, opts)))
   end
 
-  defp do_sync_push(notification, opts) do
+  defp sync_push(notification, opts) do
     ref = :erlang.make_ref
     pid = self()
     on_response = fn(x) -> send pid, {ref, x} end
@@ -94,26 +108,47 @@ defmodule Pigeon.FCM do
   defp recipient_attr([regid]), do: %{"to" => regid}
   defp recipient_attr(regid) when is_list(regid), do: %{"registration_ids" => regid}
 
+  @doc ~S"""
+  Starts FCM worker connection with given config or name.
+
+  ## Examples
+
+      iex> config = Pigeon.FCM.Config.config(:fcm_default)
+      iex> {:ok, pid} = Pigeon.FCM.start_connection(%{config | name: nil})
+      iex> is_pid(pid)
+      true
+  """
   def start_connection(opts \\ [])
   def start_connection(name) when is_atom(name) do
     config = Config.config(name)
     Supervisor.start_child(:pigeon, worker(Pigeon.Worker, [config], id: name))
   end
+  def start_connection(%Config{} = config) do
+    Pigeon.Worker.start_link(config)
+  end
   def start_connection(opts) do
-    config = %Config{
+    %Config{
       name: opts[:name],
       key: opts[:key],
       uri: opts[:uri] || 'fcm.googleapis.com',
       port: opts[:port] || 443,
       ping_period: opts[:ping_period] || 600_000
     }
-    Pigeon.Worker.start_link(config)
+    |> start_connection()
   end
 
-  def stop_connection(name) do
-    Supervisor.terminate_child(:pigeon, name)
-    Supervisor.delete_child(:pigeon, name)
-  end
+  @doc ~S"""
+  Stops existing FCM worker connection.
+
+  ## Examples
+
+      iex> config = Pigeon.FCM.Config.config(:fcm_default)
+      iex> {:ok, pid} = Pigeon.FCM.start_connection(%{config | name: nil})
+      iex> Pigeon.FCM.stop_connection(pid)
+      :ok
+  """
+  @spec stop_connection(atom | pid) :: :ok
+  def stop_connection(name), do: Pigeon.Worker.stop_connection(name)
 
   def generate_envelope(payload, on_response, opts) do
     opts = Keyword.put(opts, :on_response, on_response)

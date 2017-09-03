@@ -1,5 +1,6 @@
 defmodule Pigeon.FCMTest do
   use ExUnit.Case
+  doctest Pigeon.FCM, import: true
   doctest Pigeon.FCM.Notification, import: true
 
   alias Pigeon.FCM.{Notification, NotificationResponse}
