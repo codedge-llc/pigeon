@@ -15,23 +15,36 @@ defmodule Pigeon.FCM.Config do
     ping_period: pos_integer
   }
 
-  def config(name) do
-    config = Application.get_env(:pigeon, :fcm)[name]
+  @doc ~S"""
+  Returns a new `FCM.Config` with given `opts`.
+
+  ## Examples
+
+      iex> Pigeon.FCM.Config.new(
+      ...>   name: :test,
+      ...>   key: "fcm_key",
+      ...>   uri: 'test.server.example.com',
+      ...>   port: 5228,
+      ...>   ping_period: 300_000
+      ...> )
+      %Pigeon.FCM.Config{key: "fcm_key", name: :test, ping_period: 300000,
+      port: 5228, uri: 'test.server.example.com'}
+  """
+  def new(opts \\ []) do
     %__MODULE__{
-      name: name,
-      key: config[:key],
-      uri: config[:uri] || 'fcm.googleapis.com',
-      port: config[:port] || 443,
-      ping_period: config[:ping_period] || 600_000
+      name: opts[:name],
+      key: opts[:key],
+      uri: opts[:uri] || 'fcm.googleapis.com',
+      port: opts[:port] || 443,
+      ping_period: opts[:ping_period] || 600_000
     }
   end
 
-  def new(key, opts) do
-    %__MODULE__{
-      key: key,
-      name: opts[:name] || nil,
-      ping_period: opts[:ping_period] || 600_000
-    }
+  def config(name) do
+    Application.get_env(:pigeon, :fcm)[name]
+    |> Map.to_list
+    |> Keyword.put(:name, name)
+    |> new()
   end
 end
 

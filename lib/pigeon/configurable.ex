@@ -16,6 +16,17 @@ defprotocol Pigeon.Configurable do
   @spec ping_period(any) :: pos_integer
   def ping_period(config)
 
+  @doc ~S"""
+  Returns whether connection should reconnect if dropped.
+
+  ## Examples
+
+      iex> reconnect?(%Pigeon.APNS.Config{reconnect: true})
+      true
+
+      iex> reconnect?(%Pigeon.FCM.Config{}) # always false
+      false
+  """
   @spec reconnect?(any) :: boolean
   def reconnect?(config)
 

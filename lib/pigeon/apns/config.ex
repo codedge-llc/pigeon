@@ -1,6 +1,6 @@
 defmodule Pigeon.APNS.Config do
   @moduledoc """
-  Validates configuration settings that initialize APNS.Workers.
+  Configuration for APNS Workers
   """
 
   defstruct name: nil,
@@ -27,30 +27,44 @@ defmodule Pigeon.APNS.Config do
 
   def default_name, do: :apns_default
 
-  def config(name) do
-    config = Application.get_env(:pigeon, :apns)[name]
+  @doc ~S"""
+  Returns a new `APNS.Config` with given `opts`.
+
+  ## Examples
+
+      iex> Pigeon.APNS.Config.new(
+      ...>   name: :test,
+      ...>   mode: :prod,
+      ...>   cert: "test_cert.pem",
+      ...>   key: "test_key.pem",
+      ...>   reconnect: false,
+      ...>   port: 2197,
+      ...>   ping_period: 300_000
+      ...> )
+      %Pigeon.APNS.Config{mode: :prod, name: :test,
+      ping_period: 300000, port: 2197, reconnect: false} 
+  """
+  @spec new(Keyword.t) :: t
+  def new(opts) when is_list(opts) do
     %__MODULE__{
-      name: name,
-      mode: mode(config[:mode]),
-      reconnect: Map.get(config, :reconnect, true),
-      cert: cert(config[:cert]),
-      certfile: file_path(config[:cert]),
-      key: key(config[:key]),
-      keyfile: file_path(config[:key]),
-      port: config[:port] || 443,
-      ping_period: config[:ping_period] || 600_000
+      name: opts[:name],
+      mode: opts[:mode],
+      reconnect: Keyword.get(opts, :reconnect, true),
+      cert: cert(opts[:cert]),
+      certfile: file_path(opts[:cert]),
+      key: key(opts[:key]),
+      keyfile: file_path(opts[:key]),
+      port: opts[:port] || 443,
+      ping_period: opts[:ping_period] || 600_000
     }
   end
-
-  def mode({:system, env_var}), do: to_mode(System.get_env(env_var))
-  def mode(mode), do: mode
-
-  def to_mode(nil), do: raise "APNS.Config mode is nil"
-  def to_mode("dev"), do: :dev
-  def to_mode(":dev"), do: :dev
-  def to_mode("prod"), do: :prod
-  def to_mode(":prod"), do: :prod
-  def to_mode(other), do: raise "APNS.Config mode is #{inspect(other)}"
+  
+  def config(name) do
+    Application.get_env(:pigeon, :apns)[name]
+    |> Map.to_list
+    |> Keyword.put(:name, name)
+    |> new()
+  end
 
   def file_path(nil), do: nil
   def file_path(path) when is_binary(path) do
@@ -75,13 +89,6 @@ defmodule Pigeon.APNS.Config do
       [{:RSAPrivateKey, key, _}] -> {:RSAPrivateKey, key}
       _ -> nil
     end
-  end
-
-  def valid?(config) do
-    valid_mode? = (config[:mode] == :dev || config[:mode] == :prod)
-    valid_cert? = !is_nil(config[:cert] || config[:certfile])
-    valid_key? = !is_nil(config[:key] || config[:keyfile])
-    valid_mode? && valid_cert? && valid_key?
   end
 end
 
