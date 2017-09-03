@@ -50,7 +50,7 @@ defmodule Pigeon.Worker do
   def connect_socket(config, tries) do
     case Configurable.connect(config) do
       {:ok, socket} -> {:ok, socket}
-      {:error, reason} -> connect_socket(config, tries + 1)
+      {:error, _reason} -> connect_socket(config, tries + 1)
     end
   end
 
@@ -132,7 +132,7 @@ defmodule Pigeon.Worker do
     send_push(state, notification, opts)
   end
 
-  def handle_cast(msg, state) do
+  def handle_cast(_msg, state) do
     {:noreply, state}
   end
 end

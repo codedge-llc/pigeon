@@ -14,11 +14,26 @@ defmodule Pigeon do
   end
 
   defp workers do
-    adm_workers() ++ apns_workers() ++ fcm_workers() ++ task_supervisors()
+    adm_workers()
+    ++ apns_workers()
+    ++ fcm_workers()
+    ++ env_workers()
+    ++ task_supervisors()
   end
 
   def task_supervisors do
     [supervisor(Task.Supervisor, [[name: Pigeon.Tasks]])]
+  end
+
+  def env_workers do
+    case Application.get_env(:pigeon, :workers) do
+      nil -> []
+      workers ->
+        Enum.map(workers, fn({mod, fun}) ->
+          config = apply(mod, fun, [])
+          worker(Pigeon.Worker, [config], id: config.name, restart: :temporary)
+        end)
+    end
   end
 
   def adm_workers do
