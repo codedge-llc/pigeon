@@ -1,6 +1,17 @@
 defprotocol Pigeon.Configurable do
   @type sock :: {:sslsocket, any, pid | {any, any}}
 
+  @doc ~S"""
+  Returns worker name for config.
+
+  ## Examples
+
+      iex> worker_name(%Pigeon.APNS.Config{name: :test})
+      :test
+
+      iex> worker_name(%Pigeon.FCM.Config{name: :another})
+      :another
+  """
   @spec worker_name(any) :: atom | nil
   def worker_name(config)
 
@@ -13,6 +24,17 @@ defprotocol Pigeon.Configurable do
 
   def handle_end_stream(config, stream, notification, on_response)
 
+  @doc ~S"""
+  Returns ping_period for config.
+
+  ## Examples
+
+      iex> ping_period(%Pigeon.APNS.Config{ping_period: 600})
+      600
+
+      iex> ping_period(%Pigeon.FCM.Config{ping_period: 300})
+      300
+  """
   @spec ping_period(any) :: pos_integer
   def ping_period(config)
 

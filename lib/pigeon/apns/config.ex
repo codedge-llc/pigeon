@@ -66,6 +66,7 @@ defmodule Pigeon.APNS.Config do
     |> new()
   end
 
+  @doc false
   def file_path(nil), do: nil
   def file_path(path) when is_binary(path) do
     if :filelib.is_file(path), do: Path.expand(path), else: nil
@@ -73,6 +74,7 @@ defmodule Pigeon.APNS.Config do
   def file_path({app_name, path}) when is_atom(app_name),
     do: Path.expand(path, :code.priv_dir(app_name))
 
+  @doc false
   def cert({_app_name, _path}), do: nil
   def cert(nil), do: nil
   def cert(bin) do
@@ -82,6 +84,7 @@ defmodule Pigeon.APNS.Config do
     end
   end
 
+  @doc false
   def key({_app_name, _path}), do: nil
   def key(nil), do: nil
   def key(bin) do
