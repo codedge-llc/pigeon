@@ -31,8 +31,12 @@ defmodule Pigeon.ADM do
       payload: %{"data" => %{"body" => "your message"}},
       registration_id: "your_reg_id", updated_registration_id: nil}}
   """
-  @spec push(Notification.t, Keyword.t) :: no_return
-  def push(notification, opts \\ []) do
+  @spec push(Notification.t | [Notification.t], Keyword.t) :: no_return
+  def push(notifications, opts \\ [])
+  def push(notifications, opts) when is_list(notifications) do
+    Enum.each(notifications, &push(&1, opts))
+  end
+  def push(notification, opts) do
     worker_name = opts[:to] || Config.default_name
     cast_push(worker_name, notification, opts[:on_response])
   end
