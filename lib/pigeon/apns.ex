@@ -47,6 +47,14 @@ defmodule Pigeon.APNS do
 
   @doc """
   Sends a push over APNS.
+
+  ## Examples
+
+     iex> n = Pigeon.APNS.Notification.new("msg", "token", "topic")
+     iex> Pigeon.APNS.push(n)
+     {:error, :bad_device_token,
+       %Pigeon.APNS.Notification{device_token: "token", expiration: nil,
+       id: nil, payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"}}
   """
   @spec push(notification, push_opts) :: {:ok, term} | {:error, term, term}
   def push(notification, opts \\ [])

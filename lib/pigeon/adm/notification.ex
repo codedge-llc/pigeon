@@ -2,8 +2,12 @@ defmodule Pigeon.ADM.Notification do
   @moduledoc """
   Defines Amazon ADM notification struct and convenience constructor functions.
   """
-  defstruct registration_id: nil, payload: %{}, updated_registration_id: nil,
-            consolidation_key: nil, expires_after: 604_800, md5: nil
+  defstruct consolidation_key: nil,
+            expires_after: 604_800,
+            md5: nil,
+            payload: %{},
+            registration_id: nil,
+            updated_registration_id: nil
 
   @type t :: %__MODULE__{
     consolidation_key: String.t,
@@ -39,6 +43,7 @@ defmodule Pigeon.ADM.Notification do
         updated_registration_id: nil
       }
   """
+  @spec new(String.t, %{required(String.t) => term}) :: t
   def new(registration_id, data \\ %{})
   def new(registration_id, data) do
     %Pigeon.ADM.Notification{registration_id: registration_id}
@@ -77,18 +82,14 @@ defmodule Pigeon.ADM.Notification do
     %{notification | payload: payload}
   end
 
-  @doc """
-  ADM requires that "data" keys and values are all strings.
-  """
+  @doc false
   def ensure_strings(data) do
     data
     |> Enum.map(fn {key, value} -> {"#{key}", "#{value}"} end)
     |> Enum.into(%{})
   end
 
-  @doc """
-  Calculates md5 hash of notification data payload.
-  """
+  @doc false
   def calculate_md5(%{payload: %{"data" => data}} = notification) when is_map(data) do
     concat =
       data

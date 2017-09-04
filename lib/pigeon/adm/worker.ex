@@ -53,14 +53,14 @@ defmodule Pigeon.ADM.Worker do
   defp refresh_access_token_if_needed(state) do
     %{
       access_token: access_token,
-      access_token_refreshed_datetime_erl: access_token_refreshed_datetime_erl,
-      access_token_expiration_seconds: access_token_expiration_seconds
+      access_token_refreshed_datetime_erl: access_ref_dt_erl,
+      access_token_expiration_seconds: access_ref_exp_secs
     } = state
 
     cond do
       is_nil(access_token) ->
         refresh_access_token(state)
-      access_token_expired?(access_token_refreshed_datetime_erl, access_token_expiration_seconds) ->
+      access_token_expired?(access_ref_dt_erl, access_ref_exp_secs) ->
         refresh_access_token(state)
       true ->
         {:ok, state}
@@ -86,7 +86,10 @@ defmodule Pigeon.ADM.Worker do
   end
 
   defp refresh_access_token(state) do
-    case HTTPoison.post(@token_refresh_uri, token_refresh_body(state), token_refresh_headers()) do
+    post = HTTPoison.post(@token_refresh_uri,
+                          token_refresh_body(state),
+                          token_refresh_headers())
+    case post do
       {:ok, %{status_code: 200, body: response_body}} ->
         {:ok, response_json} = Poison.decode(response_body)
         %{
@@ -110,7 +113,8 @@ defmodule Pigeon.ADM.Worker do
     end
   end
 
-  defp token_refresh_body(%{config: %{client_id: client_id, client_secret: client_secret}}) do
+  defp token_refresh_body(%{config: %{client_id: client_id,
+                                      client_secret: client_secret}}) do
     %{
       "grant_type" => "client_credentials",
       "scope" => "messaging:push",
@@ -203,7 +207,9 @@ defmodule Pigeon.ADM.Worker do
 
   defp handle_200_status(body, notification, on_response) do
     {:ok, json} = Poison.decode(body)
-    process_callback({notification.registration_id, json}, notification, on_response)
+    process_callback({notification.registration_id, json},
+                     notification,
+                     on_response)
   end
 
   defp process_callback({reg_id, response}, notification, on_response) do
@@ -212,9 +218,9 @@ defmodule Pigeon.ADM.Worker do
         notification = %{notification | registration_id: reg_id}
         on_response.({:ok, notification})
 
-      {:ok, registration_id} ->
-        notification =
-          %{notification | registration_id: reg_id, updated_registration_id: registration_id}
+      {:ok, new_reg_id} ->
+        notification = %{notification | registration_id: reg_id,
+                                        updated_registration_id: new_reg_id}
         on_response.({:ok, notification})
 
       {:error, reason} ->

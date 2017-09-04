@@ -7,7 +7,17 @@ defmodule Pigeon.FCM.ResultParserTest do
     {:ok, response} =
       ResultParser.parse(
         ["regid"],
-        [%{ "message_id" => "1:0408" }],
+        [%{"message_id" => "1:0408"}],
+        &(&1), %NotificationResponse{}
+      )
+    assert  response.ok == ["regid"]
+  end
+
+  test "parse_result with single non-list regid" do
+    {:ok, response} =
+      ResultParser.parse(
+        "regid",
+        [%{"message_id" => "1:0408"}],
         &(&1), %NotificationResponse{}
       )
     assert  response.ok == ["regid"]
@@ -17,7 +27,7 @@ defmodule Pigeon.FCM.ResultParserTest do
     {:ok, response} =
       ResultParser.parse(
         ["regid"],
-        [%{ "message_id" => "1:2342", "registration_id" => "32" }],
+        [%{"message_id" => "1:2342", "registration_id" => "32"}],
         &(&1), %NotificationResponse{}
       )
 
@@ -29,7 +39,7 @@ defmodule Pigeon.FCM.ResultParserTest do
     {:ok, response} =
       ResultParser.parse(
         ["regid"],
-        [%{ "error" => "Unavailable" }],
+        [%{"error" => "Unavailable"}],
         &(&1),
         %NotificationResponse{}
       )
@@ -40,7 +50,7 @@ defmodule Pigeon.FCM.ResultParserTest do
     {:ok, response} =
       ResultParser.parse(
         ["regid"],
-        [%{ "error" => "NotRegistered" }],
+        [%{"error" => "NotRegistered"}],
         &(&1),
         %NotificationResponse{}
       )
@@ -51,7 +61,7 @@ defmodule Pigeon.FCM.ResultParserTest do
     {:ok, response} =
       ResultParser.parse(
         ["regid"],
-        [%{ "error" => "InvalidRegistration" }],
+        [%{"error" => "InvalidRegistration"}],
         &(&1),
         %NotificationResponse{}
       )

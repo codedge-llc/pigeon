@@ -45,11 +45,10 @@ defmodule Pigeon.Mixfile do
       {:poison, "~> 2.0 or ~> 3.0"},
       {:httpoison, "~> 0.7"},
       {:kadabra, "~> 0.3.1", optional: true},
-      {:dogma, "~> 0.1", only: :dev},
       {:earmark, "~> 1.0", only: :dev},
       {:ex_doc, "~> 0.2", only: :dev},
-      {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
       {:excoveralls, "~> 0.5", only: :test},
+      {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
       {:credo, "~> 0.8", only: [:dev, :test], runtime: false}
     ]
   end

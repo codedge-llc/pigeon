@@ -1,13 +1,13 @@
 language: elixir
-matrix:
-  include:
-    - otp_release: 19.2
-      elixir: 1.4.5
-    - otp_release: 20.0
-      elixir: 1.4.5
-    - otp_release: 20.0
-      elixir: 1.5.1
+elixir:
+  - 1.4.5
+  - 1.5.1
+otp_release:
+  - 19.2
+  - 20.0
 before_install:
-- openssl aes-256-cbc -K $encrypted_944d6c2c1357_key -iv $encrypted_944d6c2c1357_iv
-  -in cert_key.tar.enc -out cert_key.tar -d
-- tar xvf cert_key.tar
+  - openssl aes-256-cbc -K $encrypted_944d6c2c1357_key -iv $encrypted_944d6c2c1357_iv
+    -in cert_key.tar.enc -out cert_key.tar -d
+  - tar xvf cert_key.tar
+script:
+  - "MIX_ENV=test mix do deps.get, compile, coveralls.travis"

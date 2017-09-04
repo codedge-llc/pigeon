@@ -13,12 +13,15 @@ defmodule Pigeon.FCM.ResultParser do
 
   # Handle RegID updates
   def parse([regid | reg_res],
-            [%{"message_id" => id, "registration_id" => new_regid} | rest_results],
+            [%{"message_id" => id, "registration_id" => new_regid} | rest],
             on_response,
             %NotificationResponse{update: update} =  resp) do
 
     new_updates = [{regid, new_regid} | update]
-    parse(reg_res, rest_results, on_response, %{resp | message_id: id, update: new_updates})
+    parse(reg_res,
+          rest,
+          on_response,
+          %{resp | message_id: id, update: new_updates})
   end
 
   # Handle successful RegIDs, also parse `message_id`
@@ -27,7 +30,10 @@ defmodule Pigeon.FCM.ResultParser do
             on_response,
             %NotificationResponse{ok: ok} = resp) do
 
-    parse(reg_res, rest_results, on_response, %{resp | message_id: id, ok: [regid | ok]})
+    parse(reg_res,
+          rest_results,
+          on_response,
+          %{resp | message_id: id, ok: [regid | ok]})
   end
 
   # Retry `Unavailable` RegIDs
@@ -36,7 +42,10 @@ defmodule Pigeon.FCM.ResultParser do
             on_response,
             %NotificationResponse{retry: retry} = resp) do
 
-    parse(reg_res, rest_results, on_response, %{resp | retry: [regid | retry]})
+    parse(reg_res,
+          rest_results,
+          on_response,
+          %{resp | retry: [regid | retry]})
   end
 
   # Remove `NotRegistered` RegIDs
@@ -45,7 +54,10 @@ defmodule Pigeon.FCM.ResultParser do
             on_response,
             %NotificationResponse{remove: remove} = resp) do
 
-    parse(reg_res, rest_results, on_response, %{resp | remove: [regid | remove]})
+    parse(reg_res,
+          rest_results,
+          on_response,
+          %{resp | remove: [regid | remove]})
   end
 
   # Remove `InvalidRegistration` RegIDs
@@ -54,7 +66,10 @@ defmodule Pigeon.FCM.ResultParser do
             on_response,
             %NotificationResponse{remove: remove} = resp) do
 
-    parse(reg_res, rest_results, on_response, %{resp | remove: [regid | remove]})
+    parse(reg_res,
+          rest_results,
+          on_response,
+          %{resp | remove: [regid | remove]})
   end
 
   # Handle all other error keys
@@ -64,10 +79,16 @@ defmodule Pigeon.FCM.ResultParser do
             %NotificationResponse{error: regs_in_error} = resp) do
 
     if Map.has_key?(regs_in_error, error) do
-      parse(reg_res, rest_results, on_response, %{resp | error: %{regs_in_error | error => regid}})
+      parse(reg_res,
+            rest_results,
+            on_response,
+            %{resp | error: %{regs_in_error | error => regid}})
     else
       # create map key if required.
-      parse(regs, results, on_response, %{resp | error: Map.merge(%{error => []}, regs_in_error)})
+      parse(regs,
+            results,
+            on_response,
+            %{resp | error: Map.merge(%{error => []}, regs_in_error)})
     end
   end
 end

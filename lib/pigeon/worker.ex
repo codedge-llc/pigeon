@@ -30,7 +30,7 @@ defmodule Pigeon.Worker do
   def init({:ok, config}), do: initialize_worker(config)
 
   def initialize_worker(config) do
-    case connect_socket(config) do
+    case connect_socket(config, 0) do
       {:ok, socket} ->
         Process.send_after(self(), :ping, Configurable.ping_period(config))
         {:ok, %{
@@ -42,8 +42,6 @@ defmodule Pigeon.Worker do
       error -> error
     end
   end
-
-  def connect_socket(config), do: connect_socket(config, 0)
 
   def connect_socket(_config, 3), do: {:error, :timeout}
   def connect_socket(config, tries) do
@@ -72,7 +70,7 @@ defmodule Pigeon.Worker do
 
   def handle_info(msg, state) do
     case Pigeon.Http2.Client.default().handle_end_stream(msg, state) do
-      {:ok, %Pigeon.Http2.Stream{} = stream} -> process_end_stream(stream, state)
+      {:ok, %Stream{} = stream} -> process_end_stream(stream, state)
       _else -> {:noreply, state}
     end
   end
@@ -117,7 +115,7 @@ defmodule Pigeon.Worker do
   end
 
   def reconnect(%{config: config} = state) do
-    case connect_socket(config) do
+    case connect_socket(config, 0) do
       {:ok, new_socket} ->
         Process.send_after(self(), :ping, Configurable.ping_period(config))
         %{state | socket: new_socket, queue: %{}, stream_id: 1}

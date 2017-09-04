@@ -59,7 +59,12 @@ defmodule Pigeon.FCM do
     worker_name = opts[:to] || @default_worker
     notification
     |> encode_requests()
-    |> Enum.map(& GenServer.cast(worker_name, generate_envelope(&1, on_response, opts)))
+    |> Enum.map(& cast_request(worker_name, &1, on_response, opts))
+  end
+
+  def cast_request(worker_name, request, on_response, opts) do
+    opts = Keyword.put(opts, :on_response, on_response)
+    GenServer.cast(worker_name, {:push, request, opts})
   end
 
   defp sync_push(notification, opts) do
@@ -144,11 +149,6 @@ defmodule Pigeon.FCM do
   """
   @spec stop_connection(atom | pid) :: :ok
   def stop_connection(name), do: Pigeon.Worker.stop_connection(name)
-
-  def generate_envelope(payload, on_response, opts) do
-    opts = Keyword.put(opts, :on_response, on_response)
-    {:push, payload, opts}
-  end
 
   def merge(response_1, response_2) do
     Map.merge(response_1, response_2, fn(key, value_1, value_2) ->

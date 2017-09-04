@@ -29,7 +29,9 @@ defmodule Pigeon.APNS.Config do
   def default_name, do: :apns_default
 
   @doc ~S"""
-  Returns a new `APNS.Config` with given `opts`.
+  Returns a new `APNS.Config` with given `opts` or name.
+
+  If given an atom, returns the config specified in your `mix.exs`.
 
   ## Examples
 
@@ -43,7 +45,12 @@ defmodule Pigeon.APNS.Config do
       ...>   ping_period: 300_000
       ...> )
       %Pigeon.APNS.Config{mode: :prod, name: :test,
-      ping_period: 300000, port: 2197, reconnect: false} 
+      ping_period: 300000, port: 2197, reconnect: false}
+
+      iex> config = Pigeon.APNS.Config.new(:apns_default)
+      iex> %{config | certfile: nil, keyfile: nil} # Hide for testing
+      %Pigeon.APNS.Config{mode: :dev, name: :apns_default,
+      ping_period: 600_000, port: 443, reconnect: true}
   """
   @spec new(atom | Keyword.t) :: t
   def new(opts) when is_list(opts) do
@@ -118,7 +125,7 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
   end
 
   def push_headers(_config, notification, _opts) do
-    json = Pigeon.Notification.json_payload(notification.payload)
+    json = Poison.encode!(notification.payload)
 
     [
       {":method", "POST"},
@@ -130,7 +137,7 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
   end
 
   def push_payload(_config, notification, _opts) do
-    Pigeon.Notification.json_payload(notification.payload)
+    Poison.encode!(notification.payload)
   end
 
   defp put_apns_id(headers, notification) do

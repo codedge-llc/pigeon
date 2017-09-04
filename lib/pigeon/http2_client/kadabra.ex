@@ -16,6 +16,15 @@ defmodule Pigeon.Http2.Client.Kadabra do
     Kadabra.request(pid, headers, data)
   end
 
+  @doc ~S"""
+  send_ping/1 implementation
+
+  ## Examples
+
+      iex> {:ok, pid} = Kadabra.open('http2.golang.org', :https)
+      iex> Pigeon.Http2.Client.Kadabra.send_ping(pid)
+      :ok
+  """
   def send_ping(pid) do
     Kadabra.ping(pid)
   end
