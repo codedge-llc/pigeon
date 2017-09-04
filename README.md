@@ -1,4 +1,4 @@
-![logo](https://raw.githubusercontent.com/codedge-llc/pigeon/master/docs/console.png)
+![logo](https://raw.githubusercontent.com/codedge-llc/pigeon/master/docs/logo.png)
 > HTTP2-compliant wrapper for sending iOS and Android push notifications.
 
 [![Build Status](https://travis-ci.org/codedge-llc/pigeon.svg?branch=master)](https://travis-ci.org/codedge-llc/pigeon)
