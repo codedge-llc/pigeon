@@ -1,7 +1,6 @@
 defmodule Pigeon.Worker do
-  @moduledoc """
-  Generic HTTP2 worker.
-  """
+  @moduledoc false
+
   defstruct [:socket, :config, queue: %{}, stream_id: 1]
 
   use GenServer
@@ -107,7 +106,11 @@ defmodule Pigeon.Worker do
 
     Pigeon.Http2.Client.default().send_request(state.socket, headers, payload)
 
-    new_q = NotificationQueue.add(queue, state.stream_id, notification, opts[:on_response])
+    new_q = NotificationQueue.add(queue,
+                                  state.stream_id,
+                                  notification,
+                                  opts[:on_response])
+
     new_stream_id = state.stream_id + 2
 
     {:noreply, %{state | stream_id: new_stream_id, queue: new_q}}

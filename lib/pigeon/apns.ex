@@ -82,29 +82,22 @@ defmodule Pigeon.APNS do
 
   ## Examples
 
-      iex> config = Pigeon.APNS.Config.config(:apns_default)
+      iex> config = Pigeon.APNS.Config.new(:apns_default)
       iex> {:ok, pid} = Pigeon.APNS.start_connection(%{config | name: nil})
       iex> is_pid(pid)
       true
   """
   @spec start_connection(atom | Config.t | Keyword.t) :: {:ok, pid}
   def start_connection(name) when is_atom(name) do
-    config = Config.config(name)
+    config = Config.new(name)
     Supervisor.start_child(:pigeon, worker(Pigeon.Worker, [config], id: name))
   end
-  def start_connection(%Pigeon.APNS.Config{} = config) do
+  def start_connection(%Config{} = config) do
     Pigeon.Worker.start_link(config)
   end
-  def start_connection(opts) do
-    %Pigeon.APNS.Config{
-      name: opts[:name],
-      mode: opts[:mode],
-      cert: Config.cert(opts[:cert]),
-      certfile: Config.file_path(opts[:cert]),
-      key: Config.key(opts[:key]),
-      keyfile: Config.file_path(opts[:key]),
-      ping_period: opts[:ping_period] || 600_000
-    }
+  def start_connection(opts) when is_list(opts) do
+    opts
+    |> Config.new
     |> start_connection()
   end
 
@@ -113,7 +106,7 @@ defmodule Pigeon.APNS do
 
   ## Examples
 
-      iex> config = Pigeon.APNS.Config.config(:apns_default)
+      iex> config = Pigeon.APNS.Config.new(:apns_default)
       iex> {:ok, pid} = Pigeon.APNS.start_connection(%{config | name: nil})
       iex> Pigeon.APNS.stop_connection(pid)
       :ok

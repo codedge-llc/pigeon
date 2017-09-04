@@ -25,6 +25,7 @@ defmodule Pigeon.APNS.Config do
     ping_period: pos_integer
   }
 
+  @doc false
   def default_name, do: :apns_default
 
   @doc ~S"""
@@ -44,7 +45,7 @@ defmodule Pigeon.APNS.Config do
       %Pigeon.APNS.Config{mode: :prod, name: :test,
       ping_period: 300000, port: 2197, reconnect: false} 
   """
-  @spec new(Keyword.t) :: t
+  @spec new(atom | Keyword.t) :: t
   def new(opts) when is_list(opts) do
     %__MODULE__{
       name: opts[:name],
@@ -58,8 +59,7 @@ defmodule Pigeon.APNS.Config do
       ping_period: opts[:ping_period] || 600_000
     }
   end
-  
-  def config(name) do
+  def new(name) when is_atom(name) do
     Application.get_env(:pigeon, :apns)[name]
     |> Map.to_list
     |> Keyword.put(:name, name)

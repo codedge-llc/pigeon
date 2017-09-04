@@ -113,27 +113,22 @@ defmodule Pigeon.FCM do
 
   ## Examples
 
-      iex> config = Pigeon.FCM.Config.config(:fcm_default)
+      iex> config = Pigeon.FCM.Config.new(:fcm_default)
       iex> {:ok, pid} = Pigeon.FCM.start_connection(%{config | name: nil})
       iex> is_pid(pid)
       true
   """
   def start_connection(opts \\ [])
   def start_connection(name) when is_atom(name) do
-    config = Config.config(name)
-    Supervisor.start_child(:pigeon, worker(Pigeon.Worker, [config], id: name))
+    worker = worker(Pigeon.Worker, [Config.new(name)], id: name)
+    Supervisor.start_child(:pigeon, worker)
   end
   def start_connection(%Config{} = config) do
     Pigeon.Worker.start_link(config)
   end
   def start_connection(opts) do
-    %Config{
-      name: opts[:name],
-      key: opts[:key],
-      uri: opts[:uri] || 'fcm.googleapis.com',
-      port: opts[:port] || 443,
-      ping_period: opts[:ping_period] || 600_000
-    }
+    opts
+    |> Config.new
     |> start_connection()
   end
 
@@ -142,7 +137,7 @@ defmodule Pigeon.FCM do
 
   ## Examples
 
-      iex> config = Pigeon.FCM.Config.config(:fcm_default)
+      iex> config = Pigeon.FCM.Config.new(:fcm_default)
       iex> {:ok, pid} = Pigeon.FCM.start_connection(%{config | name: nil})
       iex> Pigeon.FCM.stop_connection(pid)
       :ok

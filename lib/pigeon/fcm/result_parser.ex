@@ -39,12 +39,20 @@ defmodule Pigeon.FCM.ResultParser do
     parse(reg_res, rest_results, on_response, %{resp | retry: [regid | retry]})
   end
 
-  # Remove `NotRegistered` or `InvalidRegistration` RegIDs
+  # Remove `NotRegistered` RegIDs
   def parse([regid | reg_res],
-            [%{"error" => invalid} | rest_results],
+            [%{"error" => "NotRegistered"} | rest_results],
             on_response,
-            %NotificationResponse{remove: remove} = resp) when invalid == "NotRegistered"
-                                                            or invalid == "InvalidRegistration" do
+            %NotificationResponse{remove: remove} = resp) do
+
+    parse(reg_res, rest_results, on_response, %{resp | remove: [regid | remove]})
+  end
+
+  # Remove `InvalidRegistration` RegIDs
+  def parse([regid | reg_res],
+            [%{"error" => "InvalidRegistration"} | rest_results],
+            on_response,
+            %NotificationResponse{remove: remove} = resp) do
 
     parse(reg_res, rest_results, on_response, %{resp | remove: [regid | remove]})
   end

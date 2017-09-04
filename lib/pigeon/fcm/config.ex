@@ -30,7 +30,7 @@ defmodule Pigeon.FCM.Config do
       %Pigeon.FCM.Config{key: "fcm_key", name: :test, ping_period: 300000,
       port: 5228, uri: 'test.server.example.com'}
   """
-  def new(opts \\ []) do
+  def new(opts) when is_list(opts) do
     %__MODULE__{
       name: opts[:name],
       key: opts[:key],
@@ -39,8 +39,7 @@ defmodule Pigeon.FCM.Config do
       ping_period: opts[:ping_period] || 600_000
     }
   end
-
-  def config(name) do
+  def new(name) when is_atom(name) do
     Application.get_env(:pigeon, :fcm)[name]
     |> Map.to_list
     |> Keyword.put(:name, name)

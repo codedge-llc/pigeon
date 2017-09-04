@@ -4,7 +4,7 @@ defmodule Pigeon.Mixfile do
   def project do
     [app: :pigeon,
      name: "Pigeon",
-     version: "1.0.3",
+     version: "1.1.0",
      elixir: "~> 1.4",
      source_url: "https://github.com/codedge-llc/pigeon",
      description: description(),

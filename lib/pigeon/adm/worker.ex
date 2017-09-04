@@ -7,7 +7,7 @@ defmodule Pigeon.ADM.Worker do
   @token_refresh_uri "https://api.amazon.com/auth/O2/token"
 
   def start_link(config) do
-    case config[:name] do
+    case config.name do
       nil -> GenServer.start_link(__MODULE__, {:ok, config})
       name -> GenServer.start_link(__MODULE__, {:ok, config}, name: name)
     end

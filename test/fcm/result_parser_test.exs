@@ -25,7 +25,7 @@ defmodule Pigeon.FCM.ResultParserTest do
     assert response.message_id == "1:2342"
   end
 
-  test "parse_result with error unavailable" do
+  test "parse_result with error Unavailable" do
     {:ok, response} =
       ResultParser.parse(
         ["regid"],
@@ -34,6 +34,28 @@ defmodule Pigeon.FCM.ResultParserTest do
         %NotificationResponse{}
       )
     assert response.retry == ["regid"]
+  end
+
+  test "parse_result with error NotRegistered" do
+    {:ok, response} =
+      ResultParser.parse(
+        ["regid"],
+        [%{ "error" => "NotRegistered" }],
+        &(&1),
+        %NotificationResponse{}
+      )
+    assert response.remove == ["regid"]
+  end
+
+  test "parse_result with error InvalidRegistration" do
+    {:ok, response} =
+      ResultParser.parse(
+        ["regid"],
+        [%{ "error" => "InvalidRegistration" }],
+        &(&1),
+        %NotificationResponse{}
+      )
+    assert response.remove == ["regid"]
   end
 
   test "parse_result with custom error" do

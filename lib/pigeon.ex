@@ -1,14 +1,18 @@
 defmodule Pigeon do
-  use Application
-  require Logger
-  import Supervisor.Spec
-
   @moduledoc """
   HTTP2-compliant wrapper for sending iOS and Android push notifications.
   """
 
+  use Application
+
+  require Logger
+  import Supervisor.Spec
+
+  alias Pigeon.{ADM, APNS, FCM}
+
+  @doc false
   def start(_type, _args) do
-    Pigeon.Http2.Client.default.start
+    Pigeon.Http2.Client.default().start
     opts = [strategy: :one_for_one, name: :pigeon]
     Supervisor.start_link(workers(), opts)
   end
@@ -21,11 +25,11 @@ defmodule Pigeon do
     ++ task_supervisors()
   end
 
-  def task_supervisors do
+  defp task_supervisors do
     [supervisor(Task.Supervisor, [[name: Pigeon.Tasks]])]
   end
 
-  def env_workers do
+  defp env_workers do
     case Application.get_env(:pigeon, :workers) do
       nil -> []
       workers ->
@@ -36,35 +40,25 @@ defmodule Pigeon do
     end
   end
 
-  def adm_workers do
-    case Application.get_env(:pigeon, :adm) do
-      nil -> []
-      workers ->
-        Enum.map(workers, fn({worker_name, _config}) ->
-          config = Pigeon.ADM.Config.config(worker_name)
-          worker(Pigeon.ADM.Worker, [config], id: worker_name, restart: :temporary)
-        end)
-    end
+  defp adm_workers do
+    workers_for(:adm, &ADM.Config.new/1, Pigeon.ADM.Worker)
   end
 
   defp apns_workers do
-    case Application.get_env(:pigeon, :apns) do
-      nil -> []
-      workers ->
-        Enum.map(workers, fn({worker_name, _config}) ->
-          config = Pigeon.APNS.Config.config(worker_name)
-          worker(Pigeon.Worker, [config], id: worker_name, restart: :temporary)
-        end)
-    end
+    workers_for(:apns, &APNS.Config.new/1, Pigeon.Worker)
   end
 
   defp fcm_workers do
-    case Application.get_env(:pigeon, :fcm) do
+    workers_for(:fcm, &FCM.Config.new/1, Pigeon.Worker)
+  end
+
+  defp workers_for(name, config_fn, mod) do
+    case Application.get_env(:pigeon, name) do
       nil -> []
       workers ->
         Enum.map(workers, fn({worker_name, _config}) ->
-          config = Pigeon.FCM.Config.config(worker_name)
-          worker(Pigeon.Worker, [config], id: worker_name, restart: :temporary)
+          config = config_fn.(worker_name)
+          worker(mod, [config], id: config.name, restart: :temporary)
         end)
     end
   end
