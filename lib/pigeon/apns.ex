@@ -6,7 +6,7 @@ defmodule Pigeon.APNS do
   require Logger
   import Supervisor.Spec
 
-  alias Pigeon.APNS.{Config, Notification}
+  alias Pigeon.APNS.{Config, Notification, NotificationResponse}
 
   @type notification :: Notification.t
                       | [Notification.t, ...]
@@ -55,6 +55,16 @@ defmodule Pigeon.APNS do
      {:error, :bad_device_token,
        %Pigeon.APNS.Notification{device_token: "token", expiration: nil,
        id: nil, payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"}}
+
+     iex> n = Pigeon.APNS.Notification.new("msg", "token", "topic")
+     iex> Pigeon.APNS.push([n, n])
+     %Pigeon.APNS.NotificationResponse{error: %{
+       bad_device_token: [
+         %Pigeon.APNS.Notification{device_token: "token", expiration: nil,
+         id: nil, payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"},
+         %Pigeon.APNS.Notification{device_token: "token", expiration: nil,
+         id: nil, payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"}
+     ]}, ok: []}
   """
   @spec push(notification, push_opts) :: {:ok, term} | {:error, term, term}
   def push(notification, opts \\ [])
@@ -65,7 +75,7 @@ defmodule Pigeon.APNS do
         tasks
         |> Task.yield_many(@default_timeout + 500)
         |> Enum.map(fn {task, response} -> response || Task.shutdown(task, :brutal_kill) end)
-        |> group_responses
+        |> NotificationResponse.new
       on_response -> push(notification, on_response, opts)
     end
   end
@@ -135,33 +145,5 @@ defmodule Pigeon.APNS do
     after
       @default_timeout -> {:error, :timeout, notification}
     end
-  end
-
-  defp group_responses(responses) do
-    Enum.reduce(responses, %{}, fn(response, acc) ->
-      case response do
-        {:ok, r} -> update_result(acc, r)
-        _ -> acc
-      end
-    end)
-  end
-
-  defp update_result(acc, response) do
-    case response do
-      {:ok, notif} -> add_ok_notif(acc, notif)
-      {:error, reason, notif} -> add_error_notif(acc, reason, notif)
-    end
-  end
-
-  defp add_ok_notif(acc, notif) do
-    oks = acc[:ok] || []
-    Map.put(acc, :ok, oks ++ [notif])
-  end
-
-  defp add_error_notif(acc, reason, notif) do
-    errors = acc[:error] || %{}
-    similar = errors[reason] || []
-    errors = Map.put(errors, reason, similar ++ [notif])
-    Map.put(acc, :error, errors)
   end
 end
