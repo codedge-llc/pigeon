@@ -7,7 +7,7 @@ defmodule Pigeon.Worker do
   require Logger
 
   alias Pigeon.Configurable
-  alias Pigeon.Http2.Stream
+  alias Pigeon.Http2.{Client, Stream}
   alias Pigeon.Worker.NotificationQueue
 
   def cast_push(pid, notification, opts) do
@@ -54,7 +54,7 @@ defmodule Pigeon.Worker do
   # Info
 
   def handle_info(:ping, state) do
-    Pigeon.Http2.Client.default().send_ping(state.socket)
+    Client.default().send_ping(state.socket)
     Process.send_after(self(), :ping, Configurable.ping_period(state.config))
 
     {:noreply, state}
@@ -69,7 +69,7 @@ defmodule Pigeon.Worker do
   end
 
   def handle_info(msg, state) do
-    case Pigeon.Http2.Client.default().handle_end_stream(msg, state) do
+    case Client.default().handle_end_stream(msg, state) do
       {:ok, %Stream{} = stream} -> process_end_stream(stream, state)
       _else -> {:noreply, state}
     end
@@ -81,28 +81,19 @@ defmodule Pigeon.Worker do
       {nil, new_queue} ->
         # Do nothing if no queued item for stream
         {:noreply, %{state | queue: new_queue}}
-      {{notification, on_response}, new_queue} ->
-        Configurable.handle_end_stream(config, stream, notification, on_response)
+      {{notif, on_response}, new_queue} ->
+        Configurable.handle_end_stream(config, stream, notif, on_response)
         {:noreply, %{state | queue: new_queue}}
     end
   end
 
-  def send_push(%{socket: socket,
-                  config: config,
-                  queue: queue} = state, notification, opts) do
-
-    state =
-      case socket do
-        nil ->
-          reconnect(state)
-        _socket ->
-          state
-      end
+  def send_push(%{config: config, queue: queue} = state, notification, opts) do
+    state = reconnect_if_needed(state)
 
     headers = Configurable.push_headers(config, notification, opts)
     payload = Configurable.push_payload(config, notification, opts)
 
-    Pigeon.Http2.Client.default().send_request(state.socket, headers, payload)
+    Client.default().send_request(state.socket, headers, payload)
 
     new_q = NotificationQueue.add(queue,
                                   state.stream_id,
@@ -113,6 +104,9 @@ defmodule Pigeon.Worker do
 
     {:noreply, %{state | stream_id: new_stream_id, queue: new_q}}
   end
+
+  defp reconnect_if_needed(%{socket: nil} = state), do: reconnect(state)
+  defp reconnect_if_needed(state), do: state
 
   def reconnect(%{config: config} = state) do
     case connect_socket(config, 0) do

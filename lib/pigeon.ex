@@ -8,11 +8,12 @@ defmodule Pigeon do
   require Logger
   import Supervisor.Spec
 
-  alias Pigeon.{ADM, APNS, FCM}
+  alias Pigeon.{ADM, APNS, FCM, Http2}
+  alias Pigeon.Http2.Client
 
   @doc false
   def start(_type, _args) do
-    Pigeon.Http2.Client.default().start
+    Client.default().start
     opts = [strategy: :one_for_one, name: :pigeon]
     Supervisor.start_link(workers(), opts)
   end

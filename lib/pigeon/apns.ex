@@ -7,6 +7,7 @@ defmodule Pigeon.APNS do
   import Supervisor.Spec
 
   alias Pigeon.APNS.{Config, Notification, NotificationResponse}
+  alias Pigeon.Worker
 
   @type notification :: Notification.t
                       | [Notification.t, ...]
@@ -94,7 +95,7 @@ defmodule Pigeon.APNS do
   end
   defp push(notification, on_response, opts) do
     worker_name = opts[:to] || Config.default_name
-    Pigeon.Worker.cast_push(worker_name, notification, on_response: on_response)
+    Worker.cast_push(worker_name, notification, on_response: on_response)
   end
 
   @doc ~S"""
@@ -113,7 +114,7 @@ defmodule Pigeon.APNS do
     Supervisor.start_child(:pigeon, worker(Pigeon.Worker, [config], id: name))
   end
   def start_connection(%Config{} = config) do
-    Pigeon.Worker.start_link(config)
+    Worker.start_link(config)
   end
   def start_connection(opts) when is_list(opts) do
     opts
@@ -132,7 +133,7 @@ defmodule Pigeon.APNS do
       :ok
   """
   @spec stop_connection(atom | pid) :: :ok
-  def stop_connection(name), do: Pigeon.Worker.stop_connection(name)
+  def stop_connection(name), do: Worker.stop_connection(name)
 
   defp sync_push(notification, opts) do
     pid = self()
@@ -140,7 +141,7 @@ defmodule Pigeon.APNS do
     on_response = fn(x) -> send pid, {ref, x} end
 
     worker_name = opts[:to] || Config.default_name
-    Pigeon.Worker.cast_push(worker_name, notification, on_response: on_response)
+    Worker.cast_push(worker_name, notification, on_response: on_response)
 
     receive do
       {^ref, x} -> x

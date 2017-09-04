@@ -7,6 +7,7 @@ defmodule Pigeon.FCM do
   import Supervisor.Spec
 
   alias Pigeon.FCM.{Config, Notification, NotificationResponse}
+  alias Pigeon.Worker
 
   @type on_response :: ((NotificationResponse.t) -> no_return)
 
@@ -147,7 +148,7 @@ defmodule Pigeon.FCM do
     Supervisor.start_child(:pigeon, worker)
   end
   def start_connection(%Config{} = config) do
-    Pigeon.Worker.start_link(config)
+    Worker.start_link(config)
   end
   def start_connection(opts) do
     opts
@@ -166,7 +167,7 @@ defmodule Pigeon.FCM do
       :ok
   """
   @spec stop_connection(atom | pid) :: :ok
-  def stop_connection(name), do: Pigeon.Worker.stop_connection(name)
+  def stop_connection(name), do: Worker.stop_connection(name)
 
   @doc false
   def merge(response_1, response_2) do

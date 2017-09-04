@@ -71,7 +71,7 @@ defmodule Pigeon.Http2.Client do
 
   ## Using Your Client Adapter
 
-  Once implemented, specify it in your `mix.exs`. Pigeon will use it for all
+  Once implemented, specify it in your config. Pigeon will use it for all
   HTTP2 connections.
 
       config :pigeon, http2_clinet: Pigeon.YourCustomAdapter
