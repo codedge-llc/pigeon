@@ -1,4 +1,8 @@
 defmodule Pigeon.APNS.NotificationResponse do
+  @moduledoc ~S"""
+  Notification response for a collection of synchronous APNS pushes.
+  """
+
   defstruct ok: [], error: %{}
 
   alias Pigeon.APNS.NotificationResponse

@@ -71,10 +71,12 @@ defmodule Pigeon.APNS do
   def push(notification, opts) when is_list(notification) do
     case opts[:on_response] do
       nil ->
-        tasks = for n <- notification, do: Task.async(fn -> sync_push(n, opts) end)
-        tasks
+        notification
+        |> Enum.map(& Task.async(fn -> sync_push(&1, opts) end))
         |> Task.yield_many(@default_timeout + 500)
-        |> Enum.map(fn {task, response} -> response || Task.shutdown(task, :brutal_kill) end)
+        |> Enum.map(fn {task, response} ->
+            response || Task.shutdown(task, :brutal_kill)
+           end)
         |> NotificationResponse.new
       on_response -> push(notification, on_response, opts)
     end

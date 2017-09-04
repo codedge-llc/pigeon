@@ -26,14 +26,31 @@ defmodule Pigeon.FCM do
   @default_worker :fcm_default
   @chunk_size 1_000
 
+  @doc ~S"""
+  Sends a push over FCM.
+
+  ## Examples
+
+      iex> n = Pigeon.FCM.Notification.new("regId", %{}, %{"message" => "test"})
+      iex> Pigeon.FCM.push(n)
+      {:ok, %Pigeon.FCM.NotificationResponse{error: %{}, message_id: nil,
+        ok: [], remove: ["regId"], retry: [], update: []}}
+
+      iex> n = Pigeon.FCM.Notification.new("regId", %{}, %{"message" => "test"})
+      iex> Pigeon.FCM.push([n, n])
+      [ok: %Pigeon.FCM.NotificationResponse{error: %{}, message_id: nil, ok: [],
+        remove: ["regId"], retry: [], update: []},
+       ok: %Pigeon.FCM.NotificationResponse{error: %{}, message_id: nil, ok: [],
+         remove: ["regId"], retry: [], update: []}]
+  """
   @spec push(Notification.t, Keyword.t) :: {:ok, NotificationResponse.t}
   @spec push([Notification.t, ...], Keyword.t) :: [NotificationResponse.t, ...]
   def push(notification, opts \\ [])
   def push(notification, opts) when is_list(notification) do
     case opts[:on_response] do
       nil ->
-        tasks = for n <- notification, do: Task.async(fn -> sync_push(n, opts) end)
-        tasks
+        notification
+        |> Enum.map(& Task.async(fn -> sync_push(&1, opts) end))
         |> Task.yield_many(@default_timeout + 10_000)
         |> Enum.map(&task_mapper(&1))
       on_response ->
@@ -55,14 +72,14 @@ defmodule Pigeon.FCM do
     end
   end
 
-  def send_push(notification, on_response, opts) do
+  defp send_push(notification, on_response, opts) do
     worker_name = opts[:to] || @default_worker
     notification
     |> encode_requests()
     |> Enum.map(& cast_request(worker_name, &1, on_response, opts))
   end
 
-  def cast_request(worker_name, request, on_response, opts) do
+  defp cast_request(worker_name, request, on_response, opts) do
     opts = Keyword.put(opts, :on_response, on_response)
     GenServer.cast(worker_name, {:push, request, opts})
   end
@@ -79,6 +96,7 @@ defmodule Pigeon.FCM do
     end
   end
 
+  @doc false
   def encode_requests(%{registration_id: regid} = notification) when is_binary(regid) do
     encode_requests(%{notification | registration_id: [regid]})
   end
@@ -150,6 +168,7 @@ defmodule Pigeon.FCM do
   @spec stop_connection(atom | pid) :: :ok
   def stop_connection(name), do: Pigeon.Worker.stop_connection(name)
 
+  @doc false
   def merge(response_1, response_2) do
     Map.merge(response_1, response_2, fn(key, value_1, value_2) ->
       cond do

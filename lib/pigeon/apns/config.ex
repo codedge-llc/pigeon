@@ -165,7 +165,9 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
       _error ->
         reason = Error.parse(body)
         Error.log(reason, notification)
-        unless on_response == nil, do: on_response.({:error, reason, notification})
+        unless on_response == nil do
+          on_response.({:error, reason, notification})
+        end
     end
   end
 
