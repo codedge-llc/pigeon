@@ -51,21 +51,21 @@ defmodule Pigeon.APNS do
 
   ## Examples
 
-     iex> n = Pigeon.APNS.Notification.new("msg", "token", "topic")
-     iex> Pigeon.APNS.push(n)
-     {:error, :bad_device_token,
-       %Pigeon.APNS.Notification{device_token: "token", expiration: nil,
-       id: nil, payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"}}
+       iex> n = Pigeon.APNS.Notification.new("msg", "token", "topic")
+       iex> Pigeon.APNS.push(n)
+       {:error, :bad_device_token,
+         %Pigeon.APNS.Notification{device_token: "token", expiration: nil,
+         id: nil, payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"}}
 
-     iex> n = Pigeon.APNS.Notification.new("msg", "token", "topic")
-     iex> Pigeon.APNS.push([n, n])
-     %Pigeon.APNS.NotificationResponse{error: %{
-       bad_device_token: [
-         %Pigeon.APNS.Notification{device_token: "token", expiration: nil,
-         id: nil, payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"},
-         %Pigeon.APNS.Notification{device_token: "token", expiration: nil,
-         id: nil, payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"}
-     ]}, ok: []}
+       iex> n = Pigeon.APNS.Notification.new("msg", "token", "topic")
+       iex> Pigeon.APNS.push([n, n])
+       %Pigeon.APNS.NotificationResponse{error: %{
+         bad_device_token: [
+           %Pigeon.APNS.Notification{device_token: "token", expiration: nil,
+           id: nil, payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"},
+           %Pigeon.APNS.Notification{device_token: "token", expiration: nil,
+           id: nil, payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"}
+       ]}, ok: []}
   """
   @spec push(notification, push_opts) :: {:ok, term} | {:error, term, term}
   def push(notification, opts \\ [])

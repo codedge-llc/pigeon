@@ -5,3 +5,4 @@
 erl_crash.dump
 *.ez
 *.pem
+.iex.exs

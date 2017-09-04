@@ -3,12 +3,17 @@
 ## v1.1.0 (unreleased)
 * Minimum requirements now Elixir v1.4 and OTP 19 (Kadabra bumped to `v0.3.0`)
 
-### APNS
+**APNS**
 * `APNS.Config.config/1` renamed to `APNS.Config.new/1`
 * `APNS.push/2` without an `:on_response` callback now returns a
   `%Pigeon.APNS.NotificationResponse{}`
+* Override push server endpoint with `:uri` option in `APNS.Config.new/1`
+* `:use_2197` renamed to `:port`
 
-### ADM
+**FCM**
+* Override push server endpoint with `:uri` and `:port` options in `FCM.Config.new/1`
+
+**ADM**
 * `ADM.Config.config/1` renamed to `ADM.Config.new/1`
 
 ## v1.0.2

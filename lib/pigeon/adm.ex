@@ -1,7 +1,6 @@
 defmodule Pigeon.ADM do
   @moduledoc """
-  Defines publically-exposed Amazon Device Messaging (ADM) functions. For implementation
-  see ADM.Worker.
+  Amazon Device Messaging (ADM)
   """
 
   alias Pigeon.ADM.{Config, Notification}

@@ -4,26 +4,29 @@ defmodule Pigeon.APNS.Config do
   """
 
   defstruct name: nil,
-            mode: nil,
             reconnect: true,
             cert: nil,
             certfile: nil,
             key: nil,
             keyfile: nil,
+            uri: nil,
             port: 443,
             ping_period: 600_000
 
   @type t :: %__MODULE__{
     name: atom | nil,
-    mode: :dev | :prod,
     reconnect: boolean,
     cert: binary | nil,
     certfile: binary | nil,
     key: binary | nil,
     keyfile: binary | nil,
+    uri: binary | nil,
     port: pos_integer,
     ping_period: pos_integer
   }
+
+  @apns_production_api_uri "api.push.apple.com"
+  @apns_development_api_uri "api.development.push.apple.com"
 
   @doc false
   def default_name, do: :apns_default
@@ -44,24 +47,24 @@ defmodule Pigeon.APNS.Config do
       ...>   port: 2197,
       ...>   ping_period: 300_000
       ...> )
-      %Pigeon.APNS.Config{mode: :prod, name: :test,
+      %Pigeon.APNS.Config{uri: "api.push.apple.com", name: :test,
       ping_period: 300000, port: 2197, reconnect: false}
 
       iex> config = Pigeon.APNS.Config.new(:apns_default)
       iex> %{config | certfile: nil, keyfile: nil} # Hide for testing
-      %Pigeon.APNS.Config{mode: :dev, name: :apns_default,
-      ping_period: 600_000, port: 443, reconnect: true}
+      %Pigeon.APNS.Config{uri: "api.development.push.apple.com",
+      name: :apns_default, ping_period: 600_000, port: 443, reconnect: true}
   """
   @spec new(atom | Keyword.t) :: t
   def new(opts) when is_list(opts) do
     %__MODULE__{
       name: opts[:name],
-      mode: opts[:mode],
       reconnect: Keyword.get(opts, :reconnect, true),
       cert: cert(opts[:cert]),
       certfile: file_path(opts[:cert]),
       key: key(opts[:key]),
       keyfile: file_path(opts[:key]),
+      uri: opts[:uri] || uri_for_mode(opts[:mode]),
       port: opts[:port] || 443,
       ping_period: opts[:ping_period] || 600_000
     }
@@ -72,6 +75,10 @@ defmodule Pigeon.APNS.Config do
     |> Keyword.put(:name, name)
     |> new()
   end
+
+  defp uri_for_mode(:dev), do: @apns_development_api_uri
+  defp uri_for_mode(:prod), do: @apns_production_api_uri
+  defp uri_for_mode(_else), do: nil
 
   @doc false
   def file_path(nil), do: nil
@@ -115,8 +122,8 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
   def worker_name(%Config{name: name}), do: name
 
   @spec connect(any) :: {:ok, sock} | {:error, String.t}
-  def connect(%Config{mode: mode} = config) do
-    uri = mode |> push_uri |> to_charlist
+  def connect(%Config{uri: uri} = config) do
+    uri = to_charlist(uri)
     case connect_socket_options(config) do
       {:ok, options} ->
         Pigeon.Http2.Client.default().connect(uri, :https, options)
@@ -227,14 +234,4 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
 
   defp add_port(opts, %Config{port: 443}), do: opts
   defp add_port(opts, %Config{port: port}), do: [{:port, port} | opts]
-
-  defp apns_production_api_uri, do: "api.push.apple.com"
-  defp apns_development_api_uri, do: "api.development.push.apple.com"
-
-  defp push_uri(mode) do
-    case mode do
-      :dev -> apns_development_api_uri()
-      :prod -> apns_production_api_uri()
-    end
-  end
 end

@@ -21,7 +21,7 @@ defmodule Pigeon.APNSTest do
       assert is_pid(pid)
 
       state = :sys.get_state(pid)
-      assert state.config.mode == :dev
+      assert state.config.uri == "api.development.push.apple.com"
       assert state.config.ping_period == 600_000
 
       {:ok, pid} = Pigeon.APNS.start_connection(opts)

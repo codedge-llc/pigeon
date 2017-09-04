@@ -8,7 +8,7 @@ defmodule Pigeon do
   require Logger
   import Supervisor.Spec
 
-  alias Pigeon.{ADM, APNS, FCM, Http2}
+  alias Pigeon.{ADM, APNS, FCM}
   alias Pigeon.Http2.Client
 
   @doc false
