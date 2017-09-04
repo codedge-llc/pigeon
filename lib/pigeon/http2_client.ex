@@ -7,9 +7,30 @@ defmodule Pigeon.Http2.Client do
 
   ## Writing a Custom Client Adapter
 
-  Adapters must implement five callbacks.
+  `Pigeon.Worker` relies on all of the callbacks for important
+  connection functionality.
 
-  # TODO: Finish this guide
+  * `start/0`
+    * Starts the client application when `Pigeon` starts.
+  * `connect/3`
+    * Opens a socket connection. Must return `{:ok, pid}` or
+      `{:error, reason}`. If an error, `Pigeon.Worker` will retry
+      the callback two more times.
+  * `send_ping/1`
+    * Sends an HTTP2 ping. `Pigeon.Worker` periodically sends pings to keep
+      the connection alive. Client adapters must support pings for
+      APNS-configured workers, though it is not necessary if only using FCM.
+  * `send_request/3`
+    * Makes an HTTP2 request. `Pigeon.Worker` does not handle synchronous
+      requests and will ignore the result of this callback. If the client
+      is synchronous, the adapter will need to explicitly send a message
+      back to the `Pigeon.Worker`.
+  * `handle_end_stream/2`
+    * All incoming messages on the worker are passed through this callback.
+      Must return `{:ok, %Pigeon.Http2.Stream{...}}` if it is a valid
+      `END_STREAM` response for the adapter. All other messages are ignored.
+
+  **Example implementation for Kadabra**
 
       if Code.ensure_loaded?(Kadabra) do
       defmodule Pigeon.Http2.Client.Kadabra do
@@ -47,11 +68,18 @@ defmodule Pigeon.Http2.Client do
         def handle_end_stream(msg, _state), do: msg
       end
       end
+
+  ## Using Your Client Adapter
+
+  Once implemented, specify it in your `mix.exs`. Pigeon will use it for all
+  HTTP2 connections.
+
+      config :pigeon, http2_clinet: Pigeon.YourCustomAdapter
   """
 
   @doc ~S"""
   Default http2 client to use.
-  
+
   When not configured, defaults to `Pigeon.Http2.Client.Kadabra`
 
   ## Examples
@@ -66,8 +94,8 @@ defmodule Pigeon.Http2.Client do
   @callback start() :: no_return
 
   @callback connect(uri :: charlist, scheme :: :https, options :: Keyword.t)
-    :: {:ok, term}
-     | {:error, term}
+    :: {:ok, pid}
+     | {:error, any}
 
   @callback send_ping(pid) :: :ok
 
@@ -75,5 +103,5 @@ defmodule Pigeon.Http2.Client do
 
   @callback handle_end_stream(msg :: term, state :: term)
     :: {:ok, %Pigeon.Http2.Stream{}}
-     | term
+     | any
 end

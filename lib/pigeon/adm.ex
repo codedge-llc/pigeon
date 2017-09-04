@@ -11,7 +11,6 @@ defmodule Pigeon.ADM do
 
   ## Examples
 
-
       iex> msg = %{ "body" => "your message" }
       iex> n = Pigeon.ADM.Notification.new("your_reg_id", msg)
       iex> Pigeon.ADM.push(n)
