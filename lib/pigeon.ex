@@ -36,9 +36,16 @@ defmodule Pigeon do
       workers ->
         Enum.map(workers, fn({mod, fun}) ->
           config = apply(mod, fun, [])
-          worker(Pigeon.Worker, [config], id: config.name, restart: :temporary)
+          worker(config)
         end)
     end
+  end
+
+  defp worker(%ADM.Config{} = config) do
+    worker(ADM.Worker, [config], id: config.name, restart: :temporary)
+  end
+  defp worker(config) do
+    worker(Pigeon.Worker, [config], id: config.name, restart: :temporary)
   end
 
   defp adm_workers do

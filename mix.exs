@@ -1,39 +1,47 @@
 defmodule Pigeon.Mixfile do
   use Mix.Project
 
+  @version "1.1.0"
+
   def project do
-    [app: :pigeon,
-     name: "Pigeon",
-     version: "1.1.0",
-     elixir: "~> 1.4",
-     source_url: "https://github.com/codedge-llc/pigeon",
-     description: description(),
-     package: package(),
-     build_embedded: Mix.env == :prod,
-     start_permanent: Mix.env == :prod,
-     test_coverage: [tool: ExCoveralls],
-     preferred_cli_env: [
-       "coveralls": :test,
-       "coveralls.detail": :test,
-       "coveralls.post": :test,
-       "coveralls.html": :test
-     ],
-     dialyzer: [
-       plt_add_apps: [:kadabra, :poison],
-       ignore_warnings: "config/dialyzer.ignore-warnings"
-     ],
-     docs: [
-       main: "getting-started",
-       extras: [
-         "docs/Getting Started.md",
-         "docs/APNS Apple iOS.md",
-         "docs/FCM Android.md",
-         "docs/ADM Amazon Android.md",
-         "CHANGELOG.md"
-       ]
-     ],
-     deps: deps()]
+    [
+      app: :pigeon,
+      name: "Pigeon",
+      version: @version,
+      elixir: "~> 1.4",
+   	  elixirc_paths: elixirc_paths(Mix.env),
+      source_url: "https://github.com/codedge-llc/pigeon",
+      description: description(),
+      package: package(),
+      build_embedded: Mix.env == :prod,
+      start_permanent: Mix.env == :prod,
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [
+        "coveralls": :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test
+      ],
+      dialyzer: [
+        plt_add_apps: [:kadabra, :poison],
+        ignore_warnings: "config/dialyzer.ignore-warnings"
+      ],
+      docs: [
+        main: "getting-started",
+        extras: [
+          "docs/Getting Started.md",
+          "docs/APNS Apple iOS.md",
+          "docs/FCM Android.md",
+          "docs/ADM Amazon Android.md",
+          "CHANGELOG.md"
+        ]
+      ],
+      deps: deps()
+    ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_),     do: ["lib"]
 
   def application do
     [extra_applications: [:logger],
@@ -55,7 +63,8 @@ defmodule Pigeon.Mixfile do
 
   defp description do
     """
-    HTTP2-compliant wrapper for sending iOS (APNS), Android (FCM), and Amazon Android (ADM) push notifications.
+    HTTP2-compliant wrapper for sending iOS (APNS), Android (FCM),
+    and Amazon Android (ADM) push notifications.
     """
   end
 
