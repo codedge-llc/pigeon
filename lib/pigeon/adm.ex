@@ -3,7 +3,9 @@ defmodule Pigeon.ADM do
   Amazon Device Messaging (ADM)
   """
 
-  alias Pigeon.ADM.{Config, Notification}
+  alias Pigeon.ADM.{Config, Notification, NotificationResponse}
+
+  @default_timeout 5_000
 
   @doc """
   Sends a push over ADM.
@@ -34,11 +36,25 @@ defmodule Pigeon.ADM do
   @spec push(Notification.t | [Notification.t], Keyword.t) :: no_return
   def push(notifications, opts \\ [])
   def push(notifications, opts) when is_list(notifications) do
-    Enum.each(notifications, &push(&1, opts))
+    worker_name = opts[:to] || Config.default_name
+    case opts[:on_response] do
+      nil ->
+        notifications
+        |> Enum.map(& Task.async(fn -> sync_push(worker_name, &1) end))
+        |> Task.yield_many(@default_timeout + 500)
+        |> Enum.map(fn {task, response} ->
+            response || Task.shutdown(task, :brutal_kill)
+           end)
+        |> NotificationResponse.new
+      on_response -> cast_push(worker_name, notifications, on_response)
+    end
   end
   def push(notification, opts) do
     worker_name = opts[:to] || Config.default_name
-    cast_push(worker_name, notification, opts[:on_response])
+    case opts[:on_response] do
+      nil -> sync_push(worker_name, notification)
+      on_response -> cast_push(worker_name, notification, on_response)
+    end
   end
 
   defp cast_push(worker_name, notification, nil) do
@@ -46,5 +62,19 @@ defmodule Pigeon.ADM do
   end
   defp cast_push(worker_name, notification, on_response) do
     GenServer.cast(worker_name, {:push, :adm, notification, on_response})
+  end
+
+  defp sync_push(worker_name, notification) do
+    pid = self()
+    ref = :erlang.make_ref
+    on_response = fn(x) -> send pid, {ref, x} end
+
+    GenServer.cast(worker_name, {:push, :adm, notification, on_response})
+
+    receive do
+      {^ref, x} -> x
+    after
+      @default_timeout -> {:error, :timeout, notification}
+    end
   end
 end

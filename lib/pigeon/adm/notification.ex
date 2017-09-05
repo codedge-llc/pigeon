@@ -104,10 +104,3 @@ defmodule Pigeon.ADM.Notification do
   end
   def calculate_md5(notification), do: notification
 end
-
-defmodule Pigeon.ADM.NotificationResponse do
-  @moduledoc """
-  Passed to the ADM on_response callback
-  """
-  defstruct ok: [], retry: [], update: [], remove: [], error: %{}
-end
