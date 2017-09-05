@@ -4,6 +4,8 @@ defmodule Pigeon.ADM.Worker do
   use GenServer
   require Logger
 
+  alias Pigeon.ADM.{NotificationResponse, ResultParser}
+
   @token_refresh_uri "https://api.amazon.com/auth/O2/token"
 
   def start_link(config) do
@@ -192,11 +194,10 @@ defmodule Pigeon.ADM.Worker do
 
   defp handle_error_status_code(status, body, notification, on_response) do
     case Poison.decode(body) do
-      {:ok, %{"reason" => reason}} ->
-        reason_atom = reason |> Macro.underscore |> String.to_atom
-        on_response.({:error, reason_atom, notification})
+      {:ok, %{"reason" => _reason} = result_json} ->
+        parse_result(notification.registration_id, [result_json], on_response)
       {:error, _} ->
-        on_response.({:error, generic_error_reason(status), notification})
+        unless on_response == nil do on_response.({:error, generic_error_reason(status), notification}) end
     end
   end
 
@@ -207,45 +208,14 @@ defmodule Pigeon.ADM.Worker do
 
   defp handle_200_status(body, notification, on_response) do
     {:ok, json} = Poison.decode(body)
-    process_callback({notification.registration_id, json},
-                     notification,
-                     on_response)
+    parse_result(notification.registration_id, [json], on_response)
   end
 
-  defp process_callback({reg_id, response}, notification, on_response) do
-    case parse_result(response) do
-      :ok ->
-        notification = %{notification | registration_id: reg_id}
-        on_response.({:ok, notification})
+  # no on_response callback, ignore
+  def parse_result(_, _, nil), do: :ok
 
-      {:ok, new_reg_id} ->
-        notification = %{notification | registration_id: reg_id,
-                                        updated_registration_id: new_reg_id}
-        on_response.({:ok, notification})
-
-      {:error, reason} ->
-        notification = %{notification | registration_id: reg_id}
-        on_response.({:error, reason, notification})
-    end
-  end
-
-  defp parse_result(result) do
-    error = result["reason"]
-    if is_nil(error) do
-      parse_success(result)
-    else
-      error_atom = error |> Macro.underscore |> String.to_atom
-      {:error, error_atom}
-    end
-  end
-
-  defp parse_success(result) do
-    registration_id = result["registrationID"]
-    if is_nil(registration_id) do
-      :ok
-    else
-      {:ok, registration_id}
-    end
+  def parse_result(ids, results, on_response) do
+    ResultParser.parse(ids, results, on_response, %NotificationResponse{})
   end
 
   def handle_info({_from, {:ok, %HTTPoison.Response{status_code: 200}}}, state) do
