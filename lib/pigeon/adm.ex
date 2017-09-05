@@ -14,24 +14,13 @@ defmodule Pigeon.ADM do
 
       iex> msg = %{ "body" => "your message" }
       iex> n = Pigeon.ADM.Notification.new("your_reg_id", msg)
-      iex> Pigeon.ADM.push(n)
+      iex> Pigeon.ADM.push(n, on_response: fn(x) -> IO.inspect(x) end)
       :ok
 
       iex> msg = %{ "body" => "your message" }
       iex> n = Pigeon.ADM.Notification.new("your_reg_id", msg)
-      iex> me = self()
-      iex> handler = fn(x) -> send(me, x) end
-      iex> Pigeon.ADM.push(n, on_response: handler)
-      iex> receive do
-      ...>   x -> x
-      ...> after
-      ...>   5_000 -> "Nothing received"
-      ...> end
-      {:error, :invalid_registration_id,
-      %Pigeon.ADM.Notification{consolidation_key: nil,
-      expires_after: 604800, md5: "M13RuG4uDWqajseQcCiyiw==",
-      payload: %{"data" => %{"body" => "your message"}},
-      registration_id: "your_reg_id", updated_registration_id: nil}}
+      iex> Pigeon.ADM.push(n)
+      {:ok, %Pigeon.ADM.NotificationResponse{remove: ["your_reg_id"]}}
   """
   @spec push(Notification.t | [Notification.t], Keyword.t) :: no_return
   def push(notifications, opts \\ [])

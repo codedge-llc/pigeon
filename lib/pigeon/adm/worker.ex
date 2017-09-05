@@ -195,7 +195,7 @@ defmodule Pigeon.ADM.Worker do
   defp handle_error_status_code(status, body, notification, on_response) do
     case Poison.decode(body) do
       {:ok, %{"reason" => _reason} = result_json} ->
-        parse_result(notification.registration_id, result_json, on_response)
+        parse_result(notification.registration_id, [result_json], on_response)
       {:error, _} ->
         unless on_response == nil do on_response.({:error, generic_error_reason(status), notification}) end
     end
