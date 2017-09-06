@@ -185,17 +185,10 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
     end
   end
 
-  @doc ~S"""
-  Returns ping period for config.
-
-  ## Examples
-
-      iex> config = %Pigeon.APNS.Config{ping_period: 60}
-      iex> Pigeon.Configurable.ping_period(config)
-      60
-  """
-  @spec ping_period(any) :: pos_integer
-  def ping_period(%Config{ping_period: ping}), do: ping
+  @spec schedule_ping(any) :: no_return
+  def schedule_ping(%Config{ping_period: ping}) do
+    Process.send_after(self(), :ping, ping)
+  end
 
   @spec reconnect?(any) :: boolean
   def reconnect?(%Config{reconnect: reconnect}), do: reconnect

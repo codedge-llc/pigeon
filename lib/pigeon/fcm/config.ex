@@ -4,15 +4,13 @@ defmodule Pigeon.FCM.Config do
   defstruct key: nil,
             uri: 'fcm.googleapis.com',
             port: 443,
-            name: nil,
-            ping_period: 600_000
+            name: nil
 
   @type t :: %__MODULE__{
     key: binary,
     name: term,
-    uri: charlist,
     port: pos_integer,
-    ping_period: pos_integer
+    uri: charlist,
   }
 
   @doc ~S"""
@@ -24,19 +22,17 @@ defmodule Pigeon.FCM.Config do
       ...>   name: :test,
       ...>   key: "fcm_key",
       ...>   uri: 'test.server.example.com',
-      ...>   port: 5228,
-      ...>   ping_period: 300_000
+      ...>   port: 5228
       ...> )
-      %Pigeon.FCM.Config{key: "fcm_key", name: :test, ping_period: 300000,
+      %Pigeon.FCM.Config{key: "fcm_key", name: :test,
       port: 5228, uri: 'test.server.example.com'}
   """
   def new(opts) when is_list(opts) do
     %__MODULE__{
       name: opts[:name],
       key: opts[:key],
-      uri: opts[:uri] || 'fcm.googleapis.com',
-      port: opts[:port] || 443,
-      ping_period: opts[:ping_period] || 600_000
+      uri: Keyword.get(opts, :uri, 'fcm.googleapis.com'),
+      port: Keyword.get(opts, :port, 443)
     }
   end
   def new(name) when is_atom(name) do
@@ -125,8 +121,8 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
     on_response.({:error, :unavailable})
   end
 
-  @spec ping_period(any) :: pos_integer
-  def ping_period(%Config{ping_period: ping}), do: ping
+  @spec schedule_ping(any) :: no_return
+  def schedule_ping(_config), do: :ok
 
   @spec reconnect?(any) :: boolean
   def reconnect?(_config), do: false

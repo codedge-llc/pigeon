@@ -25,18 +25,6 @@ defmodule Pigeon.FCMTest do
       assert state.config.key == fcm_key
       assert is_pid(state.socket)
     end
-
-    test "configures ping_period if specified" do
-      fcm_key = Application.get_env(:pigeon, :test)[:fcm_key]
-      opts = [
-        key: fcm_key,
-        ping_period: 30_000
-      ]
-
-      {:ok, pid} = Pigeon.FCM.start_connection(opts)
-      state = :sys.get_state(pid)
-      assert state.config.ping_period == 30_000
-    end
   end
 
   describe "push/2 with custom worker" do

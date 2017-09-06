@@ -32,14 +32,14 @@ defmodule Pigeon.Worker do
   def initialize_worker(config) do
     case connect_socket(config, 0) do
       {:ok, socket} ->
-        Process.send_after(self(), :ping, Configurable.ping_period(config))
+        Configurable.schedule_ping(config)
         {:ok, %{
           socket: socket,
           config: config,
           stream_id: 1,
           queue: %{}
         }}
-      error -> error
+      {:error, reason} -> {:stop, reason}
     end
   end
 
@@ -55,7 +55,7 @@ defmodule Pigeon.Worker do
 
   def handle_info(:ping, state) do
     Client.default().send_ping(state.socket)
-    Process.send_after(self(), :ping, Configurable.ping_period(state.config))
+    Configurable.schedule_ping(state.config)
 
     {:noreply, state}
   end
@@ -111,7 +111,7 @@ defmodule Pigeon.Worker do
   def reconnect(%{config: config} = state) do
     case connect_socket(config, 0) do
       {:ok, new_socket} ->
-        Process.send_after(self(), :ping, Configurable.ping_period(config))
+        Configurable.schedule_ping(state.config)
         %{state | socket: new_socket, queue: %{}, stream_id: 1}
       error ->
         error |> inspect() |> Logger.error

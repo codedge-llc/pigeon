@@ -27,7 +27,7 @@ defmodule Pigeon.ADM.NotificationResponse do
   end
 
   defp put_response(acc, {:ok, response}) do
-    %{ acc |
+    %{acc |
        ok: acc.ok ++ response.ok,
        retry: acc.retry ++ response.retry,
        update: acc.update ++ response.update,

@@ -25,18 +25,28 @@ defprotocol Pigeon.Configurable do
   def handle_end_stream(config, stream, notification, on_response)
 
   @doc ~S"""
-  Returns ping_period for config.
+  Schedules connection ping if necessary.
 
   ## Examples
 
-      iex> ping_period(%Pigeon.APNS.Config{ping_period: 600})
-      600
+      iex> schedule_ping(%Pigeon.APNS.Config{ping_period: 2})
+      iex> receive do
+      ...>   :ping -> "Got ping!"
+      ...> after
+      ...>   5000 -> "No ping received."
+      ...> end
+      "Got ping!"
 
-      iex> ping_period(%Pigeon.FCM.Config{ping_period: 300})
-      300
+      iex> schedule_ping(%Pigeon.FCM.Config{})
+      iex> receive do
+      ...>   :ping -> "Got ping!"
+      ...> after
+      ...>   5000 -> "No ping received."
+      ...> end
+      "No ping received."
   """
-  @spec ping_period(any) :: pos_integer
-  def ping_period(config)
+  @spec schedule_ping(any) :: no_return
+  def schedule_ping(config)
 
   @doc ~S"""
   Returns whether connection should reconnect if dropped.
