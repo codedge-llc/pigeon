@@ -6,13 +6,15 @@ defmodule Pigeon.APNS.Notification do
             expiration: nil,
             id: nil,
             payload: %{"aps" => %{}},
-            topic: nil
+            topic: nil,
+            response: nil
 
   @type t :: %__MODULE__{
     device_token: String.t | nil,
     expiration: String.t | nil,
     id: String.t | nil,
     payload: %{String.t => String.t},
+    response: atom | nil,
     topic: String.t | nil
   }
 

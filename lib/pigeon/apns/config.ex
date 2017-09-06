@@ -167,13 +167,14 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
                         on_response) do
     case status do
       200 ->
-        notification = %{notification | id: get_apns_id(headers)}
-        unless on_response == nil, do: on_response.({:ok, notification})
+        notification = %{notification | id: get_apns_id(headers), response: :success}
+        unless on_response == nil, do: on_response.(notification)
       _error ->
         reason = Error.parse(body)
         Error.log(reason, notification)
         unless on_response == nil do
-          on_response.({:error, reason, notification})
+          notification = %{notification | response: reason}
+          on_response.(notification)
         end
     end
   end

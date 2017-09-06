@@ -6,7 +6,7 @@ defmodule Pigeon.APNS do
   require Logger
   import Supervisor.Spec
 
-  alias Pigeon.APNS.{Config, Notification, NotificationResponse}
+  alias Pigeon.APNS.{Config, Notification}
   alias Pigeon.Worker
 
   @type notification :: Notification.t
@@ -17,13 +17,13 @@ defmodule Pigeon.APNS do
 
   ## Examples
 
-      handler = fn(x) ->
-        case x do
-          {:ok, notification} ->
+      handler = fn(%Pigeon.APNS.Notification{response: response}) ->
+        case response do
+          :success ->
             Logger.debug "Push successful!"
-          {:error, :bad_device_token, notification} ->
+          :bad_device_token ->
             Logger.error "Bad device token!"
-          {:error, reason, notification} ->
+          _error ->
             Logger.error "Some other error happened."
         end
       end
@@ -53,19 +53,18 @@ defmodule Pigeon.APNS do
 
        iex> n = Pigeon.APNS.Notification.new("msg", "token", "topic")
        iex> Pigeon.APNS.push(n)
-       {:error, :bad_device_token,
-         %Pigeon.APNS.Notification{device_token: "token", expiration: nil,
-         id: nil, payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"}}
+       %Pigeon.APNS.Notification{device_token: "token", expiration: nil,
+        response: :bad_device_token, id: nil,
+        payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"}
 
        iex> n = Pigeon.APNS.Notification.new("msg", "token", "topic")
        iex> Pigeon.APNS.push([n, n])
-       %Pigeon.APNS.NotificationResponse{error: %{
-         bad_device_token: [
-           %Pigeon.APNS.Notification{device_token: "token", expiration: nil,
-           id: nil, payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"},
-           %Pigeon.APNS.Notification{device_token: "token", expiration: nil,
-           id: nil, payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"}
-       ]}, ok: []}
+       [%Pigeon.APNS.Notification{device_token: "token", expiration: nil,
+         response: :bad_device_token, id: nil,
+         payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"},
+        %Pigeon.APNS.Notification{device_token: "token", expiration: nil,
+         response: :bad_device_token, id: nil,
+         payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"}]
   """
   @spec push(notification, push_opts) :: {:ok, term} | {:error, term, term}
   def push(notification, opts \\ [])
@@ -76,9 +75,12 @@ defmodule Pigeon.APNS do
         |> Enum.map(& Task.async(fn -> sync_push(&1, opts) end))
         |> Task.yield_many(@default_timeout + 500)
         |> Enum.map(fn {task, response} ->
-            response || Task.shutdown(task, :brutal_kill)
+             case response do
+               nil -> Task.shutdown(task, :brutal_kill)
+               {:ok, resp} -> resp
+               _error -> nil
+             end
            end)
-        |> NotificationResponse.new
       on_response -> push(notification, on_response, opts)
     end
   end
@@ -146,7 +148,7 @@ defmodule Pigeon.APNS do
     receive do
       {^ref, x} -> x
     after
-      @default_timeout -> {:error, :timeout, notification}
+      @default_timeout -> %{notification | response: :timeout}
     end
   end
 end
