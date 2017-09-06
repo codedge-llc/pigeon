@@ -30,7 +30,6 @@ defmodule Pigeon.FCM.Worker do
       {:ok, socket} ->
         ping = config[:ping_period] || @default_ping_period
         config = Map.put(config, :ping_period, ping)
-        Process.send_after(self(), :ping, ping)
 
         {:ok, %{
           socket: socket,
@@ -145,7 +144,6 @@ defmodule Pigeon.FCM.Worker do
   def reconnect(%{config: config} = state) do
     case connect_socket(config, 0) do
       {:ok, new_socket} ->
-        Process.send_after(self(), :ping, config.ping_period)
         {:ok, %{state | socket: new_socket, queue: %{}, stream_id: 1}}
       error ->
         error |> inspect() |> Logger.error
@@ -165,7 +163,6 @@ defmodule Pigeon.FCM.Worker do
   def handle_info(:ping, state) do
     if state.socket != nil do
       Pigeon.Http2.Client.default().send_ping(state.socket)
-      Process.send_after(self(), :ping, state.config.ping_period)
     end
 
     {:noreply, state}
