@@ -64,9 +64,9 @@ defmodule Pigeon.APNS.Config do
       certfile: file_path(opts[:cert]),
       key: key(opts[:key]),
       keyfile: file_path(opts[:key]),
-      uri: opts[:uri] || uri_for_mode(opts[:mode]),
-      port: opts[:port] || 443,
-      ping_period: opts[:ping_period] || 600_000
+      uri: Keyword.get(opts, :uri, uri_for_mode(opts[:mode])),
+      port: Keyword.get(opts, :port, 443),
+      ping_period: Keyword.get(opts, :ping_period, 600_000)
     }
   end
   def new(name) when is_atom(name) do
@@ -219,6 +219,7 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
       {:packet, 0},
       {:reuseaddr, true},
       {:active, true},
+      {:reconnect, config.reconnect},
       :binary
     ]
     |> add_port(config)

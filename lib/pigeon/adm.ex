@@ -14,7 +14,7 @@ defmodule Pigeon.ADM do
 
       iex> msg = %{ "body" => "your message" }
       iex> n = Pigeon.ADM.Notification.new("your_reg_id", msg)
-      iex> Pigeon.ADM.push(n, on_response: fn(x) -> IO.inspect(x) end)
+      iex> Pigeon.ADM.push(n, on_response: & &1)
       :ok
 
       iex> msg = %{ "body" => "your message" }

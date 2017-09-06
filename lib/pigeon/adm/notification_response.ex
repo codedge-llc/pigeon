@@ -40,5 +40,4 @@ defmodule Pigeon.ADM.NotificationResponse do
     errors = Map.put(error, reason, [notification | similar])
     %{resp | error: errors}
   end
-
 end
