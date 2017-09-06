@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.0.4
+* Fix: removed connection pinging from FCM.Worker (`:ping_period` option left in FCM config to not break API)
+
+## v1.0.3
+* Fixed proper handling of large FCM push batches
+
+## v1.0.2
+* Fixed FCM infinite `GOAWAY session_timed_out` loop
+
 ## v1.0.2
 * Fixed FCM infinite `GOAWAY session_timed_out` loop
 
