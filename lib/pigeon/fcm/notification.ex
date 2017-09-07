@@ -2,12 +2,18 @@ defmodule Pigeon.FCM.Notification do
   @moduledoc """
   Defines FCM notification struct and convenience constructor functions.
   """
-  defstruct registration_id: nil, payload: %{}, priority: :normal
+  defstruct message_id: nil,
+            payload: %{},
+            priority: :normal,
+            registration_id: nil,
+            response: []
 
   @type t :: %__MODULE__{
+    message_id: nil | String.t,
     payload: %{},
+    priority: :normal | :high,
     registration_id: String.t | [String.t],
-    priority: :normal | :high
+    response: [...]
   }
 
   @doc """
@@ -39,12 +45,39 @@ defmodule Pigeon.FCM.Notification do
         registration_id: "reg ID",
         priority: :normal
       }
+
+			iex> regids = Enum.map(0..1_499, fn(_x) -> "reg ID" end)
+			iex> [n1 | [n2]] = Pigeon.FCM.Notification.new(regids,
+			...> %{"body" => "test message"}, %{"key" => "value"})
+			iex> Enum.count(n1.registration_id)
+			1000
+			iex> Enum.count(n2.registration_id)
+			500
   """
   def new(registration_ids, notification \\ %{}, data \\ %{})
-  def new(registration_ids, notification, data) do
-    %Pigeon.FCM.Notification{registration_id: registration_ids}
+  def new(reg_id, notification, data) when is_binary(reg_id) do
+    %Pigeon.FCM.Notification{registration_id: reg_id}
     |> put_notification(notification)
     |> put_data(data)
+  end
+  def new(reg_ids, notification, data) when length(reg_ids) < 1001 do
+    %Pigeon.FCM.Notification{registration_id: reg_ids}
+    |> put_notification(notification)
+    |> put_data(data)
+  end
+  def new(reg_ids, notification, data) do
+    reg_ids
+    |> chunk(1000, 1000, [])
+    |> Enum.map(& new(&1, notification, data))
+    |> List.flatten
+  end
+
+  defp chunk(collection, chunk_size, step, padding) do
+    if Kernel.function_exported?(Enum, :chunk_every, 4) do
+      Enum.chunk_every(collection, chunk_size, step, padding)
+    else
+      Enum.chunk(collection, chunk_size, step, padding)
+    end
   end
 
   @doc """
@@ -99,4 +132,25 @@ defmodule Pigeon.FCM.Notification do
       |> Map.put(key, value)
     %{notification | payload: payload}
   end
+end
+
+defimpl Pigeon.Encodable, for: Pigeon.FCM.Notification do
+  def binary_payload(notif) do
+    encode_requests(notif)
+  end
+
+  @doc false
+  def encode_requests(%{registration_id: regid} = notification) when is_binary(regid) do
+    encode_requests(%{notification | registration_id: [regid]})
+  end
+  def encode_requests(%{registration_id: regid} = notification) when is_list(regid) do
+    regid
+    |> recipient_attr()
+    |> Map.merge(notification.payload)
+    |> Map.put("priority", to_string(notification.priority))
+    |> Poison.encode!
+  end
+
+  defp recipient_attr([regid]), do: %{"to" => regid}
+  defp recipient_attr(regid) when is_list(regid), do: %{"registration_ids" => regid}
 end

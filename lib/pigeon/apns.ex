@@ -27,6 +27,7 @@ defmodule Pigeon.APNS do
             Logger.error "Some other error happened."
         end
       end
+
       n = Pigeon.APNS.Notification.new("msg", "device token", "push topic")
       Pigeon.APNS.push(n, on_response: handler)
   """

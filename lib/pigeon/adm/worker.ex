@@ -192,12 +192,20 @@ defmodule Pigeon.ADM.Worker do
   defp process_response(status, body, notification, on_response),
     do: handle_error_status_code(status, body, notification, on_response)
 
+  defp handle_200_status(body, notification, on_response) do
+    {:ok, json} = Poison.decode(body)
+    parse_result(notification, json, on_response)
+  end
+
   defp handle_error_status_code(status, body, notification, on_response) do
     case Poison.decode(body) do
       {:ok, %{"reason" => _reason} = result_json} ->
-        parse_result(notification.registration_id, [result_json], on_response)
+        parse_result(notification, result_json, on_response)
       {:error, _} ->
-        unless on_response == nil do on_response.({:error, generic_error_reason(status), notification}) end
+        unless on_response == nil do
+          n = %{notification | response: generic_error_reason(status)}
+          on_response.(n)
+        end
     end
   end
 
@@ -206,16 +214,11 @@ defmodule Pigeon.ADM.Worker do
   defp generic_error_reason(500), do: :internal_server_error
   defp generic_error_reason(_), do: :unknown_error
 
-  defp handle_200_status(body, notification, on_response) do
-    {:ok, json} = Poison.decode(body)
-    parse_result(notification.registration_id, [json], on_response)
-  end
-
   # no on_response callback, ignore
   def parse_result(_, _, nil), do: :ok
 
-  def parse_result(ids, results, on_response) do
-    ResultParser.parse(ids, results, on_response, %NotificationResponse{})
+  def parse_result(notification, response, on_response) do
+    ResultParser.parse(notification, response, on_response)
   end
 
   def handle_info({_from, {:ok, %HTTPoison.Response{status_code: 200}}}, state) do

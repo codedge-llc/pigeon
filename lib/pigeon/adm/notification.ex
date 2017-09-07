@@ -2,11 +2,13 @@ defmodule Pigeon.ADM.Notification do
   @moduledoc """
   Defines Amazon ADM notification struct and convenience constructor functions.
   """
+
   defstruct consolidation_key: nil,
             expires_after: 604_800,
             md5: nil,
             payload: %{},
             registration_id: nil,
+            response: nil,
             updated_registration_id: nil
 
   @type t :: %__MODULE__{
@@ -15,8 +17,22 @@ defmodule Pigeon.ADM.Notification do
     md5: binary,
     payload: %{},
     registration_id: String.t,
+    response: response,
     updated_registration_id: String.t
   }
+
+  @type response :: :access_token_expired
+                  | :invalid_registration_id
+                  | :invalid_data
+                  | :invalid_consolidation_key
+                  | :invalid_expiration
+                  | :invalid_checksum
+                  | :invalid_type
+                  | :max_rate_exceeded
+                  | :message_too_large
+                  | nil
+                  | :success
+                  | :unregistered
 
   @doc """
   Creates `ADM.Notification` struct with device registration ID and optional data payload.

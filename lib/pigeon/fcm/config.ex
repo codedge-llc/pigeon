@@ -48,7 +48,8 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
 
   require Logger
 
-  alias Pigeon.FCM.{Config, ResultParser, NotificationResponse}
+  alias Pigeon.Encodable
+  alias Pigeon.FCM.{Config, ResultParser}
 
   @type sock :: {:sslsocket, any, pid | {any, any}}
 
@@ -92,33 +93,37 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
     ]
   end
 
-  def push_payload(_config, {_registration_ids, payload}, _opts) do
-    payload
+  def push_payload(_config, notification, _opts) do
+    Encodable.binary_payload(notification)
   end
 
   def handle_end_stream(_config,
                         %{body: body, status: status, error: nil},
-                        {registration_ids, _payload},
+                        notif,
                         on_response) do
     case status do
       200 ->
         result = Poison.decode!(body)
-        parse_result(registration_ids, result, on_response)
+        parse_result(notif.registration_id, result, on_response, notif)
       401 ->
         log_error("401", "Unauthorized")
-        unless on_response == nil do on_response.({:error, :unauthorized}) end
+        notif = %{notif | response: :unauthorized}
+        unless on_response == nil do on_response.(notif) end
       400 ->
         log_error("400", "Malformed JSON")
-        unless on_response == nil do on_response.({:error, :malformed_json}) end
+        notif = %{notif | response: :malformed_json}
+        unless on_response == nil do on_response.(notif) end
       code ->
         reason = parse_error(body)
         log_error(code, reason)
-        unless on_response == nil do on_response.({:error, reason}) end
+        notif = %{notif | response: reason}
+        unless on_response == nil do on_response.(notif) end
     end
   end
   def handle_end_stream(_config, %{error: _error}, _notif, nil), do: :ok
-  def handle_end_stream(_config, %{error: _error}, _notif, on_response) do
-    on_response.({:error, :unavailable})
+  def handle_end_stream(_config, %{error: _error}, {_regids, notif}, on_response) do
+    notif = %{notif | response: :unavailable}
+    on_response.(notif)
   end
 
   @spec schedule_ping(any) :: no_return
@@ -131,10 +136,10 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   end
 
   # no on_response callback, ignore
-  def parse_result(_, _, nil), do: :ok
+  def parse_result(_, _, nil, _notif), do: :ok
 
-  def parse_result(ids, %{"results" => results}, on_response) do
-    ResultParser.parse(ids, results, on_response, %NotificationResponse{})
+  def parse_result(ids, %{"results" => results}, on_response, notification) do
+    ResultParser.parse(ids, results, on_response, notification)
   end
 
   defp parse_error(data) do

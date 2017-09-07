@@ -34,15 +34,17 @@ defmodule Pigeon.FCM do
 
       iex> n = Pigeon.FCM.Notification.new("regId", %{}, %{"message" => "test"})
       iex> Pigeon.FCM.push(n)
-      {:ok, %Pigeon.FCM.NotificationResponse{error: %{}, message_id: nil,
-        ok: [], remove: ["regId"], retry: [], update: []}}
+      %Pigeon.FCM.Notification{message_id: nil,
+       payload: %{"data" => %{"message" => "test"}}, priority: :normal,
+       registration_id: "regId", response: [invalid_registration: "regId"]}
 
-      iex> n = Pigeon.FCM.Notification.new("regId", %{}, %{"message" => "test"})
-      iex> Pigeon.FCM.push([n, n])
-      [ok: %Pigeon.FCM.NotificationResponse{error: %{}, message_id: nil, ok: [],
-        remove: ["regId"], retry: [], update: []},
-       ok: %Pigeon.FCM.NotificationResponse{error: %{}, message_id: nil, ok: [],
-         remove: ["regId"], retry: [], update: []}]
+      iex> n = Pigeon.FCM.Notification.new(["regId", "regId"], %{},
+      ...> %{"message" => "test"})
+      iex> Pigeon.FCM.push(n)
+      %Pigeon.FCM.Notification{message_id: nil,
+       payload: %{"data" => %{"message" => "test"}}, priority: :normal,
+       registration_id: ["regId", "regId"], response:
+       [invalid_registration: "regId", invalid_registration: "regId"]}
   """
   @spec push(Notification.t, Keyword.t) :: {:ok, NotificationResponse.t}
   @spec push([Notification.t, ...], Keyword.t) :: [NotificationResponse.t, ...]
@@ -68,16 +70,17 @@ defmodule Pigeon.FCM do
   defp task_mapper({task, result}) do
     case result do
       nil -> Task.shutdown(task, :brutal_kill)
-      {:ok, {:ok, response}} -> {:ok, response}
-      {:ok, {:error, :timeout, notification}} -> {:error, notification}
+      {:ok, notif} -> notif
     end
   end
 
-  defp send_push(notification, on_response, opts) do
+  defp send_push(notifications, on_response, opts) when is_list(notifications) do
     worker_name = opts[:to] || @default_worker
-    notification
-    |> encode_requests()
+    notifications
     |> Enum.map(& cast_request(worker_name, &1, on_response, opts))
+  end
+  defp send_push(notification, on_response, opts) do
+    send_push([notification], on_response, opts)
   end
 
   defp cast_request(worker_name, request, on_response, opts) do
@@ -93,44 +96,9 @@ defmodule Pigeon.FCM do
     receive do
       {^ref, x} -> x
     after
-      @default_timeout -> {:error, :timeout, notification}
+      @default_timeout -> %{notification | response: :timeout}
     end
   end
-
-  @doc false
-  def encode_requests(%{registration_id: regid} = notification) when is_binary(regid) do
-    encode_requests(%{notification | registration_id: [regid]})
-  end
-  def encode_requests(%{registration_id: regid} = notification) when length(regid) < 1001 do
-    res =
-      regid
-      |> recipient_attr()
-      |> Map.merge(notification.payload)
-      |> Map.put("priority", to_string(notification.priority))
-      |> Poison.encode!
-
-    formatted_regid = regid
-      |> List.wrap
-
-    [{formatted_regid, res}]
-  end
-  def encode_requests(notification) do
-    notification.registration_id
-    |> chunk(@chunk_size, @chunk_size, [])
-    |> Enum.map(& encode_requests(%{notification | registration_id: &1}))
-    |> List.flatten
-  end
-
-  defp chunk(collection, chunk_size, step, padding) do
-    if Kernel.function_exported?(Enum, :chunk_every, 4) do
-      Enum.chunk_every(collection, chunk_size, step, padding)
-    else
-      Enum.chunk(collection, chunk_size, step, padding)
-    end
-  end
-
-  defp recipient_attr([regid]), do: %{"to" => regid}
-  defp recipient_attr(regid) when is_list(regid), do: %{"registration_ids" => regid}
 
   @doc ~S"""
   Starts FCM worker connection with given config or name.

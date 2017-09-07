@@ -12,37 +12,44 @@ defmodule Pigeon.ADM do
 
   ## Examples
 
-      iex> msg = %{ "body" => "your message" }
+      iex> msg = %{"body" => "your message"}
       iex> n = Pigeon.ADM.Notification.new("your_reg_id", msg)
-      iex> Pigeon.ADM.push(n, on_response: & &1)
+      iex> Pigeon.ADM.push(n, on_response: nil)
       :ok
 
-      iex> msg = %{ "body" => "your message" }
+      iex> msg = %{"body" => "your message"}
       iex> n = Pigeon.ADM.Notification.new("your_reg_id", msg)
       iex> Pigeon.ADM.push(n)
-      {:ok, %Pigeon.ADM.NotificationResponse{remove: ["your_reg_id"]}}
+      %Pigeon.ADM.Notification{consolidation_key: nil,
+       expires_after: 604800, md5: "M13RuG4uDWqajseQcCiyiw==",
+       payload: %{"data" => %{"body" => "your message"}},
+       registration_id: "your_reg_id", response: :invalid_registration_id,
+       updated_registration_id: nil}
   """
   @spec push(Notification.t | [Notification.t], Keyword.t) :: no_return
   def push(notifications, opts \\ [])
   def push(notifications, opts) when is_list(notifications) do
     worker_name = opts[:to] || Config.default_name
-    case opts[:on_response] do
-      nil ->
-        notifications
-        |> Enum.map(& Task.async(fn -> sync_push(worker_name, &1) end))
-        |> Task.yield_many(@default_timeout + 500)
-        |> Enum.map(fn {task, response} ->
-            response || Task.shutdown(task, :brutal_kill)
-           end)
-        |> NotificationResponse.new
-      on_response -> cast_push(worker_name, notifications, on_response)
+
+    if Keyword.has_key?(opts, :on_response) do
+      cast_push(worker_name, notifications, opts[:on_response])
+    else
+      notifications
+      |> Enum.map(& Task.async(fn -> sync_push(worker_name, &1) end))
+      |> Task.yield_many(@default_timeout + 500)
+      |> Enum.map(fn {task, response} ->
+          response || Task.shutdown(task, :brutal_kill)
+         end)
+      |> NotificationResponse.new
     end
   end
   def push(notification, opts) do
     worker_name = opts[:to] || Config.default_name
-    case opts[:on_response] do
-      nil -> sync_push(worker_name, notification)
-      on_response -> cast_push(worker_name, notification, on_response)
+
+    if Keyword.has_key?(opts, :on_response) do
+      cast_push(worker_name, notification, opts[:on_response])
+    else
+      sync_push(worker_name, notification)
     end
   end
 
@@ -63,7 +70,7 @@ defmodule Pigeon.ADM do
     receive do
       {^ref, x} -> x
     after
-      @default_timeout -> {:error, :timeout, notification}
+      @default_timeout -> %{notification | response: :timeout}
     end
   end
 end
