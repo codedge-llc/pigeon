@@ -11,6 +11,7 @@
 * `:use_2197` renamed to `:port`
 
 **FCM**
+* `NotificationResponse` done away with in favor of a `:response` key on `Notification`
 * Override push server endpoint with `:uri` and `:port` options in `FCM.Config.new/1`
 
 **ADM**

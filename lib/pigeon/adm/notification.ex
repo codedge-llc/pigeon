@@ -58,6 +58,15 @@ defmodule Pigeon.ADM.Notification do
         registration_id: "reg ID",
         updated_registration_id: nil
       }
+
+      iex> Pigeon.ADM.Notification.new("reg ID", "not a map")
+      %Pigeon.ADM.Notification{
+        consolidation_key: nil,
+        md5: "1B2M2Y8AsgTpgAmY7PhCfg==",
+        payload: %{"data" => %{}},
+        registration_id: "reg ID",
+        updated_registration_id: nil
+      }
   """
   @spec new(String.t, %{required(String.t) => term}) :: t
   def new(registration_id, data \\ %{})
@@ -89,8 +98,6 @@ defmodule Pigeon.ADM.Notification do
     |> calculate_md5
   end
 
-  defp update_payload(notification, key, value) when value == %{} and key != "data",
-    do: notification
   defp update_payload(notification, key, value) do
     payload =
       notification.payload
@@ -99,11 +106,12 @@ defmodule Pigeon.ADM.Notification do
   end
 
   @doc false
-  def ensure_strings(data) do
+  def ensure_strings(%{} = data) do
     data
     |> Enum.map(fn {key, value} -> {"#{key}", "#{value}"} end)
     |> Enum.into(%{})
   end
+  def ensure_strings(_else), do: %{}
 
   @doc false
   def calculate_md5(%{payload: %{"data" => data}} = notification) when is_map(data) do

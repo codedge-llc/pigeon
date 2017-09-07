@@ -25,8 +25,6 @@ defmodule Pigeon.Worker do
     GenServer.cast(pid, :stop)
   end
 
-  def stop, do: :gen_server.cast(self(), :stop)
-
   def init({:ok, config}), do: initialize_worker(config)
 
   def initialize_worker(config) do
@@ -121,7 +119,9 @@ defmodule Pigeon.Worker do
 
   # Cast
 
-  def handle_cast(:stop, state), do: {:noreply, state}
+  def handle_cast(:stop, state) do
+    {:stop, :normal, state}
+  end
 
   def handle_cast({:push, notification, opts}, state) do
     send_push(state, notification, opts)

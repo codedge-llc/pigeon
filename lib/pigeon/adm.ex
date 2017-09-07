@@ -3,7 +3,9 @@ defmodule Pigeon.ADM do
   Amazon Device Messaging (ADM)
   """
 
-  alias Pigeon.ADM.{Config, Notification, NotificationResponse}
+  import Supervisor.Spec
+
+  alias Pigeon.ADM.{Config, Notification, Worker}
 
   @default_timeout 5_000
 
@@ -25,6 +27,29 @@ defmodule Pigeon.ADM do
        payload: %{"data" => %{"body" => "your message"}},
        registration_id: "your_reg_id", response: :invalid_registration_id,
        updated_registration_id: nil}
+
+      iex> msg = %{"body" => "your message"}
+      iex> n = Pigeon.ADM.Notification.new("your_reg_id", msg)
+      iex> notifs = Pigeon.ADM.push([n, n], to: :adm_default)
+      iex> Enum.map(notifs, & &1.response)
+      [:invalid_registration_id, :invalid_registration_id]
+
+      iex> me = self()
+      iex> handler = fn(_x) -> send(me, "Sent a push!") end
+      iex> n = Pigeon.ADM.Notification.new("your_reg_id", %{})
+      iex> Pigeon.ADM.push(n, on_response: handler)
+      iex> receive do
+      ...>   x -> x
+      ...> after
+      ...>   5_000 -> "No push response..."
+      ...> end
+      "Sent a push!"
+
+      iex> msg = %{"body" => "your message"}
+      iex> n = Pigeon.ADM.Notification.new("your_reg_id", msg)
+      iex> notif = Pigeon.ADM.push(n, to: :worker_not_started)
+      iex> notif.response
+      :timeout
   """
   @spec push(Notification.t | [Notification.t], Keyword.t) :: no_return
   def push(notifications, opts \\ [])
@@ -38,9 +63,12 @@ defmodule Pigeon.ADM do
       |> Enum.map(& Task.async(fn -> sync_push(worker_name, &1) end))
       |> Task.yield_many(@default_timeout + 500)
       |> Enum.map(fn {task, response} ->
-          response || Task.shutdown(task, :brutal_kill)
+           case response do
+             nil -> Task.shutdown(task, :brutal_kill)
+             {:ok, resp} -> resp
+             _error -> nil
+           end
          end)
-      |> NotificationResponse.new
     end
   end
   def push(notification, opts) do
@@ -73,4 +101,44 @@ defmodule Pigeon.ADM do
       @default_timeout -> %{notification | response: :timeout}
     end
   end
+
+  @doc ~S"""
+  Starts ADM worker connection with given config or name.
+
+  ## Examples
+
+      iex> config = Pigeon.ADM.Config.new(:adm_default)
+      iex> {:ok, pid} = Pigeon.ADM.start_connection(%{config | name: nil})
+      iex> Process.alive?(pid)
+      true
+  """
+  @spec start_connection(atom | Config.t | Keyword.t) :: {:ok, pid}
+  def start_connection(name) when is_atom(name) do
+    config = Config.new(name)
+    Supervisor.start_child(:pigeon, worker(Worker, [config], id: name))
+  end
+  def start_connection(%Config{} = config) do
+    Worker.start_link(config)
+  end
+  def start_connection(opts) when is_list(opts) do
+    opts
+    |> Config.new
+    |> start_connection()
+  end
+
+  @doc ~S"""
+  Stops existing ADM worker connection.
+
+  ## Examples
+
+      iex> config = Pigeon.ADM.Config.new(:adm_default)
+      iex> {:ok, pid} = Pigeon.ADM.start_connection(%{config | name: nil})
+      iex> Pigeon.ADM.stop_connection(pid)
+      :ok
+      iex> :timer.sleep(500)
+      iex> Process.alive?(pid)
+      false
+  """
+  @spec stop_connection(atom | pid) :: :ok
+  def stop_connection(name), do: Worker.stop_connection(name)
 end

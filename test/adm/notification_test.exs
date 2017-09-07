@@ -29,12 +29,22 @@ defmodule Pigeon.ADMNotificationTest do
     assert expected_result == Pigeon.ADM.Notification.new(test_registration_id(), test_data())
   end
 
-  test "calculate_md5" do
-    n = %Pigeon.ADM.Notification{
-      payload: %{"data" => %{ message: "your message", hi: "bye" }}
-    }
-    result_n = Pigeon.ADM.Notification.calculate_md5(n)
-    assert "w2qyl/pbK7HVl9zfzu7Nww==" == result_n.md5
+  describe "calculate_md5/1" do
+    test "puts md5 hash if a valid data payload" do
+      n = %Pigeon.ADM.Notification{
+        payload: %{"data" => %{ message: "your message", hi: "bye" }}
+      }
+      result_n = Pigeon.ADM.Notification.calculate_md5(n)
+      assert "w2qyl/pbK7HVl9zfzu7Nww==" == result_n.md5
+    end
+
+    test "does nothing if invalid data payload" do
+      n = %Pigeon.ADM.Notification{
+        payload: :bad
+      }
+      result_n = Pigeon.ADM.Notification.calculate_md5(n)
+      refute result_n.md5
+    end
   end
 
   test "ensure_strings" do

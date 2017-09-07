@@ -4,7 +4,7 @@ defmodule Pigeon.ADM.Worker do
   use GenServer
   require Logger
 
-  alias Pigeon.ADM.{NotificationResponse, ResultParser}
+  alias Pigeon.ADM.ResultParser
 
   @token_refresh_uri "https://api.amazon.com/auth/O2/token"
 
@@ -15,7 +15,9 @@ defmodule Pigeon.ADM.Worker do
     end
   end
 
-  def stop, do: :gen_server.cast(self(), :stop)
+  def stop_connection(pid) do
+    GenServer.cast(pid, :stop)
+  end
 
   def init({:ok, config}), do: initialize_worker(config)
 
@@ -29,7 +31,9 @@ defmodule Pigeon.ADM.Worker do
     }}
   end
 
-  def handle_cast(:stop, state), do: {:noreply, state}
+  def handle_cast(:stop, state) do
+    {:stop, :normal, state}
+  end
 
   def handle_cast({:push, :adm, notification}, state) do
     case refresh_access_token_if_needed(state) do

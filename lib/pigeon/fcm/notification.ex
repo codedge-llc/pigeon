@@ -16,6 +16,8 @@ defmodule Pigeon.FCM.Notification do
     response: [...]
   }
 
+  @chunk_size 1_000
+
   @doc """
   Creates `FCM.Notification` struct with device registration IDs and optional
   notification and data payloads.
@@ -36,7 +38,8 @@ defmodule Pigeon.FCM.Notification do
         priority: :normal
       }
 
-      iex> Pigeon.FCM.Notification.new("reg ID", %{"body" => "test message"}, %{"key" => "value"})
+      iex> Pigeon.FCM.Notification.new("reg ID", %{"body" => "test message"},
+      ...> %{"key" => "value"})
       %Pigeon.FCM.Notification{
         payload: %{
           "data" => %{"key" => "value"},
@@ -67,7 +70,7 @@ defmodule Pigeon.FCM.Notification do
   end
   def new(reg_ids, notification, data) do
     reg_ids
-    |> chunk(1000, 1000, [])
+    |> chunk(@chunk_size, @chunk_size, [])
     |> Enum.map(& new(&1, notification, data))
     |> List.flatten
   end

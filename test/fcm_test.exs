@@ -3,7 +3,7 @@ defmodule Pigeon.FCMTest do
   doctest Pigeon.FCM, import: true
 
   alias Pigeon.FCM
-  alias Pigeon.FCM.{Notification, NotificationResponse}
+  alias Pigeon.FCM.Notification
   require Logger
 
   @data %{"message" => "Test push"}
@@ -67,42 +67,6 @@ defmodule Pigeon.FCMTest do
     assert notification.response == [success: valid_fcm_reg_id()]
   end
 
-  test "Can merge two responses" do
-    nr1 = %NotificationResponse{
-      ok: ["42"],
-      retry: ["12"],
-      error: %{"error" => ["1"]}
-    }
-    nr2 = %NotificationResponse{
-      ok: ["43"],
-      update: ["12"],
-      error: %{"error" => ["2"], "error2" => ["1"]}
-    }
-    assert Pigeon.FCM.merge(nr1, nr2) ==
-      %NotificationResponse{
-        ok: ["42", "43"],
-        retry: ["12"],
-        update: ["12"],
-        error: %{"error" => ["1", "2"] , "error2" => ["1"]}
-      }
-  end
-
-  # test "Message for less than 1000 recipients should not be chunked" do
-  #   regs = Enum.to_list(1..999)
-  #   notification = Notification.new(regs, %{}, @data)
-  #   assert [{^regs, _encoded}] = Pigeon.FCM.encode_requests(notification)
-  # end
-  # 
-  # test "Message for over 1000 recipients should be chunked" do
-  #   regs = Enum.to_list(1..2534)
-  #   notification = Notification.new(regs, %{}, @data)
-  #   res = Pigeon.FCM.encode_requests(notification)
-  #   assert [{r1, _e1}, {r2, _e2}, {r3, _e3}]  = res
-  #   assert length(r1) == 1000
-  #   assert length(r2) == 1000
-  #   assert length(r3) == 534
-  # end
-
   test "successfully sends a valid push with an explicit key" do
     notif =
       valid_fcm_reg_id()
@@ -133,18 +97,4 @@ defmodule Pigeon.FCMTest do
     assert n.registration_id == reg_id
     assert n.payload == %{"data" => @data}
   end
-
-  # test "encode_requests with one registration_id" do
-  #   registration_id = "123456"
-  #   payload = Notification.new(registration_id, %{},@data)
-  #   assert Pigeon.FCM.encode_requests(payload) ==
-  #     [{["123456"], ~S({"to":"123456","priority":"normal","data":{"message":"Test push"}})}]
-  # end
-
-  # test "encode_requests with multiple registration_ids" do
-  #   registration_id = ["a", "b", "c"]
-  #   payload = Notification.new(registration_id, %{}, %{"k" => "v"})
-  #   expected = ~S({"registration_ids":["a","b","c"],"priority":"normal","data":{"k":"v"}})
-  #   assert Pigeon.FCM.encode_requests(payload) == [{registration_id, expected}]
-  # end
 end

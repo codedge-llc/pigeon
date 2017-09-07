@@ -7,23 +7,6 @@ defmodule Pigeon.FCM.WorkerTest do
     Application.get_env(:pigeon, :test)[:valid_fcm_reg_id]
   end
 
-  # test "send malformed JSON" do
-  #   opts = [
-  #     name: :gonecrashing,
-  #     key: Application.get_env(:pigeon, :test)[:fcm_key]
-  #   ]
-  #   {:ok, pid} = FCM.start_connection(opts)
-
-  #   me = self()
-  #   bad = {"toto", "this is not json"}
-  #   :gen_server.cast(pid, {:push, bad, on_response: &(send me, &1)})
-
-  #   assert_receive(%FCM.Notification{response: response}, 5000)
-  #   assert response == :malformed_json
-
-  #   :gen_server.cast(pid, :stop)
-  # end
-
   test "reconnects on push send after disconnect" do
     opts = [
       key: Application.get_env(:pigeon, :test)[:fcm_key]

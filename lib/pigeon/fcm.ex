@@ -6,10 +6,10 @@ defmodule Pigeon.FCM do
   require Logger
   import Supervisor.Spec
 
-  alias Pigeon.FCM.{Config, Notification, NotificationResponse}
+  alias Pigeon.FCM.{Config, Notification}
   alias Pigeon.Worker
 
-  @type on_response :: ((NotificationResponse.t) -> no_return)
+  @type on_response :: ((Notification.t) -> no_return)
 
   @typedoc ~S"""
   Options for sending push notifications.
@@ -25,7 +25,6 @@ defmodule Pigeon.FCM do
 
   @default_timeout 5_000
   @default_worker :fcm_default
-  @chunk_size 1_000
 
   @doc ~S"""
   Sends a push over FCM.
@@ -38,6 +37,10 @@ defmodule Pigeon.FCM do
        payload: %{"data" => %{"message" => "test"}}, priority: :normal,
        registration_id: "regId", response: [invalid_registration: "regId"]}
 
+      iex> n = Pigeon.FCM.Notification.new("regId", %{}, %{"message" => "test"})
+      iex> Pigeon.FCM.push(n, on_response: nil)
+      :ok
+
       iex> n = Pigeon.FCM.Notification.new(["regId", "regId"], %{},
       ...> %{"message" => "test"})
       iex> Pigeon.FCM.push(n)
@@ -45,25 +48,34 @@ defmodule Pigeon.FCM do
        payload: %{"data" => %{"message" => "test"}}, priority: :normal,
        registration_id: ["regId", "regId"], response:
        [invalid_registration: "regId", invalid_registration: "regId"]}
+
+      iex> n = Pigeon.FCM.Notification.new(["regId", "regId"], %{},
+      ...> %{"message" => "test"})
+      iex> notifs = Pigeon.FCM.push([n, n])
+      iex> Enum.map(notifs, & &1.response)
+      [[invalid_registration: "regId", invalid_registration: "regId"],
+       [invalid_registration: "regId", invalid_registration: "regId"]]
   """
-  @spec push(Notification.t, Keyword.t) :: {:ok, NotificationResponse.t}
-  @spec push([Notification.t, ...], Keyword.t) :: [NotificationResponse.t, ...]
+  @spec push(Notification.t, Keyword.t) :: Notification.t
+  @spec push([Notification.t, ...], Keyword.t) :: [Notification.t, ...]
   def push(notification, opts \\ [])
   def push(notification, opts) when is_list(notification) do
-    case opts[:on_response] do
-      nil ->
-        notification
-        |> Enum.map(& Task.async(fn -> sync_push(&1, opts) end))
-        |> Task.yield_many(@default_timeout + 10_000)
-        |> Enum.map(&task_mapper(&1))
-      on_response ->
-        for n <- notification, do: send_push(n, on_response, opts)
+    if Keyword.has_key?(opts, :on_response) do
+      for n <- notification, do: send_push(n, opts[:on_response], opts)
+      :ok
+    else
+      notification
+      |> Enum.map(& Task.async(fn -> sync_push(&1, opts) end))
+      |> Task.yield_many(@default_timeout + 10_000)
+      |> Enum.map(&task_mapper(&1))
     end
   end
   def push(notification, opts) do
-    case opts[:on_response] do
-      nil -> sync_push(notification, opts)
-      on_response -> send_push(notification, on_response, opts)
+    if Keyword.has_key?(opts, :on_response) do
+      send_push(notification, opts[:on_response], opts)
+      :ok
+    else
+      sync_push(notification, opts)
     end
   end
 
@@ -107,7 +119,7 @@ defmodule Pigeon.FCM do
 
       iex> config = Pigeon.FCM.Config.new(:fcm_default)
       iex> {:ok, pid} = Pigeon.FCM.start_connection(%{config | name: nil})
-      iex> is_pid(pid)
+      iex> Process.alive?(pid)
       true
   """
   def start_connection(opts \\ [])
@@ -133,21 +145,10 @@ defmodule Pigeon.FCM do
       iex> {:ok, pid} = Pigeon.FCM.start_connection(%{config | name: nil})
       iex> Pigeon.FCM.stop_connection(pid)
       :ok
+      iex> :timer.sleep(500)
+      iex> Process.alive?(pid)
+      false
   """
   @spec stop_connection(atom | pid) :: :ok
   def stop_connection(name), do: Worker.stop_connection(name)
-
-  @doc false
-  def merge(response_1, response_2) do
-    Map.merge(response_1, response_2, fn(key, value_1, value_2) ->
-      cond do
-        key == :__struct__ -> value_1
-        is_map(value_1) -> merge(value_1, value_2)
-        is_nil(value_1) -> value_2
-        is_nil(value_2) -> value_1
-        is_list(value_1) && is_list(value_2) -> value_1 ++ value_2
-        true -> [value_1] ++ [value_2]
-      end
-    end)
-  end
 end

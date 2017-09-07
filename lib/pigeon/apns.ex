@@ -59,6 +59,10 @@ defmodule Pigeon.APNS do
         payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"}
 
        iex> n = Pigeon.APNS.Notification.new("msg", "token", "topic")
+       iex> Pigeon.APNS.push([n, n], on_response: nil)
+       :ok
+
+       iex> n = Pigeon.APNS.Notification.new("msg", "token", "topic")
        iex> Pigeon.APNS.push([n, n])
        [%Pigeon.APNS.Notification{device_token: "token", expiration: nil,
          response: :bad_device_token, id: nil,
@@ -70,25 +74,27 @@ defmodule Pigeon.APNS do
   @spec push(notification, push_opts) :: {:ok, term} | {:error, term, term}
   def push(notification, opts \\ [])
   def push(notification, opts) when is_list(notification) do
-    case opts[:on_response] do
-      nil ->
-        notification
-        |> Enum.map(& Task.async(fn -> sync_push(&1, opts) end))
-        |> Task.yield_many(@default_timeout + 500)
-        |> Enum.map(fn {task, response} ->
-             case response do
-               nil -> Task.shutdown(task, :brutal_kill)
-               {:ok, resp} -> resp
-               _error -> nil
-             end
-           end)
-      on_response -> push(notification, on_response, opts)
+    if Keyword.has_key?(opts, :on_response) do
+      push(notification, opts[:on_response], opts)
+      :ok
+    else
+      notification
+      |> Enum.map(& Task.async(fn -> sync_push(&1, opts) end))
+      |> Task.yield_many(@default_timeout + 500)
+      |> Enum.map(fn {task, response} ->
+           case response do
+             nil -> Task.shutdown(task, :brutal_kill)
+             {:ok, resp} -> resp
+             _error -> nil
+           end
+         end)
     end
   end
   def push(notification, opts) do
-    case opts[:on_response] do
-      nil -> sync_push(notification, opts)
-      on_response -> push(notification, on_response, opts)
+    if Keyword.has_key?(opts, :on_response) do
+      push(notification, opts[:on_response], opts)
+    else
+      sync_push(notification, opts)
     end
   end
 
@@ -108,7 +114,7 @@ defmodule Pigeon.APNS do
 
       iex> config = Pigeon.APNS.Config.new(:apns_default)
       iex> {:ok, pid} = Pigeon.APNS.start_connection(%{config | name: nil})
-      iex> is_pid(pid)
+      iex> Process.alive?(pid)
       true
   """
   @spec start_connection(atom | Config.t | Keyword.t) :: {:ok, pid}
@@ -134,6 +140,9 @@ defmodule Pigeon.APNS do
       iex> {:ok, pid} = Pigeon.APNS.start_connection(%{config | name: nil})
       iex> Pigeon.APNS.stop_connection(pid)
       :ok
+      iex> :timer.sleep(500)
+      iex> Process.alive?(pid)
+      false
   """
   @spec stop_connection(atom | pid) :: :ok
   def stop_connection(name), do: Worker.stop_connection(name)
