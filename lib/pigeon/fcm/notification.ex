@@ -49,13 +49,13 @@ defmodule Pigeon.FCM.Notification do
         priority: :normal
       }
 
-			iex> regids = Enum.map(0..1_499, fn(_x) -> "reg ID" end)
-			iex> [n1 | [n2]] = Pigeon.FCM.Notification.new(regids,
-			...> %{"body" => "test message"}, %{"key" => "value"})
-			iex> Enum.count(n1.registration_id)
-			1000
-			iex> Enum.count(n2.registration_id)
-			500
+      iex> regids = Enum.map(0..1_499, fn(_x) -> "reg ID" end)
+      iex> [n1 | [n2]] = Pigeon.FCM.Notification.new(regids,
+      ...> %{"body" => "test message"}, %{"key" => "value"})
+      iex> Enum.count(n1.registration_id)
+      1000
+      iex> Enum.count(n2.registration_id)
+      500
   """
   def new(registration_ids, notification \\ %{}, data \\ %{})
   def new(reg_id, notification, data) when is_binary(reg_id) do

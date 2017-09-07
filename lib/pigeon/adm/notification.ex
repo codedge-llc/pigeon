@@ -21,18 +21,18 @@ defmodule Pigeon.ADM.Notification do
     updated_registration_id: String.t
   }
 
-  @type response :: :access_token_expired
-                  | :invalid_registration_id
-                  | :invalid_data
-                  | :invalid_consolidation_key
-                  | :invalid_expiration
-                  | :invalid_checksum
-                  | :invalid_type
-                  | :max_rate_exceeded
-                  | :message_too_large
-                  | nil
-                  | :success
-                  | :unregistered
+  @type response :: nil | :success | error_response
+
+  @type error_response :: :access_token_expired
+                        | :invalid_registration_id
+                        | :invalid_data
+                        | :invalid_consolidation_key
+                        | :invalid_expiration
+                        | :invalid_checksum
+                        | :invalid_type
+                        | :max_rate_exceeded
+                        | :message_too_large
+                        | :unregistered
 
   @doc """
   Creates `ADM.Notification` struct with device registration ID and optional data payload.
