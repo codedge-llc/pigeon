@@ -9,12 +9,26 @@ defmodule Pigeon.FCM do
   alias Pigeon.FCM.{Config, Notification}
   alias Pigeon.Worker
 
+  @typedoc ~S"""
+  Async callback for push notification response.
+
+  ## Examples
+
+      handler = fn(%Pigeon.FCM.Notification{response: response}) ->
+        for regid <- Keyword.get_values(response, :invalid_registration) do
+          # Remove bad RegIDs
+        end
+      end
+
+      n = Pigeon.FCM.Notification.new("device token", %{}, %{"message" => "test"})
+      Pigeon.FCM.push(n, on_response: handler)
+  """
   @type on_response :: ((Notification.t) -> no_return)
 
   @typedoc ~S"""
   Options for sending push notifications.
 
-  - `:to` - Defines worker to process push. Defaults to `:apns_default`
+  - `:to` - Defines worker to process push. Defaults to `:fcm_default`
   - `:on_response` - Optional async callback triggered on receipt of push.
     See `t:on_response/0`
   """

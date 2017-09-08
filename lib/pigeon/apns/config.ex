@@ -13,6 +13,26 @@ defmodule Pigeon.APNS.Config do
             port: 443,
             ping_period: 600_000
 
+  @typedoc ~S"""
+  APNS configuration struct
+
+  This struct should not be set directly. Instead use `new/1`
+  with `t:config_opts/0`.
+
+  ## Examples
+
+      %Pigeon.APNS.Config{
+        name: :apns_default,
+        reconnect: true,
+        cert: nil,
+        certfile: "cert.pem",
+        key: nil,
+        keyfile: "key.pem",
+        uri: "api.push.apple.com",
+        port: 443,
+        ping_period: 600_000
+      }
+  """
   @type t :: %__MODULE__{
     name: atom | nil,
     reconnect: boolean,
@@ -24,6 +44,35 @@ defmodule Pigeon.APNS.Config do
     port: pos_integer,
     ping_period: pos_integer
   }
+
+  @typedoc ~S"""
+  Options for configuring APNS connections.
+
+  - `:name` - Registered worker name.
+  - `:mode` - If set to `:dev` or `:prod`, will set the appropriate `:uri`
+  - `:cert` - Push certificate. Can be one of three options:
+    - Static file path
+    - Full-text string of the file contents (useful for environment variables)
+    - `{:my_app, "certs/cert.pem"}` (indicates path relative to the `priv`
+      folder of the given application)
+  - `:key` - Push private key. Same as `:cert`
+  - `:uri` - Push server uri. If set, overrides uri defined by `:mode`.
+    Useful for test environments.
+  - `:port` - Push server port. Can be any value, but APNS only accepts
+    `443` and `2197`
+  - `:ping_period` - Interval between server pings. Necessary to keep long
+    running APNS connections alive. Defaults to 10 minutes.
+  """
+  @type config_opts :: [
+    name: atom | nil,
+    mode: :dev | :prod | nil,
+    cert: binary | {atom, binary},
+    key: binary | {atom, binary},
+    reconnect: boolean,
+    ping_period: pos_integer,
+    port: pos_integer,
+    uri: binary
+  ]
 
   @apns_production_api_uri "api.push.apple.com"
   @apns_development_api_uri "api.development.push.apple.com"
@@ -55,7 +104,7 @@ defmodule Pigeon.APNS.Config do
       %Pigeon.APNS.Config{uri: "api.development.push.apple.com",
       name: :apns_default, ping_period: 600_000, port: 443, reconnect: true}
   """
-  @spec new(atom | Keyword.t) :: t
+  @spec new(atom | config_opts) :: t
   def new(opts) when is_list(opts) do
     %__MODULE__{
       name: opts[:name],

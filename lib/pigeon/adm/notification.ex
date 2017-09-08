@@ -11,6 +11,23 @@ defmodule Pigeon.ADM.Notification do
             response: nil,
             updated_registration_id: nil
 
+  @typedoc ~S"""
+  ADM notification
+
+  ## Examples
+
+      %Pigeon.ADM.Notification{
+        consolidation_key: nil,
+        expires_after: 604_800,
+        md5: "qzF+HgArKZjJrpfcTbiFxg==",
+        payload: %{
+          "data" => %{"message" => "your message"}
+        },
+        registration_id: "reg ID",
+        response: nil, # Set on push response
+        updated_registration_id: nil
+      }
+  """
   @type t :: %__MODULE__{
     consolidation_key: String.t,
     expires_after: integer,
@@ -21,8 +38,20 @@ defmodule Pigeon.ADM.Notification do
     updated_registration_id: String.t
   }
 
-  @type response :: nil | :success | error_response
+  @typedoc ~S"""
+  ADM push response
 
+  - nil - Push has not been sent yet
+  - `:success` - Push was successfully sent
+  - `t:error_response/0` - Push attempted but server responded
+    with error
+  - `:timeout` - Internal error. Push did not reach ADM servers
+  """
+  @type response :: nil | :success | error_response | :timeout
+
+  @typedoc ~S"""
+  ADM error responses
+  """
   @type error_response :: :access_token_expired
                         | :invalid_registration_id
                         | :invalid_data
@@ -34,7 +63,7 @@ defmodule Pigeon.ADM.Notification do
                         | :message_too_large
                         | :unregistered
 
-  @doc """
+  @doc ~S"""
   Creates `ADM.Notification` struct with device registration ID and optional data payload.
 
   ## Examples
@@ -69,8 +98,7 @@ defmodule Pigeon.ADM.Notification do
       }
   """
   @spec new(String.t, %{required(String.t) => term}) :: t
-  def new(registration_id, data \\ %{})
-  def new(registration_id, data) do
+  def new(registration_id, data \\ %{}) do
     %Pigeon.ADM.Notification{registration_id: registration_id}
     |> put_data(data)
   end

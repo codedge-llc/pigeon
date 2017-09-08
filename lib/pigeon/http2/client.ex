@@ -74,7 +74,7 @@ defmodule Pigeon.Http2.Client do
   Once implemented, specify it in your config. Pigeon will use it for all
   HTTP2 connections.
 
-      config :pigeon, http2_clinet: Pigeon.YourCustomAdapter
+      config :pigeon, http2_client: Pigeon.YourCustomAdapter
   """
 
   @doc ~S"""

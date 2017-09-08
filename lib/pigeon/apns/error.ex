@@ -1,19 +1,60 @@
 defmodule Pigeon.APNS.Error do
-  @moduledoc false
+  @moduledoc ~S"""
+  Defines APNS error responses
+  """
 
   require Logger
 
+  alias Pigeon.APNS.Notification
+
+  @type error_response :: :bad_collapse_id
+                        | :bad_device_token
+                        | :bad_expiration_date
+                        | :bad_message_id
+                        | :bad_priority
+                        | :bad_topic
+                        | :device_token_not_for_topic
+                        | :duplicate_headers
+                        | :idle_timeout
+                        | :missing_device_token
+                        | :missing_topic
+                        | :payload_empty
+                        | :topic_disallowed
+                        | :bad_certificate
+                        | :bad_certificate_environment
+                        | :expired_provider_token
+                        | :forbidden
+                        | :invalid_provider_token
+                        | :missing_provider_token
+                        | :bad_path
+                        | :method_not_allowed
+                        | :unregistered
+                        | :payload_too_large
+                        | :too_many_provider_token_updates
+                        | :too_many_requests
+                        | :internal_server_error
+                        | :service_unavailable
+                        | :shutdown
+
+  @doc false
+  @spec parse(binary) :: error_response
   def parse(data) do
     {:ok, response} = Poison.decode(data)
     response["reason"] |> Macro.underscore |> String.to_existing_atom
   end
 
+  @doc ~S"""
+  If enabled, logs a notification and its error response.
+  """
+  @spec log(error_response, Notification.t) :: :ok
   def log(reason, notification) do
     if Pigeon.debug_log? do
       Logger.error("#{reason}: #{msg(reason)}\n#{inspect(notification)}")
     end
   end
 
+  @doc false
+  @spec msg(error_response) :: String.t
   # 400
   def msg(:bad_collapse_id) do
     "The collapse identifier exceeds the maximum allowed size"

@@ -7,6 +7,42 @@ defmodule Pigeon.ADM do
 
   alias Pigeon.ADM.{Config, Notification, Worker}
 
+  @typedoc ~S"""
+  Async callback for push notifications response.
+
+  ## Examples
+
+      handler = fn(%Pigeon.ADM.Notification{response: response}) ->
+        case response do
+          :success ->
+            Logger.debug "Push successful!"
+          :unregistered ->
+            Logger.error "Bad device token!"
+          _error ->
+            Logger.error "Some other error happened."
+        end
+      end
+
+      n = Pigeon.ADM.Notification.new("token", %{"message" => "test"})
+      Pigeon.ADM.push(n, on_response: handler)
+  """
+  @type on_response :: ((Notification.t) -> no_return)
+
+  @typedoc ~S"""
+  Options for sending push notifications.
+
+  - `:to` - Defines worker to process push. Defaults to `:adm_default`
+  - `:on_response` - Optional async callback triggered on receipt of push.
+    See `t:on_response/0`
+  """
+  @type push_opts :: [
+    to: atom | pid | nil,
+    on_response: on_response | nil
+  ]
+
+  @type connection_response :: {:ok, pid}
+                             | {:error, {:already_started, pid}}
+
   @default_timeout 5_000
 
   @doc """
@@ -112,7 +148,7 @@ defmodule Pigeon.ADM do
       iex> Process.alive?(pid)
       true
   """
-  @spec start_connection(atom | Config.t | Keyword.t) :: {:ok, pid}
+  @spec start_connection(atom | Config.t | Keyword.t) :: connection_response
   def start_connection(name) when is_atom(name) do
     config = Config.new(name)
     Supervisor.start_child(:pigeon, worker(Worker, [config], id: name))

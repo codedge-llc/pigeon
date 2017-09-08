@@ -1,7 +1,8 @@
 defmodule Pigeon.APNS.Notification do
-  @moduledoc """
-  Defines APNS notification struct and convenience constructor functions.
+  @moduledoc ~S"""
+  Defines APNS notification struct and constructor functions.
   """
+
   defstruct device_token: nil,
             expiration: nil,
             id: nil,
@@ -9,14 +10,41 @@ defmodule Pigeon.APNS.Notification do
             topic: nil,
             response: nil
 
+  alias Pigeon.APNS.{Error, Notification}
+
+  @typedoc ~S"""
+  APNS notification
+
+  ## Examples
+
+      %Pigeon.APNS.Notification{
+          device_token: "device token",
+          expiration: nil,
+          id: nil, # Set on push response if nil
+          payload: %{"aps" => %{"alert" => "push message"}},
+          response: nil, # Set on push response
+          topic: "com.example.YourApp"
+      }
+  """
   @type t :: %__MODULE__{
     device_token: String.t | nil,
     expiration: String.t | nil,
     id: String.t | nil,
     payload: %{String.t => String.t},
-    response: atom | nil,
+    response: response,
     topic: String.t | nil
   }
+
+  @typedoc ~S"""
+  APNS push response
+
+  - nil - Push has not been sent yet
+  - `:success` - Push was successfully sent
+  - `t:Pigeon.APNS.Error.error_response/0` - Push attempted but
+     server responded with error
+  - `:timeout` - Internal error. Push did not reach APNS servers
+  """
+  @type response :: nil | :success | Error.error_response | :timeout
 
   @doc """
   Returns an `APNS.Notification` struct with given message, device token, and
@@ -37,7 +65,7 @@ defmodule Pigeon.APNS.Notification do
   """
   @spec new(String.t, String.t, String.t | nil) :: t
   def new(msg, token, topic \\ nil) do
-    %Pigeon.APNS.Notification{
+    %Notification{
       device_token: token,
       payload: %{"aps" => %{"alert" => msg}},
       topic: topic
@@ -63,7 +91,7 @@ defmodule Pigeon.APNS.Notification do
   """
   @spec new(String.t, String.t, String.t, String.t) :: t
   def new(msg, token, topic, id) do
-    %Pigeon.APNS.Notification{
+    %Notification{
       device_token: token,
       id: id,
       payload: %{"aps" => %{"alert" => msg}},

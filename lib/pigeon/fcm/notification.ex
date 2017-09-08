@@ -16,6 +16,25 @@ defmodule Pigeon.FCM.Notification do
     response: [...]
   }
 
+  @typedoc ~S"""
+  FCM push response
+
+  - [] - Push has not been sent yet
+  - `:timeout` - Internal error. Push did not reach APNS servers
+  """
+  @type response :: [] | [regid_response, ...] | :timeout
+
+  @typedoc ~S"""
+  FCM push response for individual registration IDs
+
+  - {`:success`, "reg_id"} - Push was successfully sent
+  - {`:update`, {"reg_id", "new_reg_id"}} - Push successful but user should
+    use new registration ID for future pushes
+  - {error_response/0`, "reg_id"} - Push attempted but server responded
+    with error
+  """
+  @type regid_response :: {atom, binary} | {:update, {binary, binary}}
+
   @chunk_size 1_000
 
   @doc """

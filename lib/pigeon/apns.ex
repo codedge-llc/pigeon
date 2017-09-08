@@ -9,11 +9,13 @@ defmodule Pigeon.APNS do
   alias Pigeon.APNS.{Config, Notification}
   alias Pigeon.Worker
 
-  @type notification :: Notification.t
-                      | [Notification.t, ...]
+  @typedoc ~S"""
+  Can be either a single notification or a list.
+  """
+  @type notification :: Notification.t | [Notification.t, ...]
 
   @typedoc ~S"""
-  Async callback for push notifications response.
+  Async callback for push notification response.
 
   ## Examples
 
