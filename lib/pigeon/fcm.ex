@@ -14,14 +14,21 @@ defmodule Pigeon.FCM do
 
   ## Examples
 
-      handler = fn(%Pigeon.FCM.Notification{response: response}) ->
-        for regid <- Keyword.get_values(response, :invalid_registration) do
-          # Remove bad RegIDs
-        end
+    handler = fn(n) ->
+      case n.status do
+        :success ->
+          bad_regids = FCM.Notification.remove?(n)
+          to_retry = FCM.Notification.retry?(n)
+          # Handle updated regids, remove bad ones, etc
+        :unauthorized ->
+          # Bad FCM key
+        error ->
+          # Some other error
       end
+    end
 
-      n = Pigeon.FCM.Notification.new("device token", %{}, %{"message" => "test"})
-      Pigeon.FCM.push(n, on_response: handler)
+    n = Pigeon.FCM.Notification.new("device token", %{}, %{"message" => "test"})
+    Pigeon.FCM.push(n, on_response: handler)
   """
   @type on_response :: ((Notification.t) -> no_return)
 
@@ -31,9 +38,12 @@ defmodule Pigeon.FCM do
   - `:to` - Defines worker to process push. Defaults to `:fcm_default`
   - `:on_response` - Optional async callback triggered on receipt of push.
     See `t:on_response/0`
+  - `:timeout` - Specifies timeout for push responses. Useful if sending large
+    batches synchronously.
   """
   @type push_opts :: [
     to: atom | pid | nil,
+    timeout: pos_integer | nil,
     on_response: on_response | nil
   ]
 
@@ -45,23 +55,25 @@ defmodule Pigeon.FCM do
 
   ## Examples
 
-      iex> n = Pigeon.FCM.Notification.new("regId", %{}, %{"message" => "test"})
+      iex> n = Pigeon.FCM.Notification.new("regId", %{}, %{"message" => "123"})
       iex> Pigeon.FCM.push(n)
       %Pigeon.FCM.Notification{message_id: nil,
-       payload: %{"data" => %{"message" => "test"}}, priority: :normal,
-       registration_id: "regId", response: [invalid_registration: "regId"]}
+       payload: %{"data" => %{"message" => "123"}}, priority: :normal,
+       registration_id: "regId", status: :success, response:
+       [invalid_registration: "regId"]}
 
-      iex> n = Pigeon.FCM.Notification.new("regId", %{}, %{"message" => "test"})
+      iex> n = Pigeon.FCM.Notification.new("regId", %{}, %{"message" => "123"})
       iex> Pigeon.FCM.push(n, on_response: nil)
       :ok
 
       iex> n = Pigeon.FCM.Notification.new(["regId", "regId"], %{},
-      ...> %{"message" => "test"})
+      ...> %{"message" => "123"})
       iex> Pigeon.FCM.push(n)
       %Pigeon.FCM.Notification{message_id: nil,
-       payload: %{"data" => %{"message" => "test"}}, priority: :normal,
-       registration_id: ["regId", "regId"], response:
-       [invalid_registration: "regId", invalid_registration: "regId"]}
+       payload: %{"data" => %{"message" => "123"}}, priority: :normal,
+       registration_id: ["regId", "regId"], status: :success,
+       response: [invalid_registration: "regId",
+       invalid_registration: "regId"]}
 
       iex> n = Pigeon.FCM.Notification.new(["regId", "regId"], %{},
       ...> %{"message" => "test"})
@@ -74,13 +86,14 @@ defmodule Pigeon.FCM do
   @spec push([Notification.t, ...], Keyword.t) :: [Notification.t, ...]
   def push(notification, opts \\ [])
   def push(notification, opts) when is_list(notification) do
+    timeout = Keyword.get(opts, :timeout, @default_timeout)
     if Keyword.has_key?(opts, :on_response) do
       for n <- notification, do: send_push(n, opts[:on_response], opts)
       :ok
     else
       notification
       |> Enum.map(& Task.async(fn -> sync_push(&1, opts) end))
-      |> Task.yield_many(@default_timeout + 10_000)
+      |> Task.yield_many(timeout)
       |> Enum.map(&task_mapper(&1))
     end
   end
@@ -115,6 +128,7 @@ defmodule Pigeon.FCM do
   end
 
   defp sync_push(notification, opts) do
+    timeout = Keyword.get(opts, :timeout, @default_timeout)
     ref = :erlang.make_ref
     pid = self()
     on_response = fn(x) -> send pid, {ref, x} end
@@ -122,7 +136,7 @@ defmodule Pigeon.FCM do
     receive do
       {^ref, x} -> x
     after
-      @default_timeout -> %{notification | response: :timeout}
+      timeout -> %{notification | status: :timeout}
     end
   end
 

@@ -28,7 +28,8 @@ defmodule Pigeon.FCM.ResultParser do
             on_response,
             %Notification{response: resp} = notif) do
 
-    n = %{notif | message_id: id, response: [{:success, regid} | resp]}
+    new_resp = [{:success, regid} | resp]
+    n = %{notif | message_id: id, response: new_resp}
     parse(reg_res, rest_results, on_response, n)
   end
 

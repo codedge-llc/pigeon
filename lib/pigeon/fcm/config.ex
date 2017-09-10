@@ -101,35 +101,43 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
                         %{body: body, status: status, error: nil},
                         notif,
                         on_response) do
-    case status do
-      200 ->
-        result = Poison.decode!(body)
-        parse_result(notif.registration_id, result, on_response, notif)
-      401 ->
-        log_error("401", "Unauthorized")
-        notif = %{notif | response: :unauthorized}
-        unless on_response == nil do on_response.(notif) end
-      400 ->
-        log_error("400", "Malformed JSON")
-        notif = %{notif | response: :malformed_json}
-        unless on_response == nil do on_response.(notif) end
-      code ->
-        reason = parse_error(body)
-        log_error(code, reason)
-        notif = %{notif | response: reason}
-        unless on_response == nil do on_response.(notif) end
-    end
+    do_handle_end_stream(status, body, notif, on_response)
   end
   def handle_end_stream(_config, %{error: _error}, _notif, nil), do: :ok
   def handle_end_stream(_config, %{error: _error}, {_regids, notif}, on_response) do
-    notif = %{notif | response: :unavailable}
+    notif = %{notif | status: :unavailable}
     on_response.(notif)
   end
 
-  @spec schedule_ping(any) :: no_return
+  defp do_handle_end_stream(200, body, notif, on_response) do
+    result = Poison.decode!(body)
+    notif = %{notif | status: :success}
+    parse_result(notif.registration_id, result, on_response, notif)
+  end
+  defp do_handle_end_stream(400, _body, notif, on_response) do
+    log_error("400", "Malformed JSON")
+    notif = %{notif | status: :malformed_json}
+    unless on_response == nil do on_response.(notif) end
+  end
+  defp do_handle_end_stream(401, _body, notif, on_response) do
+    log_error("401", "Unauthorized")
+    notif = %{notif | status: :unauthorized}
+    unless on_response == nil do on_response.(notif) end
+  end
+  defp do_handle_end_stream(500, _body, notif, on_response) do
+    log_error("500", "Internal server error")
+    notif = %{notif | status: :internal_server_error}
+    unless on_response == nil do on_response.(notif) end
+  end
+  defp do_handle_end_stream(code, body, notif, on_response) do
+    reason = parse_error(body)
+    log_error(code, reason)
+    notif = %{notif | response: reason}
+    unless on_response == nil do on_response.(notif) end
+  end
+
   def schedule_ping(_config), do: :ok
 
-  @spec reconnect?(any) :: boolean
   def reconnect?(_config), do: false
 
   def close(_config) do

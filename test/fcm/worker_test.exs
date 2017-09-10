@@ -16,8 +16,9 @@ defmodule Pigeon.FCM.WorkerTest do
 
     refute :sys.get_state(pid).socket
 
-    n = FCM.Notification.new(valid_fcm_reg_id(), %{}, %{"message" => "Test push"})
-    assert Pigeon.FCM.push(n, to: pid).response == [success: valid_fcm_reg_id()]
+    n = FCM.Notification.new(valid_fcm_reg_id(), %{}, %{"message" => "Test"})
+    expected = [success: valid_fcm_reg_id()]
+    assert Pigeon.FCM.push(n, to: pid).response == expected
 
     assert :sys.get_state(pid).socket
   end
@@ -28,7 +29,7 @@ defmodule Pigeon.FCM.WorkerTest do
     ]
     {:ok, pid} = FCM.start_connection(opts)
 
-    n = FCM.Notification.new(valid_fcm_reg_id(), %{}, %{"message" => "Test push"})
+    n = FCM.Notification.new(valid_fcm_reg_id(), %{}, %{"message" => "Test"})
     assert _notif = Pigeon.FCM.push(n, to: pid)
     assert _notif = Pigeon.FCM.push(n, to: pid)
     assert _notif = Pigeon.FCM.push(n, to: pid)
@@ -36,7 +37,7 @@ defmodule Pigeon.FCM.WorkerTest do
     send(pid, {:closed, self()})
     assert :sys.get_state(pid).stream_id == 7
 
-    n = FCM.Notification.new(valid_fcm_reg_id(), %{}, %{"message" => "Test push"})
+    n = FCM.Notification.new(valid_fcm_reg_id(), %{}, %{"message" => "Test"})
     assert _notif = Pigeon.FCM.push(n, to: pid)
     assert _notif = Pigeon.FCM.push(n, to: pid)
 

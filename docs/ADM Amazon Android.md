@@ -33,19 +33,20 @@
     Pigeon.ADM.push(n, on_response: fn(x) -> IO.inspect(x) end)
     ```
 
-2. Reponses return a tuple of either `{:ok, notification}` or `{:error, reason, notification}`. You could handle responses like so:
+2. Responses return a notification with an updated `:response` key. 
+   You could handle responses like so:
 
     ```elixir
     on_response_handler = fn(x) ->
-      case x do
-        {:ok, notification} ->
+      case x.response do
+        :success ->
           # Push successful, check to see if the registration ID changed
           if !is_nil(notification.updated_registration_id) do
             # Update the registration ID in the database
           end
-        {:error, :invalid_registration_id, notification} ->
+        :invalid_registration_id ->
           # Remove the bad ID from the database
-        {:error, reason, notification} ->
+        error ->
           # Handle other errors
       end
     end

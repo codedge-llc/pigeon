@@ -2,38 +2,69 @@ defmodule Pigeon.FCM.Notification do
   @moduledoc """
   Defines FCM notification struct and convenience constructor functions.
   """
+
   defstruct message_id: nil,
             payload: %{},
             priority: :normal,
             registration_id: nil,
+            status: nil,
             response: []
+
+  alias Pigeon.FCM.Notification
 
   @type t :: %__MODULE__{
     message_id: nil | String.t,
     payload: %{},
     priority: :normal | :high,
     registration_id: String.t | [String.t],
-    response: [...]
+    status: status | nil,
+    response: [] | [regid_response, ...]
   }
 
   @typedoc ~S"""
-  FCM push response
+  Status of FCM request
 
-  - [] - Push has not been sent yet
-  - `:timeout` - Internal error. Push did not reach APNS servers
+  - `:success` - Notification was processed successfully
+  - `:timeout` - Worker did not respond within timeout. This is likely an
+     internal error
+  - `:unauthorized` - Bad FCM key
+  - `:malformed_json` - Push payload was invalid JSON
+  - `:internal_server_error` - FCM server encountered an error while trying
+     to process the request
+  - `:unavailable` - FCM server couldn't process the request in time
   """
-  @type response :: [] | [regid_response, ...] | :timeout
+  @type status :: :success
+                | :timeout
+                | :unauthorized
+                | :malformed_json
+                | :internal_server_error
+                | :unavailable
 
   @typedoc ~S"""
   FCM push response for individual registration IDs
 
-  - {`:success`, "reg_id"} - Push was successfully sent
-  - {`:update`, {"reg_id", "new_reg_id"}} - Push successful but user should
+  - `{:success, "reg_id"}` - Push was successfully sent
+  - `{:update, {"reg_id", "new_reg_id"}}` - Push successful but user should
     use new registration ID for future pushes
-  - {error_response/0`, "reg_id"} - Push attempted but server responded
+  - `{regid_error_response, "reg_id"}` - Push attempted but server responded
     with error
   """
-  @type regid_response :: {atom, binary} | {:update, {binary, binary}}
+  @type regid_response :: {:success, binary}
+                        | {regid_error_response, binary}
+                        | {:update, {binary, binary}}
+
+  @type regid_error_response :: :device_essage_rate_exceeded
+                              | :invalid_data_key
+                              | :invalid_package_name
+                              | :invalid_paramteres
+                              | :invalid_registration
+                              | :invalid_ttl
+                              | :message_too_big
+                              | :missing_registration
+                              | :mismatch_sender_id
+                              | :not_registered
+                              | :topics_message_rate_exceeded
+                              | :unavailable
 
   @chunk_size 1_000
 
@@ -153,6 +184,74 @@ defmodule Pigeon.FCM.Notification do
       notification.payload
       |> Map.put(key, value)
     %{notification | payload: payload}
+  end
+
+  @doc ~S"""
+  Returns a list of successful registration IDs
+
+  ## Examples
+
+      iex> n = %Pigeon.FCM.Notification{response: [
+      ...> {:success, "regid1"}, {:invalid_registration, "regid2"},
+      ...> {:success, "regid3"}, {:update, {"regid4", "new_regid4"}},
+      ...> {:not_registered, "regid5"}, {:unavailable, "regid6"}]}
+      iex> success?(n)
+      ["regid1", "regid3"]
+  """
+  def success?(%Notification{response: response}) do
+    Keyword.get_values(response, :success)
+  end
+
+  @doc ~S"""
+  Returns a list of registration IDs and their corresponding new ID
+
+  ## Examples
+
+      iex> n = %Pigeon.FCM.Notification{response: [
+      ...> {:success, "regid1"}, {:invalid_registration, "regid2"},
+      ...> {:success, "regid3"}, {:update, {"regid4", "new_regid4"}},
+      ...> {:not_registered, "regid5"}, {:unavailable, "regid6"}]}
+      iex> update?(n)
+      [{"regid4", "new_regid4"}]
+  """
+  def update?(%Notification{response: response}) do
+    Keyword.get_values(response, :update)
+  end
+
+  @doc ~S"""
+  Returns a list of registration IDs that should be retried
+
+  ## Examples
+
+      iex> n = %Pigeon.FCM.Notification{response: [
+      ...> {:success, "regid1"}, {:invalid_registration, "regid2"},
+      ...> {:success, "regid3"}, {:update, {"regid4", "new_regid4"}},
+      ...> {:not_registered, "regid5"}, {:unavailable, "regid6"}]}
+      iex> retry?(n)
+      ["regid6"]
+  """
+  def retry?(%{response: response}) do
+    Keyword.get_values(response, :unavailable)
+  end
+
+  @doc ~S"""
+  Returns a list of registration IDs that should be removed
+
+  ## Examples
+
+      iex> n = %Pigeon.FCM.Notification{response: [
+      ...> {:success, "regid1"}, {:invalid_registration, "regid2"},
+      ...> {:success, "regid3"}, {:update, {"regid4", "new_regid4"}},
+      ...> {:not_registered, "regid5"}, {:unavailable, "regid6"}]}
+      iex> remove?(n)
+      ["regid2", "regid5"]
+  """
+  def remove?(%{response: response}) do
+    response
+    |> Enum.filter(fn({k, _v}) ->
+      k == :invalid_registration || k == :not_registered
+    end)
+    |> Keyword.values
   end
 end
 

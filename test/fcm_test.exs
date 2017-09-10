@@ -39,7 +39,8 @@ defmodule Pigeon.FCMTest do
       {:ok, worker_pid} = Pigeon.FCM.start_connection(opts)
 
       expected = [success: valid_fcm_reg_id()]
-      assert Pigeon.FCM.push(n, to: worker_pid).response == expected
+      actual = Pigeon.FCM.push(n, to: worker_pid).response
+      assert actual == expected
     end
 
     test "pushes to worker's atom name" do
@@ -54,7 +55,8 @@ defmodule Pigeon.FCMTest do
       {:ok, _worker_pid} = Pigeon.FCM.start_connection(opts)
 
       expected = [success: valid_fcm_reg_id()]
-      assert Pigeon.FCM.push(n, to: :custom).response == expected
+      actual = Pigeon.FCM.push(n, to: :custom).response
+      assert actual == expected
     end
   end
 
@@ -64,7 +66,8 @@ defmodule Pigeon.FCMTest do
       |> Notification.new(%{}, @data)
       |> Pigeon.FCM.push
 
-    assert notification.response == [success: valid_fcm_reg_id()]
+    expected = [success: valid_fcm_reg_id()]
+    assert notification.response == expected
   end
 
   test "successfully sends a valid push with an explicit key" do
@@ -73,7 +76,7 @@ defmodule Pigeon.FCMTest do
       |> Notification.new(%{}, @data)
       |> Pigeon.FCM.push(key: "explicit")
 
-     assert notif.response == :unauthorized
+     assert notif.status == :unauthorized
   end
 
   test "successfully sends a valid push with callback" do
@@ -82,8 +85,9 @@ defmodule Pigeon.FCMTest do
     pid = self()
     FCM.push(n, on_response: fn(x) -> send pid, x end)
 
-    assert_receive(%Notification{response: response}, 5000)
-    assert response == [success: reg_id]
+    assert_receive(n = %Notification{response: regids}, 5000)
+    assert n.status == :success
+    assert regids == [success: reg_id]
   end
 
   test "returns an error on pushing with a bad registration_id" do
@@ -92,8 +96,9 @@ defmodule Pigeon.FCMTest do
     pid = self()
     Pigeon.FCM.push(n, on_response: fn(x) -> send pid, x end)
 
-    assert_receive(n = %Notification{response: response}, 5000)
-    assert response == [invalid_registration: reg_id]
+    assert_receive(n = %Notification{}, 5000)
+    assert n.status == :success
+    assert n.response == [invalid_registration: reg_id]
     assert n.registration_id == reg_id
     assert n.payload == %{"data" => @data}
   end

@@ -18,7 +18,9 @@
     n = Pigeon.FCM.Notification.new("your device registration ID", msg)
     ```
  
-3. Send the packet.
+3. Send the packet. Pushes are synchronous and return the notification with
+   updated `:status` and `:response` keys. If `:status` is success, `:response`
+   will contain a keyword list of individual registration ID responses.
 
     ```elixir
     Pigeon.FCM.push(n)
@@ -39,6 +41,7 @@ Pass in a list of registration IDs, as many as you want.
   %Pigeon.FCM.Notification{
       payload: %{...},
       registration_id: String.t | [String.t],
+      response: [] | [{atom, String.t}, ...], | atom,
       priority: :normal | :high
   }
   ```
@@ -66,43 +69,32 @@ or
 1. Pass an optional anonymous function as your second parameter.
 
     ```elixir
-    data = %{ message: "your message" }
+    data = %{message: "your message"}
     n = Pigeon.FCM.Notification.new(data, "device registration ID")
     Pigeon.FCM.push(n, fn(x) -> IO.inspect(x) end)
     {:ok, %Pigeon.FCM.NotificationResponse{...}}
     ```
 
-2. Reponses return a tuple of either `{:ok, notification_response}` or `{:error, reason, notification}`. You could handle responses like so:
+2. Reponses return the notification with an updated response.
 
     ```elixir
-    on_response = fn(x) ->
-      case x do
-        {:ok, notification_response} ->
-          # Handle updated registration ID's, etc.
-        {:error, :timeout, notification} ->
-          # Maybe bad connection or the port is blocked?
+    on_response = fn(n) ->
+      case n.status do
+        :success ->
+          bad_regids = FCM.Notification.remove?(n)
+          to_retry = FCM.Notification.retry?(n)
+          # Handle updated regids, remove bad ones, etc
+        :unauthorized ->
+          # Bad FCM key
+        error ->
+          # Some other error
       end
     end
     
-    data = %{ message: "your message" }
+    data = %{message: "your message"}
     n = Pigeon.FCM.Notification.new(data, "your device token")
     Pigeon.FCM.push(n, on_response)
     ```
-
-## NotificationResponse Struct
-
-Registration IDs are conveniently grouped based on their response. `:error` is a map of all other miscellaneous errors, with their corresponding registration IDs.
-
-  ```elixir
-  %Pigeon.FCM.NotificationResponse{
-      message_id: nil,
-      ok: ["reg_id", ...],
-      update: [{"old_reg_id", "new_reg_id"}, ...],
-      retry: ["reg_id", ...],
-      remove: ["reg_id", ...],
-      error: %{atom => ["reg_id", ...]}
-  }
-  ```
 
 ## Error Responses
 
