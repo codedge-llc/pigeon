@@ -1,21 +1,37 @@
 # Changelog
 
 ## v1.1.0 (unreleased)
-* Minimum requirements now Elixir v1.4 and OTP 19 (Kadabra bumped to `v0.3.0`)
+* Minimum requirements now Elixir v1.4 and OTP 19.2 (Kadabra bumped to `v0.3.0`)
+* Runtime worker configs. Create a functions that return config
+structs and specify them your `config.exs` with
+
+```elixir
+config :pigeon, workers: [
+  {YourApp.Pigeon, :apns_config},
+  {YourApp.Pigeon, :fcm_config},
+  {YourApp.Pigeon, :adm_config},
+  ...
+]
+```
 
 **APNS**
 * `APNS.Config.config/1` renamed to `APNS.Config.new/1`
-* `APNS.push/2` without an `:on_response` callback now returns a
-  `%Pigeon.APNS.NotificationResponse{}`
+* `APNS.push/2` tagged tuples done away with in favor of a `:response` key on
+  the notification.
 * Override push server endpoint with `:uri` option in `APNS.Config.new/1`
 * `:use_2197` renamed to `:port`
+* `:uri` config option for overriding push server endpoint
 
 **FCM**
 * `NotificationResponse` done away with in favor of a `:response` key on `Notification`
 * Override push server endpoint with `:uri` and `:port` options in `FCM.Config.new/1`
+* `:uri` and `:port` config options for overriding push server endpoint
 
 **ADM**
 * `ADM.Config.config/1` renamed to `ADM.Config.new/1`
+* `ADM.push/2` tagged tuples done away with in favor of a `:response` key on
+  the notification.
+* `ADM.start_connection/1` and `ADM.stop_connection/1` added
 
 ## v1.0.4
 * Fix: removed connection pinging from FCM.Worker (`:ping_period` option left in FCM config to not break API)

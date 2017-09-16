@@ -33,6 +33,7 @@ defmodule Pigeon.Mixfile do
           "docs/APNS Apple iOS.md",
           "docs/FCM Android.md",
           "docs/ADM Amazon Android.md",
+          "docs/Migrating to v1-1-0.md",
           "CHANGELOG.md"
         ]
       ],
