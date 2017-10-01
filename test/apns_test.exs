@@ -1,5 +1,6 @@
 defmodule Pigeon.APNSTest do
   use ExUnit.Case
+  doctest Pigeon.APNS
   doctest Pigeon.APNS.Notification
 
   def test_message(msg), do: "#{DateTime.to_string(DateTime.utc_now())} - #{msg}"
@@ -20,7 +21,7 @@ defmodule Pigeon.APNSTest do
       assert is_pid(pid)
 
       state = :sys.get_state(pid)
-      assert state.mode == :dev
+      assert state.config.uri == "api.development.push.apple.com"
       assert state.config.ping_period == 600_000
 
       {:ok, pid} = Pigeon.APNS.start_connection(opts)
@@ -42,25 +43,21 @@ defmodule Pigeon.APNSTest do
   end
 
   describe "push/1" do
-    test "returns {:ok, notification} on successful push" do
+    test "returns notification with :success on successful push" do
       n = Pigeon.APNS.Notification.new(test_message("push/1"), test_token(), test_topic())
-      assert {:ok, _notif} = Pigeon.APNS.push(n)
+      assert Pigeon.APNS.push(n).response == :success
     end
 
-    test "returns {:error, reason, notification} on unsuccessful push" do
+    test "returns notification with response error on unsuccessful push" do
       n = Pigeon.APNS.Notification.new(test_message("push/1"), "bad_token", test_topic())
-      assert {:error, :bad_device_token, _notif} = Pigeon.APNS.push(n)
+      assert Pigeon.APNS.push(n).response == :bad_device_token
     end
 
-    test "returns list of response tuples for multiple notifications" do
+    test "returns list for multiple notifications" do
       n = Pigeon.APNS.Notification.new(test_message("push/1"), test_token(), test_topic())
       bad_n = Pigeon.APNS.Notification.new(test_message("push/1"), "asdf1234", test_topic())
-      assert %{
-        ok: [_n1, _n2],
-        error: %{
-          bad_device_token: [_n3]
-        }
-      } = Pigeon.APNS.push([n, n, bad_n])
+      actual = Pigeon.APNS.push([n, n, bad_n])
+      assert Enum.map(actual, & &1.response) == [:success, :success, :bad_device_token]
     end
   end
 
@@ -80,7 +77,7 @@ defmodule Pigeon.APNSTest do
       ]
       {:ok, worker_pid} = Pigeon.APNS.start_connection(opts)
 
-      assert {:ok, _notif} = Pigeon.APNS.push(n, to: worker_pid)
+      assert Pigeon.APNS.push(n, to: worker_pid).response == :success
 
       Pigeon.APNS.start_connection(:apns_default)
     end
@@ -101,14 +98,14 @@ defmodule Pigeon.APNSTest do
       ]
       {:ok, _worker_pid} = Pigeon.APNS.start_connection(opts)
 
-      assert {:ok, _notif} = Pigeon.APNS.push(n, to: :custom)
+      assert Pigeon.APNS.push(n, to: :custom).response == :success
 
       Pigeon.APNS.start_connection(:apns_default)
     end
   end
 
-  describe "push/1 with :on_response" do
-    test "returns {:ok, notification} on successful push" do
+  describe "push/2 with :on_response" do
+    test "returns :success response on successful push" do
       pid = self()
       on_response = fn(x) -> send pid, x end
 
@@ -119,10 +116,10 @@ defmodule Pigeon.APNSTest do
 
       assert Pigeon.APNS.push(n, on_response: on_response) == :ok
 
-      assert_receive({:ok, _notif}, 5_000)
+      assert_receive(%Pigeon.APNS.Notification{response: :success}, 5_000)
     end
 
-    test "returns {:error, :bad_message_id, n} if apns-id is invalid" do
+    test "returns :bad_message_id response if apns-id is invalid" do
       pid = self()
       on_response = fn(x) -> send pid, x end
       n =
@@ -132,10 +129,10 @@ defmodule Pigeon.APNSTest do
 
       assert Pigeon.APNS.push(n, on_response: on_response) == :ok
 
-      assert_receive({:error, :bad_message_id, _n}, 5_000)
+      assert_receive(%Pigeon.APNS.Notification{response: :bad_message_id}, 5_000)
     end
 
-    test "returns {:error, :bad_device_token, n} if token is invalid" do
+    test "returns :bad_device_token if token is invalid" do
       pid = self()
       on_response = fn(x) -> send pid, x end
       n =
@@ -145,10 +142,10 @@ defmodule Pigeon.APNSTest do
 
       assert Pigeon.APNS.push(n, on_response: on_response) == :ok
 
-      assert_receive({:error, :bad_device_token, _n}, 5_000)
+      assert_receive(%Pigeon.APNS.Notification{response: :bad_device_token}, 5_000)
     end
 
-    test "returns {:error, :missing_topic, n} on missing topic for certs supporting mult topics" do
+    test "returns :missing_topic reponse on missing topic for certs supporting mult topics" do
       pid = self()
       on_response = fn(x) -> send pid, x end
       n =
@@ -158,7 +155,7 @@ defmodule Pigeon.APNSTest do
 
       assert Pigeon.APNS.push(n, on_response: on_response) == :ok
 
-      assert_receive({:error, :missing_topic, _n}, 5_000)
+      assert_receive(%Pigeon.APNS.Notification{response: :missing_topic}, 5_000)
     end
   end
 
@@ -182,7 +179,7 @@ defmodule Pigeon.APNSTest do
 
       assert Pigeon.APNS.push(n, on_response: on_response, to: worker_pid) == :ok
 
-      assert_receive({:ok, _notif}, 5_000)
+      assert_receive(%Pigeon.APNS.Notification{response: :success}, 5_000)
 
       Pigeon.APNS.start_connection(:apns_default)
     end
@@ -207,7 +204,7 @@ defmodule Pigeon.APNSTest do
 
       assert Pigeon.APNS.push(n, on_response: on_response, to: :custom) == :ok
 
-      assert_receive({:ok, _notif}, 5_000)
+      assert_receive(%Pigeon.APNS.Notification{response: :success}, 5_000)
 
       Pigeon.APNS.start_connection(:apns_default)
     end

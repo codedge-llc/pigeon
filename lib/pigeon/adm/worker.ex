@@ -1,21 +1,23 @@
 defmodule Pigeon.ADM.Worker do
-  @moduledoc """
-  Handles all Amazon ADM request and response parsing.
-  Includes managing OAuth2 tokens.
-  """
+  @moduledoc false
+
   use GenServer
   require Logger
+
+  alias Pigeon.ADM.ResultParser
 
   @token_refresh_uri "https://api.amazon.com/auth/O2/token"
 
   def start_link(config) do
-    case config[:name] do
+    case config.name do
       nil -> GenServer.start_link(__MODULE__, {:ok, config})
       name -> GenServer.start_link(__MODULE__, {:ok, config}, name: name)
     end
   end
 
-  def stop, do: :gen_server.cast(self(), :stop)
+  def stop_connection(pid) do
+    GenServer.cast(pid, :stop)
+  end
 
   def init({:ok, config}), do: initialize_worker(config)
 
@@ -29,7 +31,9 @@ defmodule Pigeon.ADM.Worker do
     }}
   end
 
-  def handle_cast(:stop, state), do: { :noreply, state }
+  def handle_cast(:stop, state) do
+    {:stop, :normal, state}
+  end
 
   def handle_cast({:push, :adm, notification}, state) do
     case refresh_access_token_if_needed(state) do
@@ -55,14 +59,14 @@ defmodule Pigeon.ADM.Worker do
   defp refresh_access_token_if_needed(state) do
     %{
       access_token: access_token,
-      access_token_refreshed_datetime_erl: access_token_refreshed_datetime_erl,
-      access_token_expiration_seconds: access_token_expiration_seconds
+      access_token_refreshed_datetime_erl: access_ref_dt_erl,
+      access_token_expiration_seconds: access_ref_exp_secs
     } = state
 
     cond do
       is_nil(access_token) ->
         refresh_access_token(state)
-      access_token_expired?(access_token_refreshed_datetime_erl, access_token_expiration_seconds) ->
+      access_token_expired?(access_ref_dt_erl, access_ref_exp_secs) ->
         refresh_access_token(state)
       true ->
         {:ok, state}
@@ -88,7 +92,10 @@ defmodule Pigeon.ADM.Worker do
   end
 
   defp refresh_access_token(state) do
-    case HTTPoison.post(@token_refresh_uri, token_refresh_body(state), token_refresh_headers()) do
+    post = HTTPoison.post(@token_refresh_uri,
+                          token_refresh_body(state),
+                          token_refresh_headers())
+    case post do
       {:ok, %{status_code: 200, body: response_body}} ->
         {:ok, response_json} = Poison.decode(response_body)
         %{
@@ -112,7 +119,8 @@ defmodule Pigeon.ADM.Worker do
     end
   end
 
-  defp token_refresh_body(%{config: %{client_id: client_id, client_secret: client_secret}}) do
+  defp token_refresh_body(%{config: %{client_id: client_id,
+                                      client_secret: client_secret}}) do
     %{
       "grant_type" => "client_credentials",
       "scope" => "messaging:push",
@@ -140,7 +148,7 @@ defmodule Pigeon.ADM.Worker do
             {:ok, %HTTPoison.Response{status_code: status, body: body}} =
               HTTPoison.post(adm_uri(reg_id), payload, adm_headers(state))
 
-            notification = %{ notification | registration_id: reg_id }
+            notification = %{notification | registration_id: reg_id}
             process_response(status, body, notification, on_response)
           end
       end
@@ -188,13 +196,20 @@ defmodule Pigeon.ADM.Worker do
   defp process_response(status, body, notification, on_response),
     do: handle_error_status_code(status, body, notification, on_response)
 
+  defp handle_200_status(body, notification, on_response) do
+    {:ok, json} = Poison.decode(body)
+    parse_result(notification, json, on_response)
+  end
+
   defp handle_error_status_code(status, body, notification, on_response) do
     case Poison.decode(body) do
-      {:ok, %{"reason" => reason}} ->
-        reason_atom = reason |> Macro.underscore |> String.to_atom
-        on_response.({:error, reason_atom, notification})
+      {:ok, %{"reason" => _reason} = result_json} ->
+        parse_result(notification, result_json, on_response)
       {:error, _} ->
-        on_response.({:error, generic_error_reason(status), notification})
+        unless on_response == nil do
+          n = %{notification | response: generic_error_reason(status)}
+          on_response.(n)
+        end
     end
   end
 
@@ -203,45 +218,11 @@ defmodule Pigeon.ADM.Worker do
   defp generic_error_reason(500), do: :internal_server_error
   defp generic_error_reason(_), do: :unknown_error
 
-  defp handle_200_status(body, notification, on_response) do
-    {:ok, json} = Poison.decode(body)
-    process_callback({notification.registration_id, json}, notification, on_response)
-  end
+  # no on_response callback, ignore
+  def parse_result(_, _, nil), do: :ok
 
-  defp process_callback({reg_id, response}, notification, on_response) do
-    case parse_result(response) do
-      :ok ->
-        notification = %{ notification | registration_id: reg_id }
-        on_response.({:ok, notification})
-
-      {:ok, registration_id} ->
-        notification =
-          %{ notification | registration_id: reg_id, updated_registration_id: registration_id }
-        on_response.({:ok, notification})
-
-      {:error, reason} ->
-        notification = %{ notification | registration_id: reg_id }
-        on_response.({:error, reason, notification})
-    end
-  end
-
-  defp parse_result(result) do
-    error = result["reason"]
-    if is_nil(error) do
-      parse_success(result)
-    else
-      error_atom = error |> Macro.underscore |> String.to_atom
-      {:error, error_atom}
-    end
-  end
-
-  defp parse_success(result) do
-    registration_id = result["registrationID"]
-    if is_nil(registration_id) do
-      :ok
-    else
-      {:ok, registration_id}
-    end
+  def parse_result(notification, response, on_response) do
+    ResultParser.parse(notification, response, on_response)
   end
 
   def handle_info({_from, {:ok, %HTTPoison.Response{status_code: 200}}}, state) do

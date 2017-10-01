@@ -4,5 +4,5 @@
 /doc
 erl_crash.dump
 *.ez
-cert.pem
-key_unencrypted.pem
+*.pem
+.iex.exs

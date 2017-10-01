@@ -1,49 +1,65 @@
 defmodule Pigeon.FCM.ResultParserTest do
   use ExUnit.Case
 
-  alias Pigeon.FCM.{NotificationResponse, ResultParser}
+  alias Pigeon.FCM.{Notification, ResultParser}
 
   test "parse_result with success" do
-    {:ok, response} =
-      ResultParser.parse(
-        ["regid"],
-        [%{ "message_id" => "1:0408" }],
-        &(&1), %NotificationResponse{}
-      )
-    assert  response.ok == ["regid"]
+    notif = ResultParser.parse(["regid"],
+                               [%{"message_id" => "1:0408"}],
+                               &(&1),
+                               %Notification{})
+    assert notif.response == [success: "regid"]
+  end
+
+  test "parse_result with single non-list regid" do
+    notif = ResultParser.parse("regid",
+                               [%{"message_id" => "1:0408"}],
+                               &(&1),
+                               %Notification{})
+    assert notif.response == [success: "regid"]
   end
 
   test "parse_result with success and new registration_id" do
-    {:ok, response} =
+    notif =
       ResultParser.parse(
         ["regid"],
-        [%{ "message_id" => "1:2342", "registration_id" => "32" }],
-        &(&1), %NotificationResponse{}
+        [%{"message_id" => "1:2342", "registration_id" => "32"}],
+        &(&1), %Notification{}
       )
 
-    assert response.update == [{"regid", "32"}]
-    assert response.message_id == "1:2342"
+    assert notif.response == [update: {"regid", "32"}]
+    assert notif.message_id == "1:2342"
   end
 
-  test "parse_result with error unavailable" do
-    {:ok, response} =
-      ResultParser.parse(
-        ["regid"],
-        [%{ "error" => "Unavailable" }],
-        &(&1),
-        %NotificationResponse{}
-      )
-    assert response.retry == ["regid"]
+  test "parse_result with error Unavailable" do
+    notif = ResultParser.parse(["regid"],
+                               [%{"error" => "Unavailable"}],
+                               &(&1),
+                               %Notification{})
+    assert notif.response == [unavailable: "regid"]
+  end
+
+  test "parse_result with error NotRegistered" do
+    notif = ResultParser.parse(["regid"],
+                               [%{"error" => "NotRegistered"}],
+                               &(&1),
+                               %Notification{})
+    assert notif.response == [not_registered: "regid"]
+  end
+
+  test "parse_result with error InvalidRegistration" do
+    notif = ResultParser.parse(["regid"],
+                               [%{"error" => "InvalidRegistration"}],
+                               &(&1),
+                               %Notification{})
+    assert notif.response == [invalid_registration: "regid"]
   end
 
   test "parse_result with custom error" do
-    {:ok, response} =
-      ResultParser.parse(
-        ["regid"],
-        [%{ "error" => "CustomError" }],
-        &(&1),
-        %NotificationResponse{}
-      )
-    assert response.error == %{"CustomError" => "regid"}
+    notif = ResultParser.parse(["regid"],
+                               [%{"error" => "CustomError"}],
+                               &(&1),
+                               %Notification{})
+    assert notif.response == [custom_error: "regid"]
   end
 end

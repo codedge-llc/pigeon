@@ -1,56 +1,134 @@
 defmodule Pigeon.FCM do
   @moduledoc """
-  Handles all Firebase Cloud Messaging (FCM) request and response functionality.
+  Firebase Cloud Messaging (FCM)
   """
+
   require Logger
   import Supervisor.Spec
 
-  alias Pigeon.FCM.{Notification, NotificationResponse}
+  alias Pigeon.FCM.{Config, Notification}
+  alias Pigeon.Worker
+
+  @typedoc ~S"""
+  Async callback for push notification response.
+
+  ## Examples
+
+    handler = fn(n) ->
+      case n.status do
+        :success ->
+          bad_regids = FCM.Notification.remove?(n)
+          to_retry = FCM.Notification.retry?(n)
+          # Handle updated regids, remove bad ones, etc
+        :unauthorized ->
+          # Bad FCM key
+        error ->
+          # Some other error
+      end
+    end
+
+    n = Pigeon.FCM.Notification.new("device token", %{}, %{"message" => "test"})
+    Pigeon.FCM.push(n, on_response: handler)
+  """
+  @type on_response :: ((Notification.t) -> no_return)
+
+  @typedoc ~S"""
+  Options for sending push notifications.
+
+  - `:to` - Defines worker to process push. Defaults to `:fcm_default`
+  - `:on_response` - Optional async callback triggered on receipt of push.
+    See `t:on_response/0`
+  - `:timeout` - Specifies timeout for push responses. Useful if sending large
+    batches synchronously.
+  """
+  @type push_opts :: [
+    to: atom | pid | nil,
+    timeout: pos_integer | nil,
+    on_response: on_response | nil
+  ]
 
   @default_timeout 5_000
   @default_worker :fcm_default
-  @chunk_size 1_000
 
-  @spec push(Notification.t, Keyword.t) :: {:ok, NotificationResponse.t}
-  @spec push([Notification.t, ...], Keyword.t) :: [NotificationResponse.t, ...]
+  @doc ~S"""
+  Sends a push over FCM.
+
+  ## Examples
+
+      iex> n = Pigeon.FCM.Notification.new("regId", %{}, %{"message" => "123"})
+      iex> Pigeon.FCM.push(n)
+      %Pigeon.FCM.Notification{message_id: nil,
+       payload: %{"data" => %{"message" => "123"}}, priority: :normal,
+       registration_id: "regId", status: :success, response:
+       [invalid_registration: "regId"]}
+
+      iex> n = Pigeon.FCM.Notification.new("regId", %{}, %{"message" => "123"})
+      iex> Pigeon.FCM.push(n, on_response: nil)
+      :ok
+
+      iex> n = Pigeon.FCM.Notification.new(["regId", "regId"], %{},
+      ...> %{"message" => "123"})
+      iex> Pigeon.FCM.push(n)
+      %Pigeon.FCM.Notification{message_id: nil,
+       payload: %{"data" => %{"message" => "123"}}, priority: :normal,
+       registration_id: ["regId", "regId"], status: :success,
+       response: [invalid_registration: "regId",
+       invalid_registration: "regId"]}
+
+      iex> n = Pigeon.FCM.Notification.new(["regId", "regId"], %{},
+      ...> %{"message" => "test"})
+      iex> notifs = Pigeon.FCM.push([n, n])
+      iex> Enum.map(notifs, & &1.response)
+      [[invalid_registration: "regId", invalid_registration: "regId"],
+       [invalid_registration: "regId", invalid_registration: "regId"]]
+  """
+  @spec push(Notification.t, Keyword.t) :: Notification.t
+  @spec push([Notification.t, ...], Keyword.t) :: [Notification.t, ...]
   def push(notification, opts \\ [])
   def push(notification, opts) when is_list(notification) do
-    case opts[:on_response] do
-      nil ->
-        tasks = for n <- notification, do: Task.async(fn -> do_sync_push(n, opts) end)
-        tasks
-        |> Task.yield_many(@default_timeout + 10_000)
-        |> Enum.map(&task_mapper(&1))
-      on_response ->
-        for n <- notification, do: send_push(n, on_response, opts)
+    timeout = Keyword.get(opts, :timeout, @default_timeout)
+    if Keyword.has_key?(opts, :on_response) do
+      for n <- notification, do: send_push(n, opts[:on_response], opts)
+      :ok
+    else
+      notification
+      |> Enum.map(& Task.async(fn -> sync_push(&1, opts) end))
+      |> Task.yield_many(timeout)
+      |> Enum.map(&task_mapper(&1))
     end
   end
   def push(notification, opts) do
-    case opts[:on_response] do
-      nil -> do_sync_push(notification, opts)
-      on_response -> send_push(notification, on_response, opts)
+    if Keyword.has_key?(opts, :on_response) do
+      send_push(notification, opts[:on_response], opts)
+      :ok
+    else
+      sync_push(notification, opts)
     end
   end
 
   defp task_mapper({task, result}) do
     case result do
       nil -> Task.shutdown(task, :brutal_kill)
-      {:ok, {:ok, response}} -> {:ok, response}
-      {:ok, {:error, :timeout, notification}} -> {:error, notification}
+      {:ok, notif} -> notif
     end
   end
 
-  @doc """
-  Sends a push over FCM.
-  """
-  def send_push(notification, on_response, opts) do
+  defp send_push(notifications, on_response, opts) when is_list(notifications) do
     worker_name = opts[:to] || @default_worker
-    notification
-    |> encode_requests()
-    |> Enum.map(& GenServer.cast(worker_name, generate_envelope(&1, on_response, opts)))
+    notifications
+    |> Enum.map(& cast_request(worker_name, &1, on_response, opts))
+  end
+  defp send_push(notification, on_response, opts) do
+    send_push([notification], on_response, opts)
   end
 
-  defp do_sync_push(notification, opts) do
+  defp cast_request(worker_name, request, on_response, opts) do
+    opts = Keyword.put(opts, :on_response, on_response)
+    GenServer.cast(worker_name, {:push, request, opts})
+  end
+
+  defp sync_push(notification, opts) do
+    timeout = Keyword.get(opts, :timeout, @default_timeout)
     ref = :erlang.make_ref
     pid = self()
     on_response = fn(x) -> send pid, {ref, x} end
@@ -58,77 +136,47 @@ defmodule Pigeon.FCM do
     receive do
       {^ref, x} -> x
     after
-      @default_timeout -> {:error, :timeout, notification}
+      timeout -> %{notification | status: :timeout}
     end
   end
 
-  def encode_requests(%{registration_id: regid} = notification) when is_binary(regid) do
-    encode_requests(%{notification | registration_id: [regid]})
-  end
-  def encode_requests(%{registration_id: regid} = notification) when length(regid) < 1001 do
-    res =
-      regid
-      |> recipient_attr()
-      |> Map.merge(notification.payload)
-      |> Map.put("priority", to_string(notification.priority))
-      |> Poison.encode!
+  @doc ~S"""
+  Starts FCM worker connection with given config or name.
 
-    formatted_regid = regid
-      |> List.wrap
+  ## Examples
 
-    [{formatted_regid, res}]
-  end
-  def encode_requests(notification) do
-    notification.registration_id
-    |> chunk(@chunk_size, @chunk_size, [])
-    |> Enum.map(& encode_requests(%{notification | registration_id: &1}))
-    |> List.flatten
-  end
-
-  defp chunk(collection, chunk_size, step, padding) do
-    if Kernel.function_exported?(Enum, :chunk_every, 4) do
-      Enum.chunk_every(collection, chunk_size, step, padding)
-    else
-      Enum.chunk(collection, chunk_size, step, padding)
-    end
-  end
-
-  defp recipient_attr([regid]), do: %{"to" => regid}
-  defp recipient_attr(regid) when is_list(regid), do: %{"registration_ids" => regid}
-
+      iex> config = Pigeon.FCM.Config.new(:fcm_default)
+      iex> {:ok, pid} = Pigeon.FCM.start_connection(%{config | name: nil})
+      iex> Process.alive?(pid)
+      true
+  """
   def start_connection(opts \\ [])
   def start_connection(name) when is_atom(name) do
-    config = Application.get_env(:pigeon, :fcm)[name]
-    Supervisor.start_child(:pigeon, worker(Pigeon.FCM.Worker, [config], id: name))
+    worker = worker(Pigeon.Worker, [Config.new(name)], id: name)
+    Supervisor.start_child(:pigeon, worker)
+  end
+  def start_connection(%Config{} = config) do
+    Worker.start_link(config)
   end
   def start_connection(opts) do
-    config = %{
-      name: opts[:name],
-      key:  opts[:key],
-      ping_period: opts[:ping_period]
-    }
-    Pigeon.FCM.Worker.start_link(config)
+    opts
+    |> Config.new
+    |> start_connection()
   end
 
-  def stop_connection(name) do
-    Supervisor.terminate_child(:pigeon, name)
-    Supervisor.delete_child(:pigeon, name)
-  end
+  @doc ~S"""
+  Stops existing FCM worker connection.
 
-  def generate_envelope(payload, on_response, opts) do
-    {:push, :fcm, payload, on_response, Map.new(opts)}
-  end
+  ## Examples
 
-  def merge(response_1, response_2) do
-    Map.merge(response_1, response_2, fn(key, value_1, value_2) ->
-      cond do
-        key == :__struct__ -> value_1
-        is_map(value_1) -> merge(value_1, value_2)
-        is_nil(value_1) -> value_2
-        is_nil(value_2) -> value_1
-        is_list(value_1) && is_list(value_2) -> value_1 ++ value_2
-        true -> [value_1] ++ [value_2]
-      end
-    end)
-  end
+      iex> config = Pigeon.FCM.Config.new(:fcm_default)
+      iex> {:ok, pid} = Pigeon.FCM.start_connection(%{config | name: nil})
+      iex> Pigeon.FCM.stop_connection(pid)
+      :ok
+      iex> :timer.sleep(500)
+      iex> Process.alive?(pid)
+      false
+  """
+  @spec stop_connection(atom | pid) :: :ok
+  def stop_connection(name), do: Worker.stop_connection(name)
 end

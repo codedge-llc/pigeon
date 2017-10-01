@@ -25,7 +25,8 @@
     n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic (optional)")
     ```
 
-3. Send the packet. Pushes return either `{:ok, notification}` or `{:error, reason, notification}`
+3. Send the packet. Pushes are synchronous and return the notification with an
+   updated `:response` key.
 
     ```elixir
     Pigeon.APNS.push(n)
@@ -33,7 +34,12 @@
 
 ## Notification Struct
 
-The contents of `payload` is what will be received on the iOS device. If updating this field directly, use strings for your keys. It is recommended to use the convenience functions defined in *Notifications with Custom Data*. `expiration` is a UNIX epoch date in seconds (UTC). Passing a value of `0` expires the notification immediately and Apple will not attempt to redeliver it.
+The contents of `payload` is what will be received on the iOS device. If
+updating this field directly, use strings for your keys. It is recommended
+to use the convenience functions defined in *Notifications with Custom Data*.
+`expiration` is a UNIX epoch date in seconds (UTC). Passing a value of
+`0` expires the notification immediately and Apple will not attempt to
+redeliver it.
 
   ```elixir
   %Pigeon.APNS.Notification{
@@ -47,9 +53,11 @@ The contents of `payload` is what will be received on the iOS device. If updatin
 
 ## Generating Your Certificate and Key .pem
 
-1. In Keychain Access, right-click your push certificate and select _"Export..."_
+1. In Keychain Access, right-click your push certificate and
+select _"Export..."_
 2. Export the certificate as `cert.p12`
-3. Click the dropdown arrow next to the certificate, right-click the private key and select _"Export..."_
+3. Click the dropdown arrow next to the certificate, right-click the private
+key and select _"Export..."_
 4. Export the private key as `key.p12`
 5. From a shell, convert the certificate.
 
@@ -57,7 +65,8 @@ The contents of `payload` is what will be received on the iOS device. If updatin
      openssl pkcs12 -clcerts -nokeys -out cert.pem -in cert.p12
      ```
 
-6. Convert the key. Be sure to set a password here. You will need that password in order to remove it in the next step.
+6. Convert the key. Be sure to set a password here. You will need that
+password in order to remove it in the next step.
 
      ```
      openssl pkcs12 -nocerts -out key.pem -in key.p12
@@ -69,15 +78,17 @@ The contents of `payload` is what will be received on the iOS device. If updatin
      openssl rsa -in key.pem -out key_unencrypted.pem
      ```
 
-8. `cert.pem` and `key_unencrypted.pem` can now be used as the cert and key in `Pigeon.push`, respectively. Set them in your `config.exs`
+8. `cert.pem` and `key_unencrypted.pem` can now be used as the cert and key
+in `Pigeon.push`, respectively. Set them in your `config.exs`
 
 ## Notifications with Custom Data
 
-Notifications can contain additional information in `payload`. (e.g. setting badge counters or defining custom sounds)
+Notifications can contain additional information in `payload`. (e.g. setting
+badge counters or defining custom sounds)
 
   ```elixir
   import Pigeon.APNS.Notification
-  n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic")
+  n = Pigeon.APNS.Notification.new("message", "device token", "push topic")
   |> put_badge(5)
   |> put_sound("default")
   |> put_content_available
@@ -106,8 +117,8 @@ Define custom payload data like so:
 
 ## Custom Worker Connections
 
-Multiple APNS worker connections can be configured simultaneously. Useful for supporting
-multiple apps and/or certificates at once.
+Multiple APNS worker connections can be configured simultaneously.
+Useful for supporting multiple apps and/or certificates at once.
 
   ```elixir
   config :pigeon, :apns,
@@ -126,45 +137,48 @@ multiple apps and/or certificates at once.
 Send pushes with a `to` option in your second parameter.
 
   ```elixir
-  n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic")
+  n = Pigeon.APNS.Notification.new("message", "device token", "push topic")
   Pigeon.APNS.push(n, to: :custom_worker)
   ```
 
 You can also start connections manually.
 
   ```elixir
-  {:ok, pid} = Pigeon.APNS.start_connection(cert: "cert.pem", key: "key.pem", mode: :dev)
-  Pigeon.APNS.push(notif, to: pid)
+  iex> {:ok, pid} = Pigeon.APNS.start_connection(cert: "cert.pem",
+  ...> key: "key.pem", mode: :dev)
+  iex> Pigeon.APNS.push(notif, to: pid)
 
-  Pigeon.APNS.start_connection(cert: "cert.pem", key: "key.pem", mode: :dev, name: :custom)
-  Pigeon.APNS.push(notif, to: :custom)
+  iex> Pigeon.APNS.start_connection(cert: "cert.pem", key: "key.pem",
+  ...> mode: :dev, name: :custom)
+  iex> Pigeon.APNS.push(notif, to: :custom)
   ```
 
 ## Asynchronous Pushing
 
-1. Pass an `on_response` option with an anonymous function in your second parameter.
+1. Pass an `on_response` option with an anonymous function in your
+second parameter.
 
     ```elixir
-    n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic")
+    n = Pigeon.APNS.Notification.new("message", "device token", "push topic")
     Pigeon.APNS.push(n, on_response: fn(x) -> IO.inspect(x) end)
     ```
 
-2. Responses return a tuple of either `{:ok, notification}` or `{:error, reason, notification}`.
-You could handle responses like so:
+2. Responses return a notification with an updated `:response` key. 
+   You could handle responses like so:
 
     ```elixir
-    handler = fn(x) ->
-      case x do
-        {:ok, notification} ->
+    handler = fn(%Pigeon.APNS.Notification{response: response}) ->
+      case response do
+        :success ->
           Logger.debug "Push successful!"
-        {:error, :bad_device_token, notification} ->
+        :bad_device_token ->
           Logger.error "Bad device token!"
-        {:error, reason, notification} ->
+        _error ->
           Logger.error "Some other error happened."
       end
     end
 
-    n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic")
+    n = Pigeon.APNS.Notification.new("message", "device token", "push topic")
     Pigeon.APNS.push(n, on_response: handler)
     ```
 

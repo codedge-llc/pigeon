@@ -8,6 +8,12 @@ config :pigeon, :test,
   apns_key: "key_unencrypted.pem",
   apns_topic: System.get_env("APNS_TOPIC")
 
+config :pigeon, workers: [
+  {Pigeon.TestConfig, :apns_dynamic},
+  {Pigeon.TestConfig, :fcm_dynamic},
+  {Pigeon.TestConfig, :adm_dynamic}
+]
+
 config :pigeon, :fcm,
   fcm_default: %{
     key: System.get_env("GCM_KEY")

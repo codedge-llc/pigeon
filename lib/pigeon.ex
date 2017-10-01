@@ -1,60 +1,75 @@
 defmodule Pigeon do
-  use Application
-  require Logger
-  import Supervisor.Spec
-
   @moduledoc """
   HTTP2-compliant wrapper for sending iOS and Android push notifications.
   """
 
+  use Application
+
+  require Logger
+  import Supervisor.Spec
+
+  alias Pigeon.{ADM, APNS, FCM}
+  alias Pigeon.Http2.Client
+
+  @doc false
   def start(_type, _args) do
+    Client.default().start
     opts = [strategy: :one_for_one, name: :pigeon]
     Supervisor.start_link(workers(), opts)
   end
 
   defp workers do
-    adm_workers() ++ apns_workers() ++ fcm_workers() ++ task_supervisors()
+    adm_workers()
+    ++ apns_workers()
+    ++ fcm_workers()
+    ++ env_workers()
+    ++ task_supervisors()
   end
 
-  def task_supervisors do
+  defp task_supervisors do
     [supervisor(Task.Supervisor, [[name: Pigeon.Tasks]])]
   end
 
-  def adm_workers do
-    cond do
-      workers = Application.get_env(:pigeon, :adm) ->
-        Enum.map(workers, fn({worker_name, _config}) ->
-          config = Pigeon.ADM.Config.config(worker_name)
-          worker(Pigeon.ADM.Worker, [config], id: worker_name)
+  defp env_workers do
+    case Application.get_env(:pigeon, :workers) do
+      nil -> []
+      workers ->
+        Enum.map(workers, fn({mod, fun}) ->
+          config = apply(mod, fun, [])
+          worker(config)
         end)
-      true -> []
     end
+  end
+
+  defp worker(%ADM.Config{} = config) do
+    worker(ADM.Worker, [config], id: config.name, restart: :temporary)
+  end
+  defp worker(config) do
+    worker(Pigeon.Worker, [config], id: config.name, restart: :temporary)
+  end
+
+  defp adm_workers do
+    workers_for(:adm, &ADM.Config.new/1, Pigeon.ADM.Worker)
   end
 
   defp apns_workers do
-    cond do
-      workers = Application.get_env(:pigeon, :apns) ->
-        Enum.map(workers, fn({worker_name, _config}) ->
-          config = Pigeon.APNS.Config.config(worker_name)
-          worker(Pigeon.APNS.Worker, [config], id: worker_name)
-        end)
-      true -> []
-    end
+    workers_for(:apns, &APNS.Config.new/1, Pigeon.Worker)
   end
 
   defp fcm_workers do
-    # cond do
-    #   config = Application.get_env(:pigeon, :fcm) ->
-    #     [worker(Pigeon.FCMWorker, [:fcm_worker, config], id: :fcm_worker)]
-    #   true -> []
-    # end
-    cond do
-      workers = Application.get_env(:pigeon, :fcm) ->
-        Enum.map(workers, fn({worker_name, config}) ->
-          config = Map.put(config, :name, worker_name)
-          worker(Pigeon.FCM.Worker, [config], id: worker_name)
+    workers_for(:fcm, &FCM.Config.new/1, Pigeon.Worker)
+  end
+
+  defp workers_for(name, config_fn, mod) do
+    case Application.get_env(:pigeon, name) do
+      nil -> []
+      workers ->
+        Enum.map(workers, fn({worker_name, _config}) ->
+          config = config_fn.(worker_name)
+          worker(mod, [config], id: config.name, restart: :temporary)
         end)
-      true -> []
     end
   end
+
+  def debug_log?, do: Application.get_env(:pigeon, :debug_log, false)
 end
