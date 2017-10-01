@@ -21,6 +21,7 @@ config :pigeon, workers: [
 * Override push server endpoint with `:uri` option in `APNS.Config.new/1`
 * `:use_2197` renamed to `:port`
 * `:uri` config option for overriding push server endpoint
+* `:reconnect` now false by default
 
 **FCM**
 * `NotificationResponse` done away with in favor of a `:response` key on `Notification`

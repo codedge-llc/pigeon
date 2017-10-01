@@ -102,13 +102,13 @@ defmodule Pigeon.APNS.Config do
       iex> config = Pigeon.APNS.Config.new(:apns_default)
       iex> %{config | certfile: nil, keyfile: nil} # Hide for testing
       %Pigeon.APNS.Config{uri: "api.development.push.apple.com",
-      name: :apns_default, ping_period: 600_000, port: 443, reconnect: true}
+      name: :apns_default, ping_period: 600_000, port: 443, reconnect: false}
   """
   @spec new(atom | config_opts) :: t
   def new(opts) when is_list(opts) do
     %__MODULE__{
       name: opts[:name],
-      reconnect: Keyword.get(opts, :reconnect, true),
+      reconnect: Keyword.get(opts, :reconnect, false),
       cert: cert(opts[:cert]),
       certfile: file_path(opts[:cert]),
       key: key(opts[:key]),

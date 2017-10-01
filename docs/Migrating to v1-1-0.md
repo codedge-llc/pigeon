@@ -14,6 +14,7 @@
   `%{ok: [...], error: [...]}` on synchronous APNS pushes.
 - `:use_2197` config option has been replaced with `:port`. APNS servers still
   only accept `443` and `2197`, but other ports may be useful for test servers.
+* `:reconnect` is now false by default
 - `push/3` removed in favor of `push/2` with options
 
 ## FCM
