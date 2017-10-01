@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.1.0 (unreleased)
+## v1.1.0
 * Minimum requirements now Elixir v1.4 and OTP 19.2 (Kadabra bumped to `v0.3.0`)
 * Runtime worker configs. Create a functions that return config
 structs and specify them your `config.exs` with
