@@ -13,7 +13,7 @@ Add pigeon and kadabra as `mix.exs` dependencies:
   def deps do
     [
       {:pigeon, "~> 1.1.0"},
-      {:kadabra, "~> 0.3.1"}
+      {:kadabra, "~> 0.3.3"}
     ]
   end
   ```
