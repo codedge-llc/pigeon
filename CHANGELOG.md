@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.1.1
+* Bumped minimum Kadabra version to `v0.3.4`
+
 ## v1.1.0
 * Minimum requirements now Elixir v1.4 and OTP 19.2 (Kadabra bumped to `v0.3.0`)
 * Runtime worker configs. Create a functions that return config
