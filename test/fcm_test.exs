@@ -21,9 +21,9 @@ defmodule Pigeon.FCMTest do
       {:ok, pid} = Pigeon.FCM.start_connection(opts)
       assert is_pid(pid)
 
-      state = :sys.get_state(pid)
-      assert state.config.key == fcm_key
-      assert is_pid(state.socket)
+      worker = :sys.get_state(pid)
+      assert worker.state.config.key == fcm_key
+      assert worker.state.connections == 1
     end
   end
 

@@ -24,6 +24,9 @@ defprotocol Pigeon.Configurable do
 
   def handle_end_stream(config, stream, notification, on_response)
 
+  @spec max_demand(any) :: non_neg_integer
+  def max_demand(config)
+
   @doc ~S"""
   Schedules connection ping if necessary.
 

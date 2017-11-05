@@ -170,6 +170,9 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
   @spec worker_name(any) :: atom | nil
   def worker_name(%Config{name: name}), do: name
 
+  @spec max_demand(any) :: non_neg_integer
+  def max_demand(_config), do: 1_000
+
   @spec connect(any) :: {:ok, sock} | {:error, String.t}
   def connect(%Config{uri: uri} = config) do
     uri = to_charlist(uri)

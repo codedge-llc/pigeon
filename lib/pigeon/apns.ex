@@ -106,7 +106,7 @@ defmodule Pigeon.APNS do
   end
   defp push(notification, on_response, opts) do
     worker_name = opts[:to] || Config.default_name
-    Worker.cast_push(worker_name, notification, on_response: on_response)
+    Worker.send_push(worker_name, notification, on_response: on_response)
   end
 
   @doc ~S"""
@@ -155,7 +155,7 @@ defmodule Pigeon.APNS do
     on_response = fn(x) -> send pid, {ref, x} end
 
     worker_name = opts[:to] || Config.default_name
-    Worker.cast_push(worker_name, notification, on_response: on_response)
+    Worker.send_push(worker_name, notification, on_response: on_response)
 
     receive do
       {^ref, x} -> x
