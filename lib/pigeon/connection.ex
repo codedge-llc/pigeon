@@ -18,10 +18,6 @@ defmodule Pigeon.Connection do
 
   @limit 1_000_000_000
 
-  #def cast_push(pid, notification, opts) do
-  #  GenStage.cast(pid, {:push, notification, opts})
-  #end
-
   def handle_subscribe(:producer, _opts, from, state) do
     demand = Configurable.max_demand(state.config)
     GenStage.ask(from, demand)
@@ -32,30 +28,13 @@ defmodule Pigeon.Connection do
     {:manual, state}
   end
 
-  def handle_cancel({:down, :normal}, _from, state) do
-    {:stop, :normal, state}
-  end
-
-  def handle_cancel({:cancel, :closed}, _from, state) do
-    {:stop, :normal, state}
-  end
-  
-  def handle_cancel({:cancel, :stream_id_exhausted}, _from, state) do
-    {:stop, :normal, state}
-  end
-
   def start_link({config, from}) do
     GenStage.start_link(__MODULE__, {config, from})
-  end
-
-  def stop_connection(pid) do
-    GenStage.cast(pid, :stop)
   end
 
   def init(config), do: initialize_worker(config)
 
   def initialize_worker({config, from}) do
-    # IO.puts("producer: #{inspect(from)}, consumer: #{inspect(self())}")
     state = %Connection{config: config, from: from}
     case connect_socket(config, 0) do
       {:ok, socket} ->
@@ -73,6 +52,20 @@ defmodule Pigeon.Connection do
     end
   end
 
+  # Handle Cancels
+
+  def handle_cancel({:down, :normal}, _from, state) do
+    {:stop, :normal, state}
+  end
+
+  def handle_cancel({:cancel, :closed}, _from, state) do
+    {:stop, :normal, state}
+  end
+  
+  def handle_cancel({:cancel, :stream_id_exhausted}, _from, state) do
+    {:stop, :normal, state}
+  end
+
   # Info
 
   def handle_info(:ping, state) do
@@ -82,13 +75,9 @@ defmodule Pigeon.Connection do
     {:noreply, [], state}
   end
 
-  def handle_info({:closed, _}, %{config: config} = state) do
-    if Configurable.reconnect?(config) do
-      {:noreply, [], reconnect(state)}
-    else
-      GenStage.cancel(state.from, :closed)
-      {:noreply, [], %{state | socket: nil}}
-    end
+  def handle_info({:closed, _}, %{from: from} = state) do
+    GenStage.cancel(from, :closed)
+    {:noreply, [], %{state | socket: nil}}
   end
 
   def handle_info(msg, state) do
@@ -104,11 +93,14 @@ defmodule Pigeon.Connection do
         send_push(state, notification, opts)
       end)
 
-    if (state.completed + state.requested) < @limit do
-      to_ask = min(@limit - (state.completed + state.requested), length(events))
-      GenStage.ask(from, to_ask)
-      state = inc_requested(state, to_ask)
-    end
+    state =
+      if state.completed + state.requested < @limit do
+        to_ask = min(@limit - (state.completed + state.requested), length(events))
+        GenStage.ask(from, to_ask)
+        inc_requested(state, to_ask)
+      else
+        state
+      end
 
     {:noreply, [], state}
   end
@@ -135,8 +127,6 @@ defmodule Pigeon.Connection do
   end
 
   def send_push(%{config: config, queue: queue} = state, notification, opts) do
-    state = reconnect_if_needed(state)
-
     headers = Configurable.push_headers(config, notification, opts)
     payload = Configurable.push_payload(config, notification, opts)
 
@@ -152,30 +142,7 @@ defmodule Pigeon.Connection do
     |> Map.put(:queue, new_q)
   end
 
-  defp reconnect_if_needed(%{socket: nil} = state), do: reconnect(state)
-  defp reconnect_if_needed(state), do: state
-
-  def reconnect(%{config: config} = state) do
-    case connect_socket(config, 0) do
-      {:ok, new_socket} ->
-        Configurable.schedule_ping(state.config)
-        %{state | socket: new_socket, queue: %{}, stream_id: 1}
-      error ->
-        error |> inspect() |> Logger.error
-        state
-    end
-  end
-
   # Cast
-
-  def handle_cast(:stop, state) do
-    {:stop, :normal, state}
-  end
-
-  # def handle_cast({:push, notification, opts}, state) do
-  #   state = send_push(state, notification, opts)
-  #   {:noreply, state}
-  # end
 
   def handle_cast(_msg, state) do
     {:noreply, [], state}

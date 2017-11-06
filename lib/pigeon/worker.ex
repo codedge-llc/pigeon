@@ -1,4 +1,6 @@
 defmodule Pigeon.Worker do
+  @moduledoc false
+
   defstruct config: nil, connections: 0
 
   use GenStage
@@ -26,14 +28,14 @@ defmodule Pigeon.Worker do
   end
 
   def handle_call({:push, _notification, _opts} = msg, _from, state) do
-    if state.connections <= 0 do
-      Connection.start_link({state.config, self()})
-    end
+    state =
+      if state.connections <= 0 do
+        Connection.start_link({state.config, self()})
+        %{state | connections: state.connections + 1}
+      else
+        state
+      end
     {:reply, :ok, [msg], state} # Dispatch immediately
-  end
-
-  def handle_cast({:push, _notification, _opts} = msg, _from, state) do
-    {:noreply, [msg], state} # Dispatch immediately
   end
 
   def handle_cast(:stop, state) do
@@ -41,17 +43,15 @@ defmodule Pigeon.Worker do
   end
 
   def handle_demand(_demand, state) do
-    {:noreply, [], state} # We don't care about the demand
+    {:noreply, [], state}
   end
 
   def handle_cancel({:cancel, :stream_id_exhausted}, _from, state) do
-    IO.puts("done! make a new one")
-    Connection.start_link({state.config, self()}) |> IO.inspect
+    Connection.start_link({state.config, self()})
     {:noreply, [], state}
   end
 
   def handle_cancel({:cancel, :closed}, _from, state) do
-    IO.puts("connection closed...")
     state = %{state | connections: state.connections - 1}
     {:noreply, [], state}
   end

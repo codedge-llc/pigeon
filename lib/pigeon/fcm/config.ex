@@ -141,8 +141,6 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
 
   def schedule_ping(_config), do: :ok
 
-  def reconnect?(_config), do: false
-
   def close(_config) do
   end
 

@@ -51,19 +51,5 @@ defprotocol Pigeon.Configurable do
   @spec schedule_ping(any) :: no_return
   def schedule_ping(config)
 
-  @doc ~S"""
-  Returns whether connection should reconnect if dropped.
-
-  ## Examples
-
-      iex> reconnect?(%Pigeon.APNS.Config{reconnect: true})
-      true
-
-      iex> reconnect?(%Pigeon.FCM.Config{}) # always false
-      false
-  """
-  @spec reconnect?(any) :: boolean
-  def reconnect?(config)
-
   def close(config)
 end

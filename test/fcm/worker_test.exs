@@ -23,24 +23,36 @@ defmodule Pigeon.FCM.WorkerTest do
   #   assert :sys.get_state(pid).state.socket
   # end
 
-  # test "resets stream id after disconnect" do
-  #   opts = [
-  #     key: Application.get_env(:pigeon, :test)[:fcm_key]
-  #   ]
-  #   {:ok, pid} = FCM.start_connection(opts)
+  test "decrements connection count after disconnect" do
+    opts = [
+      key: Application.get_env(:pigeon, :test)[:fcm_key]
+    ]
+    {:ok, pid} = FCM.start_connection(opts)
 
-  #   n = FCM.Notification.new(valid_fcm_reg_id(), %{}, %{"message" => "Test"})
-  #   assert _notif = Pigeon.FCM.push(n, to: pid)
-  #   assert _notif = Pigeon.FCM.push(n, to: pid)
-  #   assert _notif = Pigeon.FCM.push(n, to: pid)
+    {conn_pid, _ref} =
+      pid
+      |> :sys.get_state()
+      |> Map.get(:consumers)
+      |> Map.values
+      |> List.first
 
-  #   send(pid, {:closed, self()})
-  #   assert :sys.get_state(pid).state.stream_id == 7
+    assert :sys.get_state(pid).state.connections == 1
 
-  #   n = FCM.Notification.new(valid_fcm_reg_id(), %{}, %{"message" => "Test"})
-  #   assert _notif = Pigeon.FCM.push(n, to: pid)
-  #   assert _notif = Pigeon.FCM.push(n, to: pid)
+    n = FCM.Notification.new(valid_fcm_reg_id(), %{}, %{"message" => "Test"})
+    assert _notif = Pigeon.FCM.push(n, to: pid)
+    assert _notif = Pigeon.FCM.push(n, to: pid)
+    assert _notif = Pigeon.FCM.push(n, to: pid)
 
-  #   assert :sys.get_state(pid).state.stream_id == 5
-  # end
+    send(conn_pid, {:closed, self()})
+
+    Process.sleep(500)
+    assert :sys.get_state(pid).state.connections == 0
+
+    n = FCM.Notification.new(valid_fcm_reg_id(), %{}, %{"message" => "Test"})
+    assert _notif = Pigeon.FCM.push(n, to: pid)
+    assert _notif = Pigeon.FCM.push(n, to: pid)
+
+    Process.sleep(500)
+    assert :sys.get_state(pid).state.connections == 1
+  end
 end

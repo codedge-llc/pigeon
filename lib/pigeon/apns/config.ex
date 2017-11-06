@@ -243,9 +243,6 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
     Process.send_after(self(), :ping, ping)
   end
 
-  @spec reconnect?(any) :: boolean
-  def reconnect?(%Config{reconnect: reconnect}), do: reconnect
-
   def close(_config) do
   end
 
