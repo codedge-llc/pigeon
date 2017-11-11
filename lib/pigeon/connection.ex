@@ -61,7 +61,7 @@ defmodule Pigeon.Connection do
   def handle_cancel({:cancel, :closed}, _from, state) do
     {:stop, :normal, state}
   end
-  
+
   def handle_cancel({:cancel, :stream_id_exhausted}, _from, state) do
     {:stop, :normal, state}
   end
@@ -87,20 +87,11 @@ defmodule Pigeon.Connection do
     end
   end
 
-  def handle_events(events, from, state) do
+  def handle_events(events, _from, state) do
     state =
-      Enum.reduce(events, state, fn({:push, notification, opts}, state) ->
-        send_push(state, notification, opts)
+      Enum.reduce(events, state, fn({:push, notif, opts}, state) ->
+        send_push(state, notif, opts)
       end)
-
-    state =
-      if state.completed + state.requested < @limit do
-        to_ask = min(@limit - (state.completed + state.requested), length(events))
-        GenStage.ask(from, to_ask)
-        inc_requested(state, to_ask)
-      else
-        state
-      end
 
     {:noreply, [], state}
   end
@@ -113,11 +104,22 @@ defmodule Pigeon.Connection do
         {:noreply, [], %{state | queue: new_queue}}
       {{notif, on_response}, new_queue} ->
         Configurable.handle_end_stream(config, stream, notif, on_response)
-        state = 
+        state =
           state
           |> inc_completed(1)
           |> dec_requested(1)
           |> Map.put(:queue, new_queue)
+
+        total_requests = state.completed + state.requested
+        max_demand = Configurable.max_demand(state.config)
+        state =
+          if total_requests < @limit and state.requested < max_demand do
+            to_ask = min(@limit - total_requests, max_demand - state.requested)
+            GenStage.ask(state.from, to_ask)
+            inc_requested(state, to_ask)
+          else
+            state
+          end
 
         if state.completed >= @limit do
           GenStage.cancel(state.from, :stream_id_exhausted)

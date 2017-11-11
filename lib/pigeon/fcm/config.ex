@@ -151,9 +151,14 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
     ResultParser.parse(ids, results, on_response, notification)
   end
 
-  defp parse_error(data) do
-    {:ok, response} = Poison.decode(data)
-    response["reason"] |> Macro.underscore |> String.to_existing_atom
+  def parse_error(data) do
+    case Poison.decode(data) do
+      {:ok, response} ->
+        response["reason"] |> Macro.underscore |> String.to_existing_atom
+      error ->
+        "Poison parse failed: #{inspect(error)}, body: #{inspect(data)}"
+        |> Logger.error
+    end
   end
 
   defp log_error(code, reason) do
