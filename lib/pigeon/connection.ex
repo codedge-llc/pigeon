@@ -58,6 +58,10 @@ defmodule Pigeon.Connection do
     {:stop, :normal, state}
   end
 
+  def handle_cancel({:down, :shutdown}, _from, state) do
+    {:stop, :normal, state}
+  end
+
   def handle_cancel({:cancel, :closed}, _from, state) do
     {:stop, :normal, state}
   end

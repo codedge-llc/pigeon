@@ -23,14 +23,14 @@ defmodule Pigeon.Worker do
   end
 
   def init({:ok, config}) do
-    Connection.start_link({config, self()})
-    {:producer, %Worker{config: config, connections: 1}}
+    #Pigeon.start_connection({config, self()})
+    {:producer, %Worker{config: config, connections: 0}}
   end
 
   def handle_call({:push, _notification, _opts} = msg, _from, state) do
     state =
       if state.connections <= 0 do
-        Connection.start_link({state.config, self()})
+        Pigeon.start_connection({state.config, self()})
         %{state | connections: state.connections + 1}
       else
         state
@@ -47,12 +47,17 @@ defmodule Pigeon.Worker do
   end
 
   def handle_cancel({:cancel, :stream_id_exhausted}, _from, state) do
-    Connection.start_link({state.config, self()})
+    Pigeon.start_connection({state.config, self()})
     {:noreply, [], state}
   end
 
   def handle_cancel({:cancel, :closed}, _from, state) do
     state = %{state | connections: state.connections - 1}
+    {:noreply, [], state}
+  end
+
+  def handle_cancel({:down, _error}, _from, state) do
+    Pigeon.start_connection({state.config, self()})
     {:noreply, [], state}
   end
 end

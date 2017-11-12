@@ -23,7 +23,7 @@ defmodule Pigeon.FCMTest do
 
       worker = :sys.get_state(pid)
       assert worker.state.config.key == fcm_key
-      assert worker.state.connections == 1
+      assert worker.state.connections == 0
     end
   end
 

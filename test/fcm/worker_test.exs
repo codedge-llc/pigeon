@@ -29,6 +29,11 @@ defmodule Pigeon.FCM.WorkerTest do
     ]
     {:ok, pid} = FCM.start_connection(opts)
 
+    n = FCM.Notification.new(valid_fcm_reg_id(), %{}, %{"message" => "Test"})
+    assert _notif = Pigeon.FCM.push(n, to: pid)
+    assert _notif = Pigeon.FCM.push(n, to: pid)
+    assert _notif = Pigeon.FCM.push(n, to: pid)
+
     {conn_pid, _ref} =
       pid
       |> :sys.get_state()
@@ -37,11 +42,6 @@ defmodule Pigeon.FCM.WorkerTest do
       |> List.first
 
     assert :sys.get_state(pid).state.connections == 1
-
-    n = FCM.Notification.new(valid_fcm_reg_id(), %{}, %{"message" => "Test"})
-    assert _notif = Pigeon.FCM.push(n, to: pid)
-    assert _notif = Pigeon.FCM.push(n, to: pid)
-    assert _notif = Pigeon.FCM.push(n, to: pid)
 
     send(conn_pid, {:closed, self()})
 
