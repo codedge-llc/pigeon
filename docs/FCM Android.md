@@ -93,7 +93,7 @@ or
     
     data = %{message: "your message"}
     n = Pigeon.FCM.Notification.new("your device token", data)
-    Pigeon.FCM.push(n, [on_response: on_response])
+    Pigeon.FCM.push(n, on_response: on_response)
     ```
 
 ## Error Responses
