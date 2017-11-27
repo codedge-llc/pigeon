@@ -7,7 +7,8 @@
 [![Deps Status](https://beta.hexfaktor.org/badge/all/github/codedge-llc/pigeon.svg)](https://beta.hexfaktor.org/github/codedge-llc/pigeon)
 
 ## Installation
-
+*Requires Elixir 1.4/OTP 19.2 or later.*
+ 
 Add pigeon and kadabra as `mix.exs` dependencies:
   ```elixir
   def deps do
