@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.1.2
+* Auto-restart connections if max stream ID is reached
+* FCM/APNS Workers now use GenStage to queue pending pushes
+* Bumped minimum Kadabra version to `v0.3.5`
+
 ## v1.1.1
 * Bumped minimum Kadabra version to `v0.3.4`
 

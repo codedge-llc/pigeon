@@ -124,7 +124,7 @@ defmodule Pigeon.FCM do
 
   defp cast_request(worker_name, request, on_response, opts) do
     opts = Keyword.put(opts, :on_response, on_response)
-    GenServer.cast(worker_name, {:push, request, opts})
+    Worker.send_push(worker_name, request, opts)
   end
 
   defp sync_push(notification, opts) do

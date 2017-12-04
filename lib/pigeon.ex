@@ -71,5 +71,12 @@ defmodule Pigeon do
     end
   end
 
+  @doc false
+  def start_connection(state) do
+    opts = [restart: :temporary, id: :erlang.make_ref]
+    spec = worker(Pigeon.Connection, [state], opts)
+    Supervisor.start_child(:pigeon, spec)
+  end
+
   def debug_log?, do: Application.get_env(:pigeon, :debug_log, false)
 end

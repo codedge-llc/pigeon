@@ -24,6 +24,9 @@ defprotocol Pigeon.Configurable do
 
   def handle_end_stream(config, stream, notification, on_response)
 
+  @spec max_demand(any) :: non_neg_integer
+  def max_demand(config)
+
   @doc ~S"""
   Schedules connection ping if necessary.
 
@@ -47,20 +50,6 @@ defprotocol Pigeon.Configurable do
   """
   @spec schedule_ping(any) :: no_return
   def schedule_ping(config)
-
-  @doc ~S"""
-  Returns whether connection should reconnect if dropped.
-
-  ## Examples
-
-      iex> reconnect?(%Pigeon.APNS.Config{reconnect: true})
-      true
-
-      iex> reconnect?(%Pigeon.FCM.Config{}) # always false
-      false
-  """
-  @spec reconnect?(any) :: boolean
-  def reconnect?(config)
 
   def close(config)
 end

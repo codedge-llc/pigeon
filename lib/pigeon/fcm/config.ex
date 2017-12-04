@@ -58,6 +58,9 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   @spec worker_name(any) :: atom | nil
   def worker_name(%Config{name: name}), do: name
 
+  @spec max_demand(any) :: non_neg_integer
+  def max_demand(_config), do: 100
+
   @spec connect(any) :: {:ok, sock} | {:error, String.t}
   def connect(%Config{uri: uri} = config) do
     case connect_socket_options(config) do
@@ -138,8 +141,6 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
 
   def schedule_ping(_config), do: :ok
 
-  def reconnect?(_config), do: false
-
   def close(_config) do
   end
 
@@ -150,9 +151,14 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
     ResultParser.parse(ids, results, on_response, notification)
   end
 
-  defp parse_error(data) do
-    {:ok, response} = Poison.decode(data)
-    response["reason"] |> Macro.underscore |> String.to_existing_atom
+  def parse_error(data) do
+    case Poison.decode(data) do
+      {:ok, response} ->
+        response["reason"] |> Macro.underscore |> String.to_existing_atom
+      error ->
+        "Poison parse failed: #{inspect(error)}, body: #{inspect(data)}"
+        |> Logger.error
+    end
   end
 
   defp log_error(code, reason) do

@@ -20,9 +20,9 @@ defmodule Pigeon.APNSTest do
       {:ok, pid} = Pigeon.APNS.start_connection(opts)
       assert is_pid(pid)
 
-      state = :sys.get_state(pid)
-      assert state.config.uri == "api.development.push.apple.com"
-      assert state.config.ping_period == 600_000
+      worker = :sys.get_state(pid)
+      assert worker.state.config.uri == "api.development.push.apple.com"
+      assert worker.state.config.ping_period == 600_000
 
       {:ok, pid} = Pigeon.APNS.start_connection(opts)
       assert is_pid(pid)
@@ -37,8 +37,8 @@ defmodule Pigeon.APNSTest do
       ]
 
       {:ok, pid} = Pigeon.APNS.start_connection(opts)
-      state = :sys.get_state(pid)
-      assert state.config.ping_period == 30_000
+      worker = :sys.get_state(pid)
+      assert worker.state.config.ping_period == 30_000
     end
   end
 
@@ -69,7 +69,7 @@ defmodule Pigeon.APNSTest do
           test_token(), test_topic()
         )
 
-      Pigeon.APNS.stop_connection(:default)
+        #Pigeon.APNS.stop_connection(:apns_default)
       opts = [
         cert: Application.get_env(:pigeon, :test)[:apns_cert],
         key: Application.get_env(:pigeon, :test)[:apns_key],
@@ -79,7 +79,7 @@ defmodule Pigeon.APNSTest do
 
       assert Pigeon.APNS.push(n, to: worker_pid).response == :success
 
-      Pigeon.APNS.start_connection(:apns_default)
+      #Pigeon.APNS.start_connection(:apns_default)
     end
 
     test "pushes to worker's atom name" do
@@ -89,7 +89,7 @@ defmodule Pigeon.APNSTest do
           test_token(), test_topic()
         )
 
-      Pigeon.APNS.stop_connection(:default)
+        #Pigeon.APNS.stop_connection(:default)
       opts = [
         cert: Application.get_env(:pigeon, :test)[:apns_cert],
         key: Application.get_env(:pigeon, :test)[:apns_key],
@@ -100,7 +100,7 @@ defmodule Pigeon.APNSTest do
 
       assert Pigeon.APNS.push(n, to: :custom).response == :success
 
-      Pigeon.APNS.start_connection(:apns_default)
+      #Pigeon.APNS.start_connection(:apns_default)
     end
   end
 
@@ -193,7 +193,7 @@ defmodule Pigeon.APNSTest do
         |> test_message()
         |> Pigeon.APNS.Notification.new(test_token(), test_topic())
 
-      Pigeon.APNS.stop_connection(:default)
+        #Pigeon.APNS.stop_connection(:default)
       opts = [
         cert: Application.get_env(:pigeon, :test)[:apns_cert],
         key: Application.get_env(:pigeon, :test)[:apns_key],
@@ -206,7 +206,7 @@ defmodule Pigeon.APNSTest do
 
       assert_receive(%Pigeon.APNS.Notification{response: :success}, 5_000)
 
-      Pigeon.APNS.start_connection(:apns_default)
+      #Pigeon.APNS.start_connection(:apns_default)
     end
   end
 end
