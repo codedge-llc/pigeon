@@ -5,7 +5,7 @@ defmodule Pigeon.Worker do
 
   use GenStage
 
-  alias Pigeon.{Configurable, Connection, Worker}
+  alias Pigeon.{Configurable, Worker}
 
   def start_link(config) do
     case Configurable.worker_name(config) do
