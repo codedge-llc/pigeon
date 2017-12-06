@@ -19,10 +19,122 @@ Add pigeon and kadabra as `mix.exs` dependencies:
   end
   ```
 
-## Getting Started
-For usage and configuration, see the docs:
-* [APNS (Apple iOS)](https://hexdocs.pm/pigeon/apns-apple-ios.html)
-* [FCM (Android)](https://hexdocs.pm/pigeon/fcm-android.html)
-* [ADM (Amazon Android)](https://hexdocs.pm/pigeon/adm-amazon-android.html)
+## Quickstart Guides
+
+### Apple iOS (APNS)
+
+1. Add a default worker config to your mix config. See [the detailed docs](https://hexdocs.pm/pigeon/apns-apple-ios.html) for setting up your certificate and key.
+
+    ```elixir
+    config :pigeon, :apns,
+      apns_default: %{
+        cert: "cert.pem",
+        key: "key_unencrypted.pem",
+        mode: :dev
+      }
+    ```
+
+    This config sets up a default connection to APNS servers. `cert` and `key` can be any of the following:
+    * Static file path
+    * Full-text string of the file contents
+    * `{:my_app, "certs/cert.pem"}` (indicates path relative to the `priv` folder of the given application)
+
+2. Create a notification packet. **Note: Your push topic is generally the app's bundle identifier.**
+
+    ```elixir
+    iex> n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic (optional)")
+    ```
+
+3. Send the packet. Pushes are synchronous and return the notification with an
+   updated `:response` key.
+
+    ```elixir
+    iex> Pigeon.APNS.push(n)
+    %Pigeon.APNS.Notification{device_token: "your device token",
+     expiration: nil, id: "963B9FDA-EA60-E869-AAB5-9C88C8E7396B",
+     payload: %{"aps" => %{"alert" => "your message"}}, response: :success,
+     topic: "your push topic"}
+    
+    # Add an `:on_response` callback for async pushes.
+    iex> Pigeon.APNS.push(n, on_response: fn(x) -> IO.inspect(x) end)
+    :ok
+    ```
+
+Additional documentation: [APNS (Apple iOS)](https://hexdocs.pm/pigeon/apns-apple-ios.html)
+
+### Android (FCM)
 
 Looking for GCM? Try `v0.13` or earlier.
+
+1. Add a default worker config to your mix config.
+
+    ```elixir
+    config :pigeon, :fcm,
+      fcm_default: %{
+        key: "your_fcm_key_here"
+      }
+    ```
+
+2. Create a notification packet. FCM notifications support
+
+    ```elixir
+    iex> msg = %{ "body" => "your message" }
+    iex> n = Pigeon.FCM.Notification.new("your device registration ID", msg)
+    ```
+ 
+3. Send the packet. Pushes are synchronous and return the notification with
+   updated `:status` and `:response` keys. If `:status` is success, `:response`
+   will contain a keyword list of individual registration ID responses.
+   
+
+    ```elixir
+    iex> Pigeon.FCM.push(n)
+    %Pigeon.FCM.Notification{message_id: "0:1512580747839227%8911a9178911a917",
+     payload: %{"notification" => %{"body" => "your message"}}, priority: :normal,
+     registration_id: "your device registration ID",
+     response: [success: "your device registration ID"],
+     status: :success}
+    
+    # Add an `:on_response` callback for async pushes.
+    iex> Pigeon.FCM.push(n, on_response: fn(x) -> IO.inspect(x) end)
+    :ok
+    ```
+
+Additional documentation: [FCM (Android)](https://hexdocs.pm/pigeon/fcm-android.html)
+
+### Amazon Android (ADM)
+
+1. Add a default worker config to your mix config.
+
+    ```elixir
+    config :pigeon, :adm,
+      adm_default: %{
+        client_id: "your_oauth2_client_id_here",
+        client_secret: "your_oauth2_client_secret_here"
+      }
+    ```
+
+2. Create a notification packet.
+
+    ```elixir
+    iex> msg = %{ "body" => "your message" }
+    iex> n = Pigeon.ADM.Notification.new("your device registration ID", msg)
+    ```
+
+3. Send the packet.
+
+    ```elixir
+    iex> Pigeon.ADM.push(n)
+    %Pigeon.ADM.Notification{consolidation_key: nil,
+     expires_after: 604800, md5: "M13RuG4uDWqajseQcCiyiw==",
+     payload: %{"data" => %{"body" => "your message"}},
+     registration_id: "your device registration ID",
+     response: :success, updated_registration_id: nil}
+     
+    # Add an `:on_response` callback for async pushes.
+    iex> Pigeon.ADM.push(n, on_response: fn(x) -> IO.inspect(x) end)
+    :ok
+    ```
+
+Additional documentation: [ADM (Amazon Android)](https://hexdocs.pm/pigeon/adm-amazon-android.html)
+
