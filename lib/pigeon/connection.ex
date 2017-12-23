@@ -1,20 +1,21 @@
 defmodule Pigeon.Connection do
   @moduledoc false
 
-  defstruct config: nil,
+  alias Pigeon.Connection.NotificationQueue
+
+  defstruct completed: 0,
+            config: nil,
             from: nil,
-            socket: nil,
-            queue: %{},
-            stream_id: 1,
             requested: 0,
-            completed: 0
+            socket: nil,
+            stream_id: 1,
+            queue: NotificationQueue.new
 
   use GenStage
   require Logger
 
   alias Pigeon.{Configurable, Connection}
   alias Pigeon.Http2.{Client, Stream}
-  alias Pigeon.Worker.NotificationQueue
 
   @limit 1_000_000_000
 
@@ -32,9 +33,7 @@ defmodule Pigeon.Connection do
     GenStage.start_link(__MODULE__, {config, from})
   end
 
-  def init(config), do: initialize_worker(config)
-
-  def initialize_worker({config, from}) do
+  def init({config, from}) do
     state = %Connection{config: config, from: from}
     case connect_socket(config, 0) do
       {:ok, socket} ->
@@ -54,11 +53,7 @@ defmodule Pigeon.Connection do
 
   # Handle Cancels
 
-  def handle_cancel({:down, :normal}, _from, state) do
-    {:stop, :normal, state}
-  end
-
-  def handle_cancel({:down, :shutdown}, _from, state) do
+  def handle_cancel({:down, _}, _from, state) do
     {:stop, :normal, state}
   end
 

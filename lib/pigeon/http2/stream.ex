@@ -5,7 +5,7 @@ defmodule Pigeon.Http2.Stream do
 
   @type t :: %__MODULE__{
     id: pos_integer,
-    headers: [...],
+    headers: [{binary, binary}, ...],
     body: binary,
     error: term
   }

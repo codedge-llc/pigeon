@@ -7,21 +7,27 @@ defmodule Pigeon.FCM.WorkerTest do
     Application.get_env(:pigeon, :test)[:valid_fcm_reg_id]
   end
 
-  # test "starts new connection on push send if none available" do
-  #   opts = [
-  #     key: Application.get_env(:pigeon, :test)[:fcm_key]
-  #   ]
-  #   {:ok, pid} = FCM.start_connection(opts)
-  #   send(pid, {:closed, self()})
+  defp get_consumer_pid(pid) do
+    {conn_pid, _ref} =
+      pid
+      |> :sys.get_state()
+      |> Map.get(:consumers)
+      |> Map.values
+      |> List.first
+    conn_pid
+  end
 
-  #   refute :sys.get_state(pid).socket
+  defp send_push(pid, count) do
+    n = FCM.Notification.new(valid_fcm_reg_id(), %{}, %{"message" => "Test"})
+    1..count
+    |> Enum.each(fn(_x) -> 
+      assert _notif = Pigeon.FCM.push(n, to: pid)
+    end)
+  end
 
-  #   n = FCM.Notification.new(valid_fcm_reg_id(), %{}, %{"message" => "Test"})
-  #   expected = [success: valid_fcm_reg_id()]
-  #   assert Pigeon.FCM.push(n, to: pid).response == expected
-
-  #   assert :sys.get_state(pid).state.socket
-  # end
+  defp assert_connection_count(pid, count) do
+    assert :sys.get_state(pid).state.connections == count
+  end
 
   test "decrements connection count after disconnect" do
     opts = [
@@ -29,30 +35,42 @@ defmodule Pigeon.FCM.WorkerTest do
     ]
     {:ok, pid} = FCM.start_connection(opts)
 
-    n = FCM.Notification.new(valid_fcm_reg_id(), %{}, %{"message" => "Test"})
-    assert _notif = Pigeon.FCM.push(n, to: pid)
-    assert _notif = Pigeon.FCM.push(n, to: pid)
-    assert _notif = Pigeon.FCM.push(n, to: pid)
+    send_push(pid, 3)
 
-    {conn_pid, _ref} =
-      pid
-      |> :sys.get_state()
-      |> Map.get(:consumers)
-      |> Map.values
-      |> List.first
+    assert_connection_count(pid, 1)
 
-    assert :sys.get_state(pid).state.connections == 1
+    conn_pid = get_consumer_pid(pid)
 
     send(conn_pid, {:closed, self()})
 
     Process.sleep(500)
-    assert :sys.get_state(pid).state.connections == 0
+    assert_connection_count(pid, 0)
 
-    n = FCM.Notification.new(valid_fcm_reg_id(), %{}, %{"message" => "Test"})
-    assert _notif = Pigeon.FCM.push(n, to: pid)
-    assert _notif = Pigeon.FCM.push(n, to: pid)
+    send_push(pid, 2)
 
     Process.sleep(500)
-    assert :sys.get_state(pid).state.connections == 1
+    assert_connection_count(pid, 1)
+  end
+
+  test "decrements connection count after :down message" do
+    opts = [
+      key: Application.get_env(:pigeon, :test)[:fcm_key]
+    ]
+    {:ok, pid} = FCM.start_connection(opts)
+
+    send_push(pid, 1)
+
+    assert_connection_count(pid, 1)
+
+    conn_pid = get_consumer_pid(pid)
+    Process.exit(conn_pid, :kill)
+
+    Process.sleep(500)
+    assert_connection_count(pid, 0)
+
+    send_push(pid, 1)
+
+    Process.sleep(500)
+    assert_connection_count(pid, 1)
   end
 end
