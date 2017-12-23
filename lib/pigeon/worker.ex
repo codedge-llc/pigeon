@@ -34,8 +34,9 @@ defmodule Pigeon.Worker do
   def send_push(name, notification, opts) do
     # Ensure connections are live before trying to push
     # Doesn't play nice if you try to do it all in one step
-    GenStage.call(name, :ensure_connection, 5000)
-    GenStage.call(name, {:push, notification, opts}, 5000)
+    timeout = Keyword.get(opts, :timeout, 5_000)
+    GenStage.call(name, :ensure_connection, timeout)
+    GenStage.call(name, {:push, notification, opts}, timeout)
   end
 
   def init({:ok, config}) do
@@ -48,8 +49,9 @@ defmodule Pigeon.Worker do
   end
 
   def handle_call({:push, _notif, _opts} = msg, from, state) do
+    GenStage.reply(from, :ok)
     state
-    |> Map.update(:queue, :queue.new, &(:queue.in({from, msg}, &1)))
+    |> Map.update(:queue, :queue.new, &(:queue.in(msg, &1)))
     |> dispatch_events([])
   end
 
@@ -94,8 +96,7 @@ defmodule Pigeon.Worker do
   end
   defp dispatch_events(%{queue: queue} = state, events) do
     case :queue.out(queue) do
-      {{:value, {from, event}}, queue} ->
-        GenStage.reply(from, :ok)
+      {{:value, event}, queue} ->
         state
         |> Map.put(:queue, queue)
         |> increment_demand(-1)
