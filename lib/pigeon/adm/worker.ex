@@ -206,11 +206,14 @@ defmodule Pigeon.ADM.Worker do
       {:ok, %{"reason" => _reason} = result_json} ->
         parse_result(notification, result_json, on_response)
       {:error, _} ->
-        unless on_response == nil do
-          n = %{notification | response: generic_error_reason(status)}
-          on_response.(n)
-        end
+        n = %{notification | response: generic_error_reason(status)}
+        process_on_response(on_response, n)
     end
+  end
+
+  defp process_on_response(nil, _notif), do: :ok
+  defp process_on_response(on_response, notif) do
+    Task.Supervisor.start_child(Pigeon.Tasks, fn -> on_response.(notif) end)
   end
 
   defp generic_error_reason(400), do: :invalid_json

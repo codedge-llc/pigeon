@@ -3,8 +3,8 @@ defmodule Pigeon.FCM.ResultParser do
 
   alias Pigeon.FCM.Notification
 
-  def parse([], [], on_response, notification) do
-    on_response.(notification)
+  def parse([], [], on_response, notif) do
+    Task.Supervisor.start_child(Pigeon.Tasks, fn -> on_response.(notif) end)
   end
 
   def parse(regid, results, on_response, notif) when is_binary(regid) do

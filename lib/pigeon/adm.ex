@@ -120,9 +120,9 @@ defmodule Pigeon.ADM do
   defp cast_push(worker_name, notifications, on_response) when is_list(notifications) do
     for n <- notifications, do: cast_push(worker_name, n, on_response)
   end
-  defp cast_push(worker_name, notification, nil) do
-    GenServer.cast(worker_name, {:push, :adm, notification})
-  end
+  #defp cast_push(worker_name, notification, nil) do
+  #  GenServer.cast(worker_name, {:push, :adm, notification})
+  #end
   defp cast_push(worker_name, notification, on_response) do
     GenServer.cast(worker_name, {:push, :adm, notification, on_response})
   end
