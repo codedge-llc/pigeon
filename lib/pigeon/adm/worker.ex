@@ -51,7 +51,8 @@ defmodule Pigeon.ADM.Worker do
         :ok = do_push(notification, state, on_response)
         {:noreply, state}
       {:error, reason} ->
-        on_response.({:error, reason, notification})
+        notification = %{notification | response: reason}
+        on_response.(notification)
         {:noreply, state}
     end
   end
