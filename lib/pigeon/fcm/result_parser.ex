@@ -1,10 +1,12 @@
 defmodule Pigeon.FCM.ResultParser do
   @moduledoc false
 
+  import Pigeon.Tasks, only: [process_on_response: 2]
+
   alias Pigeon.FCM.Notification
 
   def parse([], [], on_response, notif) do
-    Task.Supervisor.start_child(Pigeon.Tasks, fn -> on_response.(notif) end)
+    process_on_response(on_response, notif)
   end
 
   def parse(regid, results, on_response, notif) when is_binary(regid) do

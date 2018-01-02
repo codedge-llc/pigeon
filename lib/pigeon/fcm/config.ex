@@ -48,6 +48,8 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
 
   require Logger
 
+  import Pigeon.Tasks, only: [process_on_response: 2]
+
   alias Pigeon.Encodable
   alias Pigeon.FCM.{Config, ResultParser}
 
@@ -137,12 +139,6 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
     log_error(code, reason)
     notif = %{notif | response: reason}
     process_on_response(on_response, notif)
-  end
-
-  defp process_on_response(nil, _notif), do: :ok
-
-  defp process_on_response(on_response, notif) do
-    Task.Supervisor.start_child(Pigeon.Tasks, fn -> on_response.(notif) end)
   end
 
   def schedule_ping(_config), do: :ok

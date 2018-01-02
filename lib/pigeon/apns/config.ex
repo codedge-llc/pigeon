@@ -161,6 +161,8 @@ end
 defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
   @moduledoc false
 
+  import Pigeon.Tasks, only: [process_on_response: 2]
+
   alias Pigeon.APNS.{Config, Error}
 
   @type sock :: {:sslsocket, any, pid | {any, any}}
@@ -227,12 +229,6 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
         notification = %{notification | response: reason}
         process_on_response(on_response, notification)
     end
-  end
-
-  defp process_on_response(nil, _notif), do: :ok
-
-  defp process_on_response(on_response, notif) do
-    Task.Supervisor.start_child(Pigeon.Tasks, fn -> on_response.(notif) end)
   end
 
   def get_apns_id(headers) do

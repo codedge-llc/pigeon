@@ -4,6 +4,8 @@ defmodule Pigeon.ADM.Worker do
   use GenServer
   require Logger
 
+  import Pigeon.Tasks, only: [process_on_response: 2]
+
   alias Pigeon.ADM.ResultParser
 
   @token_refresh_uri "https://api.amazon.com/auth/O2/token"
@@ -35,16 +37,6 @@ defmodule Pigeon.ADM.Worker do
     {:stop, :normal, state}
   end
 
-  def handle_cast({:push, :adm, notification}, state) do
-    case refresh_access_token_if_needed(state) do
-      {:ok, state} ->
-        :ok = do_push(notification, state, nil)
-        {:noreply, state}
-      {:error, _reason} ->
-        {:noreply, state}
-    end
-  end
-
   def handle_cast({:push, :adm, notification, on_response}, state) do
     case refresh_access_token_if_needed(state) do
       {:ok, state} ->
@@ -52,7 +44,7 @@ defmodule Pigeon.ADM.Worker do
         {:noreply, state}
       {:error, reason} ->
         notification = %{notification | response: reason}
-        on_response.(notification)
+        process_on_response(on_response, notification)
         {:noreply, state}
     end
   end
@@ -210,11 +202,6 @@ defmodule Pigeon.ADM.Worker do
         n = %{notification | response: generic_error_reason(status)}
         process_on_response(on_response, n)
     end
-  end
-
-  defp process_on_response(nil, _notif), do: :ok
-  defp process_on_response(on_response, notif) do
-    Task.Supervisor.start_child(Pigeon.Tasks, fn -> on_response.(notif) end)
   end
 
   defp generic_error_reason(400), do: :invalid_json
