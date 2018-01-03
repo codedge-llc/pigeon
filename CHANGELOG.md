@@ -3,6 +3,8 @@
 ## v1.1.4
 * Fix: `:on_response` callbacks spawned as supervised task instead of running
   in the `Worker` process
+* Fix: ADM token refresh failure returns updated notification instead of
+  error tuple
 
 ## v1.1.3
 * More robust FCM/APNS backpressure
