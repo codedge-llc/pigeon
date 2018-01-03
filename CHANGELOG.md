@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.4
+* Fix: `:on_response` callbacks spawned as supervised task instead of running
+  in the `Worker` process
+
 ## v1.1.3
 * More robust FCM/APNS backpressure
 * Bumped minimum Kadabra version to `v0.3.6`
@@ -13,9 +17,10 @@
 * Bumped minimum Kadabra version to `v0.3.4`
 
 ## v1.1.0
-* Minimum requirements now Elixir v1.4 and OTP 19.2 (Kadabra bumped to `v0.3.0`)
+* Minimum requirements now Elixir v1.4 and OTP 19.2 (Kadabra bumped
+  to `v0.3.0`)
 * Runtime worker configs. Create a functions that return config
-structs and specify them your `config.exs` with
+  structs and specify them your `config.exs` with
 
 ```elixir
 config :pigeon, workers: [
@@ -36,8 +41,10 @@ config :pigeon, workers: [
 * `:reconnect` now false by default
 
 **FCM**
-* `NotificationResponse` done away with in favor of a `:response` key on `Notification`
-* Override push server endpoint with `:uri` and `:port` options in `FCM.Config.new/1`
+* `NotificationResponse` done away with in favor of a `:response` key
+  on `Notification`
+* Override push server endpoint with `:uri` and `:port` options
+  in `FCM.Config.new/1`
 * `:uri` and `:port` config options for overriding push server endpoint
 
 **ADM**
@@ -47,7 +54,8 @@ config :pigeon, workers: [
 * `ADM.start_connection/1` and `ADM.stop_connection/1` added
 
 ## v1.0.4
-* Fix: removed connection pinging from FCM.Worker (`:ping_period` option left in FCM config to not break API)
+* Fix: removed connection pinging from FCM.Worker (`:ping_period` option
+  left in FCM config to not break API)
 
 ## v1.0.3
 * Fixed proper handling of large FCM push batches
@@ -73,7 +81,8 @@ config :pigeon, workers: [
 * Various `chatterbox` client adapter fixes
 
 ## V0.12.0
-* Configurable `Pigeon.Http2.Client`. Currently supports `kadabra` and `chatterbox`
+* Configurable `Pigeon.Http2.Client`. Currently supports `kadabra`
+  and `chatterbox`
 * `kadabra` bumped to `v0.2.0`
 
 ## v0.11.0
@@ -93,7 +102,8 @@ config :pigeon, workers: [
 ## v0.10.0
 * Migrated HTTP/2 client from `chatterbox` to `kadabra`
 * Support for ADM (Amazon Android) push
-* APNS pushes are now synchronous by default. For async pushes use the new `on_response` option. GCM and ADM will have it in the next major release.
+* APNS pushes are now synchronous by default. For async pushes use the
+  new `on_response` option. GCM and ADM will have it in the next major release.
 * Bulk APNS pushing
 * Handling of multiple APNS worker connections with different configs
 * Re-implemented APNS socket pings to keep connections open
@@ -103,7 +113,8 @@ config :pigeon, workers: [
 * Fixed GCM error response atom conversion
 
 ## v0.9.1
-* Fixed :eaddrinuse error when restarting Pigeon too quickly with :apns_2197 enabled
+* Fixed :eaddrinuse error when restarting Pigeon too quickly with
+  :apns_2197 enabled
 
 ## v0.9.0
 * APNS topic made optional
@@ -114,21 +125,27 @@ config :pigeon, workers: [
 ## v0.8.0
 * Implemented Chatterbox as APNS HTTP2 client
 * APNS server responses now caught asynchronously
-* GCM support for `notification` and `data` payload keys (`Pigeon.GCM.Notification.new` API changes)
+* GCM support for `notification` and `data` payload keys
+  (`Pigeon.GCM.Notification.new` API changes)
 
 ## v0.7.0
-* APNS cert/key configs can now either be a file path, full-text string, or `{:your_app, "path/to/file.pem"}` (which looks in the `/priv` directory of your app)
+* APNS cert/key configs can now either be a file path, full-text string,
+  or `{:your_app, "path/to/file.pem"}` (which looks in the `/priv` directory
+  of your app)
 * Fixed APNSWorker crash on `:ssl.send/2` timeout
 * Better error-handling for invalid APNS configs
 
 ## v0.6.0
 * `Pigeon.APNS.Notification.new/3` returns `%Pigeon.APNS.Notification{}` struct
-* Configure APNS to use SSL port 2197 with `apns_2197: true` in your `config.exs`
+* Configure APNS to use SSL port 2197 with `apns_2197: true` in
+  your `config.exs`
 * Error feedback symbols converted from `CamelCase` to `snake_case`
-* APNS expiration values supported with `expiration` key in `%Pigeon.APNS.Notification{}`
+* APNS expiration values supported with `expiration` key in
+  `%Pigeon.APNS.Notification{}`
 
 ## v0.5.2
-* Fixed bug where APNSWorker would hang up if SSL connection failed. Now retries the connection twice more before gracefully shutting down. 
+* Fixed bug where APNSWorker would hang up if SSL connection failed. Now
+  retries the connection twice more before gracefully shutting down.
 
 ## v0.5.1
 * GCM error responses return proper chunk of regstration IDs

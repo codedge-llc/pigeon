@@ -48,6 +48,8 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
 
   require Logger
 
+  import Pigeon.Tasks, only: [process_on_response: 2]
+
   alias Pigeon.Encodable
   alias Pigeon.FCM.{Config, ResultParser}
 
@@ -109,7 +111,7 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   def handle_end_stream(_config, %{error: _error}, _notif, nil), do: :ok
   def handle_end_stream(_config, %{error: _error}, {_regids, notif}, on_response) do
     notif = %{notif | status: :unavailable}
-    on_response.(notif)
+    process_on_response(on_response, notif)
   end
 
   defp do_handle_end_stream(200, body, notif, on_response) do
@@ -120,23 +122,23 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   defp do_handle_end_stream(400, _body, notif, on_response) do
     log_error("400", "Malformed JSON")
     notif = %{notif | status: :malformed_json}
-    unless on_response == nil do on_response.(notif) end
+    process_on_response(on_response, notif)
   end
   defp do_handle_end_stream(401, _body, notif, on_response) do
     log_error("401", "Unauthorized")
     notif = %{notif | status: :unauthorized}
-    unless on_response == nil do on_response.(notif) end
+    process_on_response(on_response, notif)
   end
   defp do_handle_end_stream(500, _body, notif, on_response) do
     log_error("500", "Internal server error")
     notif = %{notif | status: :internal_server_error}
-    unless on_response == nil do on_response.(notif) end
+    process_on_response(on_response, notif)
   end
   defp do_handle_end_stream(code, body, notif, on_response) do
     reason = parse_error(body)
     log_error(code, reason)
     notif = %{notif | response: reason}
-    unless on_response == nil do on_response.(notif) end
+    process_on_response(on_response, notif)
   end
 
   def schedule_ping(_config), do: :ok

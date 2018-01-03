@@ -161,6 +161,8 @@ end
 defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
   @moduledoc false
 
+  import Pigeon.Tasks, only: [process_on_response: 2]
+
   alias Pigeon.APNS.{Config, Error}
 
   @type sock :: {:sslsocket, any, pid | {any, any}}
@@ -220,14 +222,12 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
     case status do
       200 ->
         n = %{notification | id: get_apns_id(headers), response: :success}
-        unless on_response == nil, do: on_response.(n)
+        process_on_response(on_response, n)
       _error ->
         reason = Error.parse(body)
         Error.log(reason, notification)
-        unless on_response == nil do
-          notification = %{notification | response: reason}
-          on_response.(notification)
-        end
+        notification = %{notification | response: reason}
+        process_on_response(on_response, notification)
     end
   end
 
