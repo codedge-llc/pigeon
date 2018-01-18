@@ -74,11 +74,11 @@ defmodule Pigeon.APNS do
   @doc """
   Sends a push over APNS.
   """
-  @spec push([Notification.t], ((Notification.t) -> ()), Keyword.t) :: no_return
+  @spec push([Notification.t], ((Notification.t) -> any()), Keyword.t) :: no_return
   def push(notification, on_response, opts) when is_list(notification) do
     for n <- notification, do: push(n, on_response, opts)
   end
-  @spec push(Notification.t, ((Notification.t) -> ()), Keyword.t) :: no_return
+  @spec push(Notification.t, ((Notification.t) -> any()), Keyword.t) :: no_return
   def push(notification, on_response, opts) do
     worker_name = opts[:to] || Config.default_name
     GenServer.cast(worker_name, {:push, :apns, notification, on_response})
