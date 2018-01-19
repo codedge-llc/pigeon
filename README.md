@@ -11,7 +11,7 @@ Add pigeon and kadabra as `mix.exs` dependencies:
   ```elixir
   def deps do
     [
-      {:pigeon, "~> 0.12.0"},
+      {:pigeon, "~> 0.13.1"},
       {:kadabra, "~> 0.2.0"}
     ]
   end

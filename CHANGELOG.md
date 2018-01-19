@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.13.1
+* Fixed typespec compile errors for Elixir v1.6
+
 ## v0.13.0
 * Configurable `:ping_period` for APNS connections
 
