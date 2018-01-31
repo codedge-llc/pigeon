@@ -10,7 +10,6 @@
         cert: "cert.pem",
         key: "key_unencrypted.pem",
         mode: :dev
-        use_2197: true (optional)
       }
     ```
 
