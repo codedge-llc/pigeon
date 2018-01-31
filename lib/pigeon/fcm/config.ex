@@ -7,11 +7,11 @@ defmodule Pigeon.FCM.Config do
             name: nil
 
   @type t :: %__MODULE__{
-    key: binary,
-    name: term,
-    port: pos_integer,
-    uri: charlist,
-  }
+          key: binary,
+          name: term,
+          port: pos_integer,
+          uri: charlist
+        }
 
   @doc ~S"""
   Returns a new `FCM.Config` with given `opts`.
@@ -35,9 +35,10 @@ defmodule Pigeon.FCM.Config do
       port: Keyword.get(opts, :port, 443)
     }
   end
+
   def new(name) when is_atom(name) do
     Application.get_env(:pigeon, :fcm)[name]
-    |> Enum.to_list
+    |> Enum.to_list()
     |> Keyword.put(:name, name)
     |> new()
   end
@@ -63,7 +64,7 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   @spec max_demand(any) :: non_neg_integer
   def max_demand(_config), do: 100
 
-  @spec connect(any) :: {:ok, sock} | {:error, String.t}
+  @spec connect(any) :: {:ok, sock} | {:error, String.t()}
   def connect(%Config{uri: uri} = config) do
     case connect_socket_options(config) do
       {:ok, options} ->
@@ -72,15 +73,16 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   end
 
   def connect_socket_options(config) do
-    opts = [
-      {:active, :once},
-      {:packet, :raw},
-      {:reuseaddr, true},
-      {:alpn_advertised_protocols, [<<"h2">>]},
-      {:reconnect, false},
-      :binary
-    ]
-    |> add_port(config)
+    opts =
+      [
+        {:active, :once},
+        {:packet, :raw},
+        {:reuseaddr, true},
+        {:alpn_advertised_protocols, [<<"h2">>]},
+        {:reconnect, false},
+        :binary
+      ]
+      |> add_port(config)
 
     {:ok, opts}
   end
@@ -102,14 +104,13 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
     Encodable.binary_payload(notification)
   end
 
-  def handle_end_stream(_config,
-                        %{body: body, status: status, error: nil},
-                        notif,
-                        on_response) do
-    do_handle_end_stream(status, body, notif, on_response)
+  def handle_end_stream(_config, %{error: nil} = stream, notif, on_response) do
+    do_handle_end_stream(stream.status, stream.body, notif, on_response)
   end
+
   def handle_end_stream(_config, %{error: _error}, _notif, nil), do: :ok
-  def handle_end_stream(_config, %{error: _error}, {_regids, notif}, on_response) do
+
+  def handle_end_stream(_config, _stream, {_regids, notif}, on_response) do
     notif = %{notif | status: :unavailable}
     process_on_response(on_response, notif)
   end
@@ -119,21 +120,25 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
     notif = %{notif | status: :success}
     parse_result(notif.registration_id, result, on_response, notif)
   end
+
   defp do_handle_end_stream(400, _body, notif, on_response) do
     log_error("400", "Malformed JSON")
     notif = %{notif | status: :malformed_json}
     process_on_response(on_response, notif)
   end
+
   defp do_handle_end_stream(401, _body, notif, on_response) do
     log_error("401", "Unauthorized")
     notif = %{notif | status: :unauthorized}
     process_on_response(on_response, notif)
   end
+
   defp do_handle_end_stream(500, _body, notif, on_response) do
     log_error("500", "Internal server error")
     notif = %{notif | status: :internal_server_error}
     process_on_response(on_response, notif)
   end
+
   defp do_handle_end_stream(code, body, notif, on_response) do
     reason = parse_error(body)
     log_error(code, reason)
@@ -156,14 +161,15 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   def parse_error(data) do
     case Poison.decode(data) do
       {:ok, response} ->
-        response["reason"] |> Macro.underscore |> String.to_existing_atom
+        response["reason"] |> Macro.underscore() |> String.to_existing_atom()
+
       error ->
         "Poison parse failed: #{inspect(error)}, body: #{inspect(data)}"
-        |> Logger.error
+        |> Logger.error()
     end
   end
 
   defp log_error(code, reason) do
-    if Pigeon.debug_log?, do: Logger.error("#{reason}: #{code}")
+    if Pigeon.debug_log?(), do: Logger.error("#{reason}: #{code}")
   end
 end

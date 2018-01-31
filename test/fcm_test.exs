@@ -15,9 +15,11 @@ defmodule Pigeon.FCMTest do
   describe "start_connection/1" do
     test "starts conneciton with opts keyword list" do
       fcm_key = Application.get_env(:pigeon, :test)[:fcm_key]
+
       opts = [
         key: fcm_key
       ]
+
       {:ok, pid} = Pigeon.FCM.start_connection(opts)
       assert is_pid(pid)
 
@@ -36,6 +38,7 @@ defmodule Pigeon.FCMTest do
       opts = [
         key: Application.get_env(:pigeon, :test)[:fcm_key]
       ]
+
       {:ok, worker_pid} = Pigeon.FCM.start_connection(opts)
 
       expected = [success: valid_fcm_reg_id()]
@@ -52,6 +55,7 @@ defmodule Pigeon.FCMTest do
         key: Application.get_env(:pigeon, :test)[:fcm_key],
         name: :custom
       ]
+
       {:ok, _worker_pid} = Pigeon.FCM.start_connection(opts)
 
       expected = [success: valid_fcm_reg_id()]
@@ -64,7 +68,7 @@ defmodule Pigeon.FCMTest do
     notification =
       valid_fcm_reg_id()
       |> Notification.new(%{}, @data)
-      |> Pigeon.FCM.push
+      |> Pigeon.FCM.push()
 
     expected = [success: valid_fcm_reg_id()]
     assert notification.response == expected
@@ -76,14 +80,14 @@ defmodule Pigeon.FCMTest do
       |> Notification.new(%{}, @data)
       |> Pigeon.FCM.push(key: "explicit")
 
-     assert notif.status == :unauthorized
+    assert notif.status == :unauthorized
   end
 
   test "successfully sends a valid push with callback" do
     reg_id = valid_fcm_reg_id()
     n = Notification.new(reg_id, %{}, @data)
     pid = self()
-    FCM.push(n, on_response: fn(x) -> send pid, x end)
+    FCM.push(n, on_response: fn x -> send(pid, x) end)
 
     assert_receive(n = %Notification{response: regids}, 5000)
     assert n.status == :success
@@ -94,7 +98,7 @@ defmodule Pigeon.FCMTest do
     reg_id = "bad_reg_id"
     n = Notification.new(reg_id, %{}, @data)
     pid = self()
-    Pigeon.FCM.push(n, on_response: fn(x) -> send pid, x end)
+    Pigeon.FCM.push(n, on_response: fn x -> send(pid, x) end)
 
     assert_receive(n = %Notification{}, 5000)
     assert n.status == :success

@@ -34,16 +34,16 @@ defmodule Pigeon.APNS.Config do
       }
   """
   @type t :: %__MODULE__{
-    name: atom | nil,
-    reconnect: boolean,
-    cert: binary | nil,
-    certfile: binary | nil,
-    key: binary | nil,
-    keyfile: binary | nil,
-    uri: binary | nil,
-    port: pos_integer,
-    ping_period: pos_integer
-  }
+          name: atom | nil,
+          reconnect: boolean,
+          cert: binary | nil,
+          certfile: binary | nil,
+          key: binary | nil,
+          keyfile: binary | nil,
+          uri: binary | nil,
+          port: pos_integer,
+          ping_period: pos_integer
+        }
 
   @typedoc ~S"""
   Options for configuring APNS connections.
@@ -64,15 +64,15 @@ defmodule Pigeon.APNS.Config do
     running APNS connections alive. Defaults to 10 minutes.
   """
   @type config_opts :: [
-    name: atom | nil,
-    mode: :dev | :prod | nil,
-    cert: binary | {atom, binary},
-    key: binary | {atom, binary},
-    reconnect: boolean,
-    ping_period: pos_integer,
-    port: pos_integer,
-    uri: binary
-  ]
+          name: atom | nil,
+          mode: :dev | :prod | nil,
+          cert: binary | {atom, binary},
+          key: binary | {atom, binary},
+          reconnect: boolean,
+          ping_period: pos_integer,
+          port: pos_integer,
+          uri: binary
+        ]
 
   @apns_production_api_uri "api.push.apple.com"
   @apns_development_api_uri "api.development.push.apple.com"
@@ -118,9 +118,10 @@ defmodule Pigeon.APNS.Config do
       ping_period: Keyword.get(opts, :ping_period, 600_000)
     }
   end
+
   def new(name) when is_atom(name) do
     Application.get_env(:pigeon, :apns)[name]
-    |> Enum.to_list
+    |> Enum.to_list()
     |> Keyword.put(:name, name)
     |> new()
   end
@@ -131,15 +132,18 @@ defmodule Pigeon.APNS.Config do
 
   @doc false
   def file_path(nil), do: nil
+
   def file_path(path) when is_binary(path) do
     if :filelib.is_file(path), do: Path.expand(path), else: nil
   end
+
   def file_path({app_name, path}) when is_atom(app_name),
     do: Path.expand(path, :code.priv_dir(app_name))
 
   @doc false
   def cert({_app_name, _path}), do: nil
   def cert(nil), do: nil
+
   def cert(bin) do
     case :public_key.pem_decode(bin) do
       [{:Certificate, cert, _}] -> cert
@@ -150,6 +154,7 @@ defmodule Pigeon.APNS.Config do
   @doc false
   def key({_app_name, _path}), do: nil
   def key(nil), do: nil
+
   def key(bin) do
     case :public_key.pem_decode(bin) do
       [{:RSAPrivateKey, key, _}] -> {:RSAPrivateKey, key}
@@ -175,13 +180,16 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
   @spec max_demand(any) :: non_neg_integer
   def max_demand(_config), do: 1_000
 
-  @spec connect(any) :: {:ok, sock} | {:error, String.t}
+  @spec connect(any) :: {:ok, sock} | {:error, String.t()}
   def connect(%Config{uri: uri} = config) do
     uri = to_charlist(uri)
+
     case connect_socket_options(config) do
       {:ok, options} ->
         Pigeon.Http2.Client.default().connect(uri, :https, options)
-      error -> error
+
+      error ->
+        error
     end
   end
 
@@ -210,19 +218,19 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
 
   defp put_apns_topic(headers, notification) do
     case notification.topic do
-      nil   -> headers
+      nil -> headers
       topic -> headers ++ [{"apns-topic", topic}]
     end
   end
 
-  def handle_end_stream(_config,
-                        %{headers: headers, body: body, status: status},
-                        notification,
-                        on_response) do
+  def handle_end_stream(_config, stream, notification, on_response) do
+    %{headers: headers, body: body, status: status} = stream
+
     case status do
       200 ->
         n = %{notification | id: get_apns_id(headers), response: :success}
         process_on_response(on_response, n)
+
       _error ->
         reason = Error.parse(body)
         Error.log(reason, notification)
@@ -232,7 +240,7 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
   end
 
   def get_apns_id(headers) do
-    case Enum.find(headers, fn({key, _val}) -> key == "apns-id" end) do
+    case Enum.find(headers, fn {key, _val} -> key == "apns-id" end) do
       {"apns-id", id} -> id
       nil -> nil
     end
@@ -251,21 +259,24 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
   def connect_socket_options(%Config{cert: nil, certfile: nil}) do
     {:error, :invalid_config}
   end
+
   def connect_socket_options(%Config{key: nil, keyfile: nil}) do
     {:error, :invalid_config}
   end
+
   def connect_socket_options(config) do
-    options = [
-      cert_option(config),
-      key_option(config),
-      {:password, ''},
-      {:packet, 0},
-      {:reuseaddr, true},
-      {:active, true},
-      {:reconnect, config.reconnect},
-      :binary
-    ]
-    |> add_port(config)
+    options =
+      [
+        cert_option(config),
+        key_option(config),
+        {:password, ''},
+        {:packet, 0},
+        {:reuseaddr, true},
+        {:active, true},
+        {:reconnect, config.reconnect},
+        :binary
+      ]
+      |> add_port(config)
 
     {:ok, options}
   end

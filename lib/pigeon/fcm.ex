@@ -10,6 +10,11 @@ defmodule Pigeon.FCM do
   alias Pigeon.Worker
 
   @typedoc ~S"""
+  Can be either a single notification or a list.
+  """
+  @type notification :: Notification.t() | [Notification.t(), ...]
+
+  @typedoc ~S"""
   Async callback for push notification response.
 
   ## Examples
@@ -30,7 +35,7 @@ defmodule Pigeon.FCM do
     n = Pigeon.FCM.Notification.new("device token", %{}, %{"message" => "test"})
     Pigeon.FCM.push(n, on_response: handler)
   """
-  @type on_response :: ((Notification.t) -> no_return)
+  @type on_response :: (Notification.t() -> no_return)
 
   @typedoc ~S"""
   Options for sending push notifications.
@@ -42,10 +47,10 @@ defmodule Pigeon.FCM do
     batches synchronously.
   """
   @type push_opts :: [
-    to: atom | pid | nil,
-    timeout: pos_integer | nil,
-    on_response: on_response | nil
-  ]
+          to: atom | pid | nil,
+          timeout: pos_integer | nil,
+          on_response: on_response | nil
+        ]
 
   @default_timeout 5_000
   @default_worker :fcm_default
@@ -82,21 +87,23 @@ defmodule Pigeon.FCM do
       [[invalid_registration: "regId", invalid_registration: "regId"],
        [invalid_registration: "regId", invalid_registration: "regId"]]
   """
-  @spec push(Notification.t, Keyword.t) :: Notification.t
-  @spec push([Notification.t, ...], Keyword.t) :: [Notification.t, ...]
+  @spec push(notification, Keyword.t()) :: notification | :ok
   def push(notification, opts \\ [])
+
   def push(notification, opts) when is_list(notification) do
     timeout = Keyword.get(opts, :timeout, @default_timeout)
+
     if Keyword.has_key?(opts, :on_response) do
       for n <- notification, do: send_push(n, opts[:on_response], opts)
       :ok
     else
       notification
-      |> Enum.map(& Task.async(fn -> sync_push(&1, opts) end))
+      |> Enum.map(&Task.async(fn -> sync_push(&1, opts) end))
       |> Task.yield_many(timeout)
       |> Enum.map(&task_mapper(&1))
     end
   end
+
   def push(notification, opts) do
     if Keyword.has_key?(opts, :on_response) do
       send_push(notification, opts[:on_response], opts)
@@ -115,9 +122,11 @@ defmodule Pigeon.FCM do
 
   defp send_push(notifications, on_response, opts) when is_list(notifications) do
     worker_name = opts[:to] || @default_worker
+
     notifications
-    |> Enum.map(& cast_request(worker_name, &1, on_response, opts))
+    |> Enum.map(&cast_request(worker_name, &1, on_response, opts))
   end
+
   defp send_push(notification, on_response, opts) do
     send_push([notification], on_response, opts)
   end
@@ -129,10 +138,11 @@ defmodule Pigeon.FCM do
 
   defp sync_push(notification, opts) do
     timeout = Keyword.get(opts, :timeout, @default_timeout)
-    ref = :erlang.make_ref
+    ref = :erlang.make_ref()
     pid = self()
-    on_response = fn(x) -> send pid, {ref, x} end
+    on_response = fn x -> send(pid, {ref, x}) end
     send_push(notification, on_response, opts)
+
     receive do
       {^ref, x} -> x
     after
@@ -151,16 +161,19 @@ defmodule Pigeon.FCM do
       true
   """
   def start_connection(opts \\ [])
+
   def start_connection(name) when is_atom(name) do
     worker = worker(Pigeon.Worker, [Config.new(name)], id: name)
     Supervisor.start_child(:pigeon, worker)
   end
+
   def start_connection(%Config{} = config) do
     Worker.start_link(config)
   end
+
   def start_connection(opts) do
     opts
-    |> Config.new
+    |> Config.new()
     |> start_connection()
   end
 

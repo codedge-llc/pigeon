@@ -19,11 +19,8 @@ defmodule Pigeon do
   end
 
   defp workers do
-    adm_workers()
-    ++ apns_workers()
-    ++ fcm_workers()
-    ++ env_workers()
-    ++ task_supervisors()
+    adm_workers() ++
+      apns_workers() ++ fcm_workers() ++ env_workers() ++ task_supervisors()
   end
 
   defp task_supervisors do
@@ -32,9 +29,11 @@ defmodule Pigeon do
 
   defp env_workers do
     case Application.get_env(:pigeon, :workers) do
-      nil -> []
+      nil ->
+        []
+
       workers ->
-        Enum.map(workers, fn({mod, fun}) ->
+        Enum.map(workers, fn {mod, fun} ->
           config = apply(mod, fun, [])
           worker(config)
         end)
@@ -44,6 +43,7 @@ defmodule Pigeon do
   defp worker(%ADM.Config{} = config) do
     worker(ADM.Worker, [config], id: config.name, restart: :temporary)
   end
+
   defp worker(config) do
     worker(Pigeon.Worker, [config], id: config.name, restart: :temporary)
   end
@@ -62,9 +62,11 @@ defmodule Pigeon do
 
   defp workers_for(name, config_fn, mod) do
     case Application.get_env(:pigeon, name) do
-      nil -> []
+      nil ->
+        []
+
       workers ->
-        Enum.map(workers, fn({worker_name, _config}) ->
+        Enum.map(workers, fn {worker_name, _config} ->
           config = config_fn.(worker_name)
           worker(mod, [config], id: config.name, restart: :temporary)
         end)
@@ -73,7 +75,7 @@ defmodule Pigeon do
 
   @doc false
   def start_connection(state) do
-    opts = [restart: :temporary, id: :erlang.make_ref]
+    opts = [restart: :temporary, id: :erlang.make_ref()]
     spec = worker(Pigeon.Connection, [state], opts)
     Supervisor.start_child(:pigeon, spec)
   end

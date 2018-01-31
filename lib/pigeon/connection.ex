@@ -9,7 +9,7 @@ defmodule Pigeon.Connection do
             requested: 0,
             socket: nil,
             stream_id: 1,
-            queue: NotificationQueue.new
+            queue: NotificationQueue.new()
 
   use GenStage
   require Logger
@@ -22,10 +22,12 @@ defmodule Pigeon.Connection do
   def handle_subscribe(:producer, _opts, from, state) do
     demand = Configurable.max_demand(state.config)
     GenStage.ask(from, demand)
+
     state =
       state
       |> inc_requested(demand)
       |> Map.put(:from, from)
+
     {:manual, state}
   end
 
@@ -35,15 +37,19 @@ defmodule Pigeon.Connection do
 
   def init({config, from}) do
     state = %Connection{config: config, from: from}
+
     case connect_socket(config, 0) do
       {:ok, socket} ->
         Configurable.schedule_ping(config)
         {:consumer, %{state | socket: socket}, subscribe_to: [from]}
-      {:error, reason} -> {:stop, reason}
+
+      {:error, reason} ->
+        {:stop, reason}
     end
   end
 
   def connect_socket(_config, 3), do: {:error, :timeout}
+
   def connect_socket(config, tries) do
     case Configurable.connect(config) do
       {:ok, socket} -> {:ok, socket}
@@ -88,21 +94,24 @@ defmodule Pigeon.Connection do
 
   def handle_events(events, _from, state) do
     state =
-      Enum.reduce(events, state, fn({:push, notif, opts}, state) ->
+      Enum.reduce(events, state, fn {:push, notif, opts}, state ->
         send_push(state, notif, opts)
       end)
 
     {:noreply, [], state}
   end
 
-  def process_end_stream(%Stream{id: stream_id} = stream,
-                         %{queue: queue, config: config} = state) do
+  def process_end_stream(%Stream{id: stream_id} = stream, state) do
+    %{queue: queue, config: config} = state
+
     case NotificationQueue.pop(queue, stream_id) do
       {nil, new_queue} ->
         # Do nothing if no queued item for stream
         {:noreply, [], %{state | queue: new_queue}}
+
       {{notif, on_response}, new_queue} ->
         Configurable.handle_end_stream(config, stream, notif, on_response)
+
         state =
           state
           |> inc_completed(1)
@@ -111,6 +120,7 @@ defmodule Pigeon.Connection do
 
         total_requests = state.completed + state.requested
         max_demand = Configurable.max_demand(state.config)
+
         state =
           if total_requests < @limit and state.requested < max_demand do
             to_ask = min(@limit - total_requests, max_demand - state.requested)
@@ -123,6 +133,7 @@ defmodule Pigeon.Connection do
         if state.completed >= @limit do
           GenStage.cancel(state.from, :stream_id_exhausted)
         end
+
         {:noreply, [], state}
     end
   end
@@ -133,10 +144,13 @@ defmodule Pigeon.Connection do
 
     Client.default().send_request(state.socket, headers, payload)
 
-    new_q = NotificationQueue.add(queue,
-                                  state.stream_id,
-                                  notification,
-                                  opts[:on_response])
+    new_q =
+      NotificationQueue.add(
+        queue,
+        state.stream_id,
+        notification,
+        opts[:on_response]
+      )
 
     state
     |> inc_stream_id()
