@@ -55,7 +55,7 @@ defmodule Pigeon.Mixfile do
       {:gen_stage, "~> 0.12"},
       {:kadabra, "~> 0.3.7", optional: true},
       {:earmark, "~> 1.0", only: :dev},
-      {:ex_doc, "~> 0.2", only: :dev},
+      {:ex_doc, "~> 0.17.0", only: :dev},
       {:excoveralls, "~> 0.5", only: :test},
       {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
       {:credo, "~> 0.8", only: [:dev, :test], runtime: false}
