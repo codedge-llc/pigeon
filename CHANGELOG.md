@@ -1,7 +1,11 @@
 # Changelog
 
+## v1.1.6
+* Relax `gen_stage` dependency to `~> 0.12`
+* Bump `kadabra` dependency to 0.3.7
+
 ## v1.1.5
-* Fix: relax httpoison dependency to allow 0.x or 1.0
+* Fix: relax `httpoison` dependency to allow `0.x` or `1.0`
 
 ## v1.1.4
 * Fix: `:on_response` callbacks spawned as supervised task instead of running
