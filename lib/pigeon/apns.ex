@@ -73,7 +73,7 @@ defmodule Pigeon.APNS do
          response: :bad_device_token, id: nil,
          payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"}]
   """
-  @spec push(notification, push_opts) :: {:ok, term} | {:error, term, term}
+  @spec push(notification, push_opts) :: notification
   def push(notification, opts \\ [])
   def push(notification, opts) when is_list(notification) do
     if Keyword.has_key?(opts, :on_response) do
