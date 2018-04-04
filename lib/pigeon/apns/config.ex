@@ -263,6 +263,7 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
       {:reuseaddr, true},
       {:active, true},
       {:reconnect, config.reconnect},
+      {:versions, [:'tlsv1.2']},
       :binary
     ]
     |> add_port(config)
