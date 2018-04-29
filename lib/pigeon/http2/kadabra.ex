@@ -9,11 +9,12 @@ if Code.ensure_loaded?(Kadabra) do
     end
 
     def connect(uri, scheme, opts) do
-      Kadabra.open(uri, scheme, opts)
+      host = "#{scheme}://#{uri}"
+      Kadabra.open(host, ssl: opts)
     end
 
     def send_request(pid, headers, data) do
-      Kadabra.request(pid, headers, data)
+      Kadabra.request(pid, headers: headers, body: data)
     end
 
     @doc ~S"""
@@ -21,7 +22,7 @@ if Code.ensure_loaded?(Kadabra) do
 
     ## Examples
 
-        iex> {:ok, pid} = Kadabra.open('http2.golang.org', :https)
+        iex> {:ok, pid} = Kadabra.open("https://http2.golang.org")
         iex> Pigeon.Http2.Client.Kadabra.send_ping(pid)
         :ok
     """
@@ -42,6 +43,8 @@ if Code.ensure_loaded?(Kadabra) do
       {:ok, pigeon_stream}
     end
 
-    def handle_end_stream(msg, _state), do: msg
+    def handle_end_stream(msg, _state) do
+      msg
+    end
   end
 end

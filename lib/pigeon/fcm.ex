@@ -120,7 +120,8 @@ defmodule Pigeon.FCM do
     end
   end
 
-  defp send_push(notifications, on_response, opts) when is_list(notifications) do
+  defp send_push(notifications, on_response, opts)
+       when is_list(notifications) do
     worker_name = opts[:to] || @default_worker
 
     notifications
