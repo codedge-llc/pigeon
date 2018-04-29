@@ -72,7 +72,7 @@ or
     data = %{message: "your message"}
     n = Pigeon.FCM.Notification.new(data, "device registration ID")
     Pigeon.FCM.push(n, fn(x) -> IO.inspect(x) end)
-    {:ok, %Pigeon.FCM.NotificationResponse{...}}
+    {:ok, %Pigeon.FCM.Notification{...}}
     ```
 
 2. Reponses return the notification with an updated response.
