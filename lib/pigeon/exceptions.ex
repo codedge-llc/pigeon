@@ -1,7 +1,7 @@
 defmodule Pigeon.ConfigError do
   @moduledoc """
   This error represents configuration errors: for example, configuring
-  `:token key` and `:cert` for APNS.
+  both `:cert` and `:jwt_key` for APNS.
   """
 
   defexception [:message]
