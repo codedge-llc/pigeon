@@ -6,7 +6,10 @@ config :pigeon, :test,
   valid_apns_token: System.get_env("VALID_APNS_TOKEN"),
   apns_cert: "cert.pem",
   apns_key: "key_unencrypted.pem",
-  apns_topic: System.get_env("APNS_TOPIC")
+  apns_topic: System.get_env("APNS_TOPIC"),
+  apns_jwt_key: nil,
+  apns_jwt_key_identifier: System.get_env("APNS_JWT_KEY_IDENTIFIER"),
+  apns_jwt_team_id: System.get_env("APNS_JWT_TEAM_ID")
 
 config :pigeon,
   workers: [
