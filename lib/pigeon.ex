@@ -20,7 +20,12 @@ defmodule Pigeon do
 
   defp workers do
     adm_workers() ++
-      apns_workers() ++ fcm_workers() ++ env_workers() ++ task_supervisors()
+      apns_workers() ++
+      fcm_workers() ++ env_workers() ++ task_supervisors() ++ apns_token_agent()
+  end
+
+  defp apns_token_agent do
+    [{Pigeon.APNS.Token, nil}]
   end
 
   defp task_supervisors do

@@ -79,7 +79,6 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
         {:packet, :raw},
         {:reuseaddr, true},
         {:alpn_advertised_protocols, [<<"h2">>]},
-        {:reconnect, false},
         :binary
       ]
       |> add_port(config)

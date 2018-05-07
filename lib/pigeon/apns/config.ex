@@ -3,47 +3,12 @@ defmodule Pigeon.APNS.Config do
   Configuration for APNS Workers
   """
 
-  defstruct name: nil,
-            reconnect: true,
-            cert: nil,
-            certfile: nil,
-            key: nil,
-            keyfile: nil,
-            uri: nil,
-            port: 443,
-            ping_period: 600_000
+  alias Pigeon.APNS.{CertConfig, JWTConfig}
 
-  @typedoc ~S"""
-  APNS configuration struct
+  @apns_production_api_uri "api.push.apple.com"
+  @apns_development_api_uri "api.development.push.apple.com"
 
-  This struct should not be set directly. Instead use `new/1`
-  with `t:config_opts/0`.
-
-  ## Examples
-
-      %Pigeon.APNS.Config{
-        name: :apns_default,
-        reconnect: true,
-        cert: nil,
-        certfile: "cert.pem",
-        key: nil,
-        keyfile: "key.pem",
-        uri: "api.push.apple.com",
-        port: 443,
-        ping_period: 600_000
-      }
-  """
-  @type t :: %__MODULE__{
-          name: atom | nil,
-          reconnect: boolean,
-          cert: binary | nil,
-          certfile: binary | nil,
-          key: binary | nil,
-          keyfile: binary | nil,
-          uri: binary | nil,
-          port: pos_integer,
-          ping_period: pos_integer
-        }
+  @type t :: CertConfig.t() | JWTConfig.t()
 
   @typedoc ~S"""
   Options for configuring APNS connections.
@@ -62,6 +27,9 @@ defmodule Pigeon.APNS.Config do
     `443` and `2197`
   - `:ping_period` - Interval between server pings. Necessary to keep long
     running APNS connections alive. Defaults to 10 minutes.
+  - `:jwt_key` - 
+  - `:jwt_key_identifier` - 
+  - `:jwt_team_id` - 
   """
   @type config_opts :: [
           name: atom | nil,
@@ -71,17 +39,17 @@ defmodule Pigeon.APNS.Config do
           reconnect: boolean,
           ping_period: pos_integer,
           port: pos_integer,
-          uri: binary
+          uri: binary,
+          jwt_key: binary | {atom, binary},
+          jwt_key_identifier: binary | nil,
+          jwt_team_id: binary | nil
         ]
-
-  @apns_production_api_uri "api.push.apple.com"
-  @apns_development_api_uri "api.development.push.apple.com"
 
   @doc false
   def default_name, do: :apns_default
 
   @doc ~S"""
-  Returns a new `APNS.Config` with given `opts` or name.
+  Returns a new `APNS.CertConfig` or `APNS.JWTConfig` with given `opts` or name.
 
   If given an atom, returns the config specified in your `mix.exs`.
 
@@ -92,21 +60,34 @@ defmodule Pigeon.APNS.Config do
       ...>   mode: :prod,
       ...>   cert: "test_cert.pem",
       ...>   key: "test_key.pem",
-      ...>   reconnect: false,
       ...>   port: 2197,
       ...>   ping_period: 300_000
       ...> )
-      %Pigeon.APNS.Config{uri: "api.push.apple.com", name: :test,
+      %Pigeon.APNS.CertConfig{uri: "api.push.apple.com", name: :test,
       ping_period: 300000, port: 2197, reconnect: false}
 
       iex> config = Pigeon.APNS.Config.new(:apns_default)
-      iex> %{config | certfile: nil, keyfile: nil} # Hide for testing
-      %Pigeon.APNS.Config{uri: "api.development.push.apple.com",
-      name: :apns_default, ping_period: 600_000, port: 443, reconnect: false}
+      iex> %{config | certfile: nil, keyfile: nil, jwt_key: nil, jwt_keyfile: nil, jwt_key_identifier: nil, jwt_team_id: nil} # Hide for testing
+      iex> match? %_{uri: "api.development.push.apple.com", name: :apns_default, ping_period: 600_000, port: 443, reconnect: false}, config
+      true
   """
-  @spec new(atom | config_opts) :: t
+  @spec new(atom | config_opts) :: CertConfig.t() | JWTConfig.t()
   def new(opts) when is_list(opts) do
-    %__MODULE__{
+    case check_config(Enum.into(opts, %{})) do
+      :cert -> new_cert_config(opts)
+      :jwt -> new_jwt_config(opts)
+    end
+  end
+
+  def new(name) when is_atom(name) do
+    Application.get_env(:pigeon, :apns)[name]
+    |> Enum.to_list()
+    |> Keyword.put(:name, name)
+    |> new()
+  end
+
+  defp new_cert_config(opts) do
+    %CertConfig{
       name: opts[:name],
       reconnect: Keyword.get(opts, :reconnect, false),
       cert: cert(opts[:cert]),
@@ -119,11 +100,36 @@ defmodule Pigeon.APNS.Config do
     }
   end
 
-  def new(name) when is_atom(name) do
-    Application.get_env(:pigeon, :apns)[name]
-    |> Enum.to_list()
-    |> Keyword.put(:name, name)
-    |> new()
+  defp new_jwt_config(opts) do
+    %JWTConfig{
+      name: opts[:name],
+      reconnect: Keyword.get(opts, :reconnect, false),
+      uri: Keyword.get(opts, :uri, uri_for_mode(opts[:mode])),
+      port: Keyword.get(opts, :port, 443),
+      ping_period: Keyword.get(opts, :ping_period, 600_000),
+      jwt_key: opts[:jwt_key],
+      jwt_keyfile: file_path(opts[:jwt_key]),
+      jwt_key_identifier: Keyword.get(opts, :jwt_key_identifier),
+      jwt_team_id: Keyword.get(opts, :jwt_team_id)
+    }
+  end
+
+  defp check_config(%{cert: cert, jwt_key: jwt_key})
+       when not is_nil(cert) and not is_nil(jwt_key) do
+    raise Pigeon.ConfigError,
+      message:
+        "Invalid Configuration. :cert and :jwt_key can't both be configured."
+  end
+
+  defp check_config(%{cert: _cert, jwt_key: nil}), do: :cert
+  defp check_config(%{cert: cert}) when not is_nil(cert), do: :cert
+  defp check_config(%{cert: nil, jwt_key: _jwt_key}), do: :jwt
+  defp check_config(%{jwt_key: jwt_key}) when not is_nil(jwt_key), do: :jwt
+
+  defp check_config(_) do
+    raise Pigeon.ConfigError,
+      message:
+        "Invalid Configuration. Either :cert or :jwt_key must be configured."
   end
 
   defp uri_for_mode(:dev), do: @apns_development_api_uri
@@ -161,132 +167,4 @@ defmodule Pigeon.APNS.Config do
       _ -> nil
     end
   end
-end
-
-defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
-  @moduledoc false
-
-  import Pigeon.Tasks, only: [process_on_response: 2]
-
-  alias Pigeon.APNS.{Config, Error}
-
-  @type sock :: {:sslsocket, any, pid | {any, any}}
-
-  # Configurable Callbacks
-
-  @spec worker_name(any) :: atom | nil
-  def worker_name(%Config{name: name}), do: name
-
-  @spec max_demand(any) :: non_neg_integer
-  def max_demand(_config), do: 1_000
-
-  @spec connect(any) :: {:ok, sock} | {:error, String.t()}
-  def connect(%Config{uri: uri} = config) do
-    uri = to_charlist(uri)
-
-    case connect_socket_options(config) do
-      {:ok, options} ->
-        Pigeon.Http2.Client.default().connect(uri, :https, options)
-
-      error ->
-        error
-    end
-  end
-
-  def push_headers(_config, notification, _opts) do
-    json = Poison.encode!(notification.payload)
-
-    [
-      {":method", "POST"},
-      {":path", "/3/device/#{notification.device_token}"},
-      {"content-length", "#{byte_size(json)}"}
-    ]
-    |> put_apns_id(notification)
-    |> put_apns_topic(notification)
-  end
-
-  def push_payload(_config, notification, _opts) do
-    Poison.encode!(notification.payload)
-  end
-
-  defp put_apns_id(headers, notification) do
-    case notification.id do
-      nil -> headers
-      id -> headers ++ [{"apns-id", id}]
-    end
-  end
-
-  defp put_apns_topic(headers, notification) do
-    case notification.topic do
-      nil -> headers
-      topic -> headers ++ [{"apns-topic", topic}]
-    end
-  end
-
-  def handle_end_stream(_config, stream, notification, on_response) do
-    %{headers: headers, body: body, status: status} = stream
-
-    case status do
-      200 ->
-        n = %{notification | id: get_apns_id(headers), response: :success}
-        process_on_response(on_response, n)
-
-      _error ->
-        reason = Error.parse(body)
-        Error.log(reason, notification)
-        notification = %{notification | response: reason}
-        process_on_response(on_response, notification)
-    end
-  end
-
-  def get_apns_id(headers) do
-    case Enum.find(headers, fn {key, _val} -> key == "apns-id" end) do
-      {"apns-id", id} -> id
-      nil -> nil
-    end
-  end
-
-  @spec schedule_ping(any) :: no_return
-  def schedule_ping(%Config{ping_period: ping}) do
-    Process.send_after(self(), :ping, ping)
-  end
-
-  def close(_config) do
-  end
-
-  # Everything Else
-
-  def connect_socket_options(%Config{cert: nil, certfile: nil}) do
-    {:error, :invalid_config}
-  end
-
-  def connect_socket_options(%Config{key: nil, keyfile: nil}) do
-    {:error, :invalid_config}
-  end
-
-  def connect_socket_options(config) do
-    options =
-      [
-        cert_option(config),
-        key_option(config),
-        {:password, ''},
-        {:packet, 0},
-        {:reuseaddr, true},
-        {:active, true},
-        {:reconnect, config.reconnect},
-        :binary
-      ]
-      |> add_port(config)
-
-    {:ok, options}
-  end
-
-  def cert_option(%Config{cert: cert, certfile: nil}), do: {:cert, cert}
-  def cert_option(%Config{cert: nil, certfile: file}), do: {:certfile, file}
-
-  def key_option(%Config{key: key, keyfile: nil}), do: {:key, key}
-  def key_option(%Config{key: nil, keyfile: file}), do: {:keyfile, file}
-
-  defp add_port(opts, %Config{port: 443}), do: opts
-  defp add_port(opts, %Config{port: port}), do: [{:port, port} | opts]
 end
