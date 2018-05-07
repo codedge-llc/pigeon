@@ -19,9 +19,15 @@ defmodule Pigeon do
   end
 
   defp workers do
-    adm_workers() ++
-      apns_workers() ++
-      fcm_workers() ++ env_workers() ++ task_supervisors() ++ apns_token_agent()
+    [
+      adm_workers(),
+      apns_workers(),
+      fcm_workers(),
+      env_workers(),
+      apns_token_agent(),
+      task_supervisors()
+    ]
+    |> List.flatten()
   end
 
   defp apns_token_agent do
@@ -58,7 +64,7 @@ defmodule Pigeon do
   end
 
   defp apns_workers do
-    workers_for(:apns, &APNS.Config.new/1, Pigeon.Worker)
+    workers_for(:apns, &APNS.ConfigParser.parse/1, Pigeon.Worker)
   end
 
   defp fcm_workers do
