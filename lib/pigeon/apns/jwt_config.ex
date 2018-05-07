@@ -16,23 +16,23 @@ defmodule Pigeon.APNS.JWTConfig do
   alias Pigeon.APNS.{Config, ConfigParser}
 
   @typedoc ~S"""
-  APNS configuration struct
+  APNS JWT configuration struct
 
   This struct should not be set directly. Instead use `new/1`
   with `t:config_opts/0`.
 
   ## Examples
 
-      %Pigeon.APNS.Config{
+      %Pigeon.APNS.JWTConfig{
         name: :apns_default,
         reconnect: true,
         uri: "api.push.apple.com",
         port: 443,
         ping_period: 600_000,
-        jwt_key: {:app, "key.p8"},
-        jwt_keyfile: "key.p8",
-        jwt_key_identifier: "ABC1234567",
-        jwt_team_id: "DEF1234567"
+        key: {:app, "key.p8"},
+        keyfile: "key.p8",
+        key_identifier: "ABC1234567",
+        team_id: "DEF1234567"
       }
   """
   @type t :: %__MODULE__{
@@ -48,7 +48,7 @@ defmodule Pigeon.APNS.JWTConfig do
         }
 
   @doc ~S"""
-  Returns a new `APNS.Config` or `APNS.JWTConfig` with given `opts` or name.
+  Returns a new `APNS.JWTConfig` with given `opts` or name.
 
   If given an atom, returns the config specified in your `mix.exs`.
 
@@ -57,17 +57,20 @@ defmodule Pigeon.APNS.JWTConfig do
       iex> Pigeon.APNS.JWTConfig.new(
       ...>   name: :test,
       ...>   mode: :prod,
-      ...>   cert: "test_cert.pem",
-      ...>   key: "test_key.pem",
+      ...>   key: "key.p8",
+      ...>   key_identifier: "ABC1234567",
+      ...>   team_id: "DEF1234567",
       ...>   port: 2197,
       ...>   ping_period: 300_000
       ...> )
-      %Pigeon.APNS.Config{uri: "api.push.apple.com", name: :test,
+      %Pigeon.APNS.JWTConfig{uri: "api.push.apple.com", name: :test,
+      team_id: "DEF1234567", key_identifier: "ABC1234567", key: "key.p8",
       ping_period: 300000, port: 2197, reconnect: false}
 
-      iex> config = Pigeon.APNS.Config.new(:apns_default)
-      iex> %{config | certfile: nil, keyfile: nil, jwt_key: nil, jwt_keyfile: nil, jwt_key_identifier: nil, jwt_team_id: nil} # Hide for testing
-      iex> match? %_{uri: "api.development.push.apple.com", name: :apns_default, ping_period: 600_000, port: 443, reconnect: false}, config
+      iex> config = Pigeon.APNS.JWTConfig.new(:apns_jwt_static)
+      iex> %{config | key: nil, key_identifier: nil, team_id: nil} # Hide for testing
+      iex> match? %_{uri: "api.development.push.apple.com", name: :apns_jwt_static,
+      ...> ping_period: 600_000, port: 443, reconnect: false}, config
       true
   """
   def new(opts) when is_list(opts) do
@@ -77,10 +80,10 @@ defmodule Pigeon.APNS.JWTConfig do
       uri: Keyword.get(opts, :uri, ConfigParser.uri_for_mode(opts[:mode])),
       port: Keyword.get(opts, :port, 443),
       ping_period: Keyword.get(opts, :ping_period, 600_000),
-      key: opts[:jwt_key],
-      keyfile: ConfigParser.file_path(opts[:jwt_key]),
-      key_identifier: Keyword.get(opts, :jwt_key_identifier),
-      team_id: Keyword.get(opts, :jwt_team_id)
+      key: opts[:key],
+      keyfile: ConfigParser.file_path(opts[:key]),
+      key_identifier: Keyword.get(opts, :key_identifier),
+      team_id: Keyword.get(opts, :team_id)
     }
   end
 
@@ -176,7 +179,7 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
 
     token =
       token()
-      |> with_claims(%{"iss" => config.jwt_team_id, "iat" => now})
+      |> with_claims(%{"iss" => config.team_id, "iat" => now})
       |> with_header_arg("alg", "ES256")
       |> with_header_arg("typ", "JWT")
       |> with_header_arg("kid", config.key_identifier)
@@ -190,7 +193,7 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
 
   @spec get_token_key(JWTConfig.t()) :: JOSE.JWK.t()
   defp get_token_key(%JWTConfig{keyfile: nil} = config) do
-    JOSE.JWK.from_pem(config.jwt_key)
+    JOSE.JWK.from_pem(config.key)
   end
 
   defp get_token_key(%JWTConfig{keyfile: file}) do

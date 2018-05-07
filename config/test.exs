@@ -6,14 +6,13 @@ config :pigeon, :test,
   valid_apns_token: System.get_env("VALID_APNS_TOKEN"),
   apns_cert: "cert.pem",
   apns_key: "key_unencrypted.pem",
-  apns_topic: System.get_env("APNS_TOPIC"),
-  apns_jwt_key: nil,
-  apns_jwt_key_identifier: System.get_env("APNS_JWT_KEY_IDENTIFIER"),
-  apns_jwt_team_id: System.get_env("APNS_JWT_TEAM_ID")
+  apns_topic: System.get_env("APNS_TOPIC")
 
 config :pigeon,
+  debug_log: true,
   workers: [
     {Pigeon.TestConfig, :apns_dynamic},
+    {Pigeon.TestConfig, :apns_jwt_dynamic},
     {Pigeon.TestConfig, :fcm_dynamic},
     {Pigeon.TestConfig, :adm_dynamic}
   ]
@@ -27,6 +26,12 @@ config :pigeon, :apns,
   apns_default: %{
     cert: "cert.pem",
     key: "key_unencrypted.pem",
+    mode: :dev
+  },
+  apns_jwt_static: %{
+    key: System.get_env("APNS_JWT_KEY"),
+    key_identifier: System.get_env("APNS_JWT_KEY_IDENTIFIER"),
+    team_id: System.get_env("APNS_JWT_TEAM_ID"),
     mode: :dev
   }
 

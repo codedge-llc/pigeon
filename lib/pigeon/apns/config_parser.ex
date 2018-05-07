@@ -44,7 +44,7 @@ defmodule Pigeon.APNS.ConfigParser do
   @spec parse(atom | config_opts) :: config | {:error, :invalid_config}
   def parse(opts) when is_list(opts) do
     case config_type(Enum.into(opts, %{})) do
-      nil -> {:error, :invalid_config}
+      :error -> raise "invalid apns configuration #{inspect(opts)}"
       type -> type.new(opts)
     end
   end
@@ -56,15 +56,10 @@ defmodule Pigeon.APNS.ConfigParser do
     |> parse()
   end
 
-  defp config_type(%{cert: cert, jwt_key: jwt_key})
-       when not is_nil(cert) and not is_nil(jwt_key),
-       do: :error
-
-  defp config_type(%{cert: _cert, jwt_key: nil}), do: Config
-  defp config_type(%{cert: cert}) when not is_nil(cert), do: Config
-  defp config_type(%{cert: nil, jwt_key: _jwt_key}), do: JWTConfig
-  defp config_type(%{jwt_key: jwt_key}) when not is_nil(jwt_key), do: JWTConfig
-  defp config_type(_), do: :error
+  defp config_type(%{cert: _cert, key_identifier: _key_id}), do: :error
+  defp config_type(%{cert: _cert}), do: Config
+  defp config_type(%{key_identifier: _jwt_key}), do: JWTConfig
+  defp config_type(_else), do: :error
 
   @doc false
   def file_path(nil), do: nil
