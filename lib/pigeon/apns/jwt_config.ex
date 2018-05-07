@@ -157,20 +157,21 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
   defp put_bearer_token(headers, %{key: nil}), do: headers
 
   defp put_bearer_token(headers, config) do
-    {timestamp, saved_token} = Pigeon.APNS.Token.get(config.name)
+    token_storage_key = config.key_identifier <> ":" <> config.team_id
+    {timestamp, saved_token} = Pigeon.APNS.Token.get(token_storage_key)
     now = :os.system_time(:seconds)
 
     token =
       case now - timestamp do
         age when age < @token_max_age -> saved_token
-        _ -> generate_apns_jwt(config)
+        _ -> generate_apns_jwt(config, token_storage_key)
       end
 
     [{"authorization", "bearer " <> token} | headers]
   end
 
-  @spec generate_apns_jwt(JWTConfig.t()) :: String.t()
-  defp generate_apns_jwt(config) do
+  @spec generate_apns_jwt(JWTConfig.t(), String.t()) :: String.t()
+  defp generate_apns_jwt(config, token_storage_key) do
     import Joken
 
     key = get_token_key(config)
@@ -186,7 +187,7 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
       |> sign(es256(key))
       |> get_compact
 
-    :ok = Pigeon.APNS.Token.update(config.name, now, token)
+    :ok = Pigeon.APNS.Token.update(token_storage_key, {now, token})
 
     token
   end
