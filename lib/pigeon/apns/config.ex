@@ -94,21 +94,15 @@ end
 defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
   @moduledoc false
 
-  import Pigeon.Tasks, only: [process_on_response: 2]
-
-  alias Pigeon.APNS.{Config, Notification, Error}
-
-  @type headers :: [{binary(), any()}]
+  alias Pigeon.APNS.Shared
 
   @type sock :: {:sslsocket, any, pid | {any, any}}
 
   # Configurable Callbacks
 
-  @spec worker_name(any) :: atom | nil
-  def worker_name(%{name: name}), do: name
+  defdelegate worker_name(any), to: Shared
 
-  @spec max_demand(any) :: non_neg_integer
-  def max_demand(_config), do: 1_000
+  defdelegate max_demand(any), to: Shared
 
   @spec connect(any) :: {:ok, sock} | {:error, String.t()}
   def connect(%{uri: uri} = config) do
@@ -123,69 +117,16 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
     end
   end
 
-  @spec push_headers(Config.t(), Notification.t(), Keyword.t()) :: headers()
-  def push_headers(_config, notification, _opts) do
-    json = Poison.encode!(notification.payload)
+  defdelegate push_headers(config, notification, opts), to: Shared
 
-    [
-      {":method", "POST"},
-      {":path", "/3/device/#{notification.device_token}"},
-      {"content-length", "#{byte_size(json)}"}
-    ]
-    |> put_apns_id(notification)
-    |> put_apns_topic(notification)
-  end
+  defdelegate push_payload(config, notification, opts), to: Shared
 
-  @spec push_payload(Config.t(), Notification.t(), Keyword.t()) ::
-          iodata | no_return
-  def push_payload(_config, notification, _opts) do
-    Poison.encode!(notification.payload)
-  end
+  defdelegate handle_end_stream(config, stream, notification, on_response),
+    to: Shared
 
-  def handle_end_stream(_config, stream, notification, on_response) do
-    %{headers: headers, body: body, status: status} = stream
+  defdelegate schedule_ping(any), to: Shared
 
-    case status do
-      200 ->
-        n = %{notification | id: get_apns_id(headers), response: :success}
-        process_on_response(on_response, n)
-
-      _error ->
-        reason = Error.parse(body)
-        Error.log(reason, notification)
-        notification = %{notification | response: reason}
-        process_on_response(on_response, notification)
-    end
-  end
-
-  @spec schedule_ping(any) :: no_return
-  def schedule_ping(%{ping_period: ping}) do
-    Process.send_after(self(), :ping, ping)
-  end
-
-  def close(_config) do
-  end
-
-  def put_apns_id(headers, notification) do
-    case notification.id do
-      nil -> headers
-      id -> headers ++ [{"apns-id", id}]
-    end
-  end
-
-  def put_apns_topic(headers, notification) do
-    case notification.topic do
-      nil -> headers
-      topic -> headers ++ [{"apns-topic", topic}]
-    end
-  end
-
-  def get_apns_id(headers) do
-    case Enum.find(headers, fn {key, _val} -> key == "apns-id" end) do
-      {"apns-id", id} -> id
-      nil -> nil
-    end
-  end
+  defdelegate close(config), to: Shared
 
   def connect_socket_options(%{cert: nil, certfile: nil}) do
     {:error, :invalid_config}
@@ -206,7 +147,7 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
         {:active, true},
         :binary
       ]
-      |> add_port(config)
+      |> Shared.add_port(config)
 
     {:ok, options}
   end
@@ -216,7 +157,4 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
 
   def key_option(%{key: key, keyfile: nil}), do: {:key, key}
   def key_option(%{key: nil, keyfile: file}), do: {:keyfile, file}
-
-  def add_port(opts, %{port: 443}), do: opts
-  def add_port(opts, %{port: port}), do: [{:port, port} | opts]
 end

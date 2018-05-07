@@ -90,7 +90,7 @@ end
 defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
   @moduledoc false
 
-  alias Pigeon.APNS.{Config, JWTConfig, Notification}
+  alias Pigeon.APNS.{Config, JWTConfig, Notification, Shared}
 
   @type sock :: {:sslsocket, any, pid | {any, any}}
 
@@ -99,9 +99,9 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
 
   # Configurable Callbacks
 
-  defdelegate worker_name(any), to: Config
+  defdelegate worker_name(any), to: Shared
 
-  defdelegate max_demand(any), to: Config
+  defdelegate max_demand(any), to: Shared
 
   @spec connect(any) :: {:ok, sock} | {:error, String.t()}
   def connect(%{uri: uri} = config) do
@@ -117,27 +117,27 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
   end
 
   @spec push_headers(JWTConfig.t(), Notification.t(), Keyword.t()) ::
-          Config.headers()
+          Shared.headers()
   def push_headers(config, notification, opts) do
     config
-    |> Config.push_headers(notification, opts)
+    |> Shared.push_headers(notification, opts)
     |> put_bearer_token(config)
   end
 
-  defdelegate push_payload(config, notification, opts), to: Config
+  defdelegate push_payload(config, notification, opts), to: Shared
 
   defdelegate handle_end_stream(config, stream, notification, on_response),
-    to: Config
+    to: Shared
 
-  defdelegate schedule_ping(any), to: Config
+  defdelegate schedule_ping(any), to: Shared
 
-  defdelegate close(config), to: Config
+  defdelegate close(config), to: Shared
 
   def connect_socket_options(%{key: nil}) do
     {:error, :invalid_config}
   end
 
-  def connect_socket_options(%{key: jwt_key} = config) do
+  def connect_socket_options(%{key: _jwt_key} = config) do
     options =
       [
         {:packet, 0},
@@ -145,7 +145,7 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
         {:active, true},
         :binary
       ]
-      |> Config.add_port(config)
+      |> Shared.add_port(config)
 
     {:ok, options}
   end
