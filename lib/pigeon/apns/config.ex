@@ -92,7 +92,6 @@ defmodule Pigeon.APNS.Config do
       ...>   mode: :prod,
       ...>   cert: "test_cert.pem",
       ...>   key: "test_key.pem",
-      ...>   reconnect: false,
       ...>   port: 2197,
       ...>   ping_period: 300_000
       ...> )
@@ -273,7 +272,6 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
         {:packet, 0},
         {:reuseaddr, true},
         {:active, true},
-        {:reconnect, config.reconnect},
         :binary
       ]
       |> add_port(config)
