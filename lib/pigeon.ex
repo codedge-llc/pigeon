@@ -31,7 +31,7 @@ defmodule Pigeon do
   end
 
   defp apns_token_agent do
-    [{Pigeon.APNS.Token, nil}]
+    [worker(APNS.Token, [%{}], restart: :permanent, shutdown: 5_000)]
   end
 
   defp task_supervisors do

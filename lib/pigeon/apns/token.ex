@@ -1,8 +1,6 @@
 defmodule Pigeon.APNS.Token do
   @moduledoc false
 
-  use Agent, restart: :permanent, shutdown: 5_000
-
   @type t :: {non_neg_integer(), binary() | nil}
 
   @spec start_link((() -> any())) :: Agent.on_start()
