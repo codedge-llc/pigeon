@@ -1,15 +1,19 @@
 language: elixir
 elixir:
-  - 1.4.5
-  - 1.5.3
-  - 1.6.0
+- 1.4.5
+- 1.5.3
+- 1.6.5
 otp_release:
-  - 19.2
-  - 20.0
+- 19.2
+- 20.0
 before_install:
-- openssl aes-256-cbc -K $encrypted_3033c569c247_key -iv
-  $encrypted_3033c569c247_iv -in cert_key.tar.enc -out
-  cert_key.tar -d
+- openssl aes-256-cbc -K $encrypted_3033c569c247_key -iv $encrypted_3033c569c247_iv
+  -in cert_key.tar.enc -out cert_key.tar -d
 - tar xvf cert_key.tar
 script:
-  - "MIX_ENV=test mix do deps.get, compile, coveralls.travis"
+- MIX_ENV=test mix do deps.get, compile, coveralls.travis
+env:
+  matrix:
+  - secure: P5DKumjyoRWmkOeJ5EMK06CPcZek26hMgJjj7B/y0lCRkyXwJ5aX7/NTdXs4xmVZNh7wKkAYaSgKbB1i1atHPFnqNTCBrXMfe1h1KOHBh8M8rEKc0SdtJEBB3aYLfdoTffPB8RIQHGgi4WLP1FEErbgOmbLF7b4LZNtoIlQ6bdB9YCcwiVs4ZSjagbg3lc76qI/MUudlp3U/i7+/ZqGT7FR9caKimRcG9rp/M4Kf9UvLhMyb87X8dgPk03PBXMqRg+hal+FAXadhuO8LrRN3dIpJeY0cTpmheBm75s2i7uWHU3qKDUnH8wnpU2007bx3UxWFf1qeCHdNnPvzQ/ZACSctuWGROxCqoaQuxcTG2Qek0H9qrepsHra6fK6UxewdjQxoZtOTjLFJWQBrms9B0o9o1OiQeS8/pcVaeOwQwMOtPmlTw0fevUSOmMW25Dc8DQJSChgPspPXr9gvPBam3rCVrrqjQDhyXqJIZeWZqXm/udWL18JfCxIWX4X11lJcIVaB3klRNy2oq2pG3kvVDOjcv7nWWRfztJBW/W9GafdS+iJddJTItz5wx9pgexdBul6rd7deqHRagknIGbaTKROGvUr3TY1gcS5+uHFRsCe7YKOut6A+RIZB1rAad9RI/BhNSjBHBPmCtsm556vHubhix8NTZMdSlxNKFKj3BoM=
+  - secure: kd6KF3eMgtaWIQbd/MG8m8L2cR3fqxmgRHWng4fqxRwPH45hP4IVLf2cQctGA9mm6nOV5wrNtys1fQzYPuXAKA/LAYJ/pc66ISdEjKjNpqxIGRCCJsB6lZft5XPgpAJTClwKGpFvEd7cLtz2ir4PBN0JjDyWtMTKHXarKzn7cOQNpRypwc5wWU1dmuqSsNNjr2hk3HUAwSNqB8W960Zqd39lqo0m+/tlq3L8LghcFlibn8XFNlzAmERpUpERkJZPbRplgx+ofigATGaC9Tzuc04WWLUthsPyBJkli2tYs/8Yd1tCjAYz90Tde0E1/Mzj6b4/LW4AGXrb4I5pKZrkkDw0gjqJ1Buu4U2d/TGZc+wU13BD5icpjq7zx8ZZ08N3XmQ6Y2ydd5p9MwCtUx5Dg2d9ybvdeCI1kj4HVcYAxqoBmf12od3fRZ+IwzbpUIvFn8R05wlvhA8nSLGloUceag3qUHJLD/tJOj9GRgR8ubw6hAQz7w7uWJhq3XSvHvdtYw2tfc9pGpjloA2gOhaStHrjJGFpzMFPITCEcQF1B7KraY/FPxMyvQL70l9RhQZ11F+56uwZ9oZFEQeyr5Tr6mPISyp1enz50HjwRrVy4pw5hOaTOCxA1dxrstWPhdKHOyYNtZDMFopn8yAIGzPE3z6UQ4bABqIlz8tpEEy13Eg=
+  - secure: f7LJkl/HyS/YghhADhVSNZjOsYkzuWXL9kqYAqjTxzB4g/2HPxkyjGjtlUHv82MvjvoIs7icDNjIveVf0ZP/is5t5T88HXfobYIW1H4hexXbN94oLJTaehdlkv0Fdi9Rfm7sBBH+tyd9HwS25R9MMSndRkxcnr78huFP8iWgRFFF4dDHyh8Dozzo+tHbrPPJtt8iJPz1Fs8U3nMQOdwHj8cA3fZXg65S7IzeavGAnkxtUDV22FgJd0PLD2i2RHAXAxjpmjLY3GIZDquSAO9DWJGElNRphg91nIT726vylm6IZ0JQ0H13hXbVfD4akYYb9ipL8CS/FzZexArtd1cg/nJKSz4G6AJyfByw0KqJwUgaPhvhlCeG8RDse4CH9dH7d8ODbUpxkcvh3Z31EUECY/2BC7Ma4ieLC4VAMBBgc21XxMPklt5z+wW8v2mblVudTSIRnXLL3QiiM2SHV0PLHyH7TPGiKU92J5HrhT3cKkrUMwcePLb6GUBKg6tSiF52DEiiGXWDWbj3rMEnwRbvAa5QkHNhVLwre1tsOt8nCX6cK3rY5fygR3W7lfzMQGMs/XzMdMaqFamJ0YRqUMh2msL0SdzltqFsXlS80JWS8U3zM1IlS448/qmhHzDjyV5mW/bd5iC7uDPQ/5rJfSaicfS1pNNp83Ufg7byNVaIbL4=
