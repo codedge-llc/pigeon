@@ -29,7 +29,7 @@ config :pigeon, :apns,
     mode: :dev
   },
   apns_jwt_static: %{
-    key: System.get_env("APNS_JWT_KEY"),
+    key: "AuthKey.p8",
     key_identifier: System.get_env("APNS_JWT_KEY_IDENTIFIER"),
     team_id: System.get_env("APNS_JWT_TEAM_ID"),
     mode: :dev
