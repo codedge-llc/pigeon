@@ -10,6 +10,16 @@ defmodule Pigeon.TestConfig do
     )
   end
 
+  def apns_jwt_dynamic do
+    APNS.JWTConfig.new(
+      name: :apns_jwt_dynamic,
+      key: System.get_env("APNS_JWT_KEY"),
+      key_identifier: System.get_env("APNS_JWT_KEY_IDENTIFIER"),
+      team_id: System.get_env("APNS_JWT_TEAM_ID"),
+      mode: :dev
+    )
+  end
+
   def fcm_dynamic do
     FCM.Config.new(
       name: :fcm_dynamic,

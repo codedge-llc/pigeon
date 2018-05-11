@@ -5,4 +5,7 @@
 erl_crash.dump
 *.ez
 *.pem
+*.p8
+scratchpad.txt
+.DS_Store
 .iex.exs

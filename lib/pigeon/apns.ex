@@ -128,7 +128,7 @@ defmodule Pigeon.APNS do
     Supervisor.start_child(:pigeon, worker(Pigeon.Worker, [config], id: name))
   end
 
-  def start_connection(%Config{} = config) do
+  def start_connection(%_{} = config) do
     Worker.start_link(config)
   end
 
