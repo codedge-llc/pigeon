@@ -23,16 +23,16 @@
     ```elixir
     config :pigeon, :apns,
       apns_default: %{
-        jwt_key: "AuthKey.p8",
-        jwt_key_identifier: "ABC1234567",
-        jwt_team_id: "DEF8901234",
+        key: "AuthKey.p8",
+        key_identifier: "ABC1234567",
+        team_id: "DEF8901234",
         mode: :dev
       }
     ```
 
-    * `:jwt_key` - Created and downloaded via your developer account. Like `:cert` this can be a file path, file contents string or tuple
-    * `:jwt_key_identifier` - The 10-character key identifier associated with `:jwt_key`, obtained from your developer account
-    * `:jwt_team_id` - Your 10-character Team ID, obtained from your developer account
+    * `:key` - Created and downloaded via your developer account. Like `:cert` this can be a file path, file contents string or tuple
+    * `:key_identifier` - The 10-character key identifier associated with `:key`, obtained from your developer account
+    * `:team_id` - Your 10-character Team ID, obtained from your developer account
 
 2. Create a notification packet. **Note: Your push topic is generally the app's bundle identifier.**
 

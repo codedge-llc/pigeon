@@ -1,27 +1,8 @@
 defmodule Pigeon.APNS.ConfigParser do
+  @moduledoc false
+
   alias Pigeon.APNS.{Config, JWTConfig}
 
-  @typedoc ~S"""
-  Options for configuring APNS connections.
-
-  - `:name` - Registered worker name.
-  - `:mode` - If set to `:dev` or `:prod`, will set the appropriate `:uri`
-  - `:cert` - Push certificate. Can be one of three options:
-    - Static file path
-    - Full-text string of the file contents (useful for environment variables)
-    - `{:my_app, "certs/cert.pem"}` (indicates path relative to the `priv`
-      folder of the given application)
-  - `:key` - Push private key. Same as `:cert`
-  - `:uri` - Push server uri. If set, overrides uri defined by `:mode`.
-    Useful for test environments.
-  - `:port` - Push server port. Can be any value, but APNS only accepts
-    `443` and `2197`
-  - `:ping_period` - Interval between server pings. Necessary to keep long
-    running APNS connections alive. Defaults to 10 minutes.
-  - `:jwt_key` - 
-  - `:jwt_key_identifier` - 
-  - `:jwt_team_id` - 
-  """
   @type config_opts :: [
           name: atom | nil,
           mode: :dev | :prod | nil,
@@ -31,9 +12,8 @@ defmodule Pigeon.APNS.ConfigParser do
           ping_period: pos_integer,
           port: pos_integer,
           uri: binary,
-          jwt_key: binary | {atom, binary},
-          jwt_key_identifier: binary | nil,
-          jwt_team_id: binary | nil
+          key_identifier: binary | nil,
+          team_id: binary | nil
         ]
 
   @type config :: Config.t() | JWTConfig.t()

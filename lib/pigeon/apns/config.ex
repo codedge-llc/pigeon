@@ -1,6 +1,6 @@
 defmodule Pigeon.APNS.Config do
   @moduledoc ~S"""
-  Configuration for APNS Workers
+  Configuration for APNS Workers using certificates.
   """
 
   defstruct name: nil,
@@ -14,7 +14,7 @@ defmodule Pigeon.APNS.Config do
             ping_period: 600_000
 
   @typedoc ~S"""
-  APNS configuration struct
+  Certificate APNS configuration struct
 
   This struct should not be set directly. Instead use `new/1`
   with `t:config_opts/0`.
@@ -45,15 +45,51 @@ defmodule Pigeon.APNS.Config do
           ping_period: pos_integer
         }
 
+  @typedoc ~S"""
+  Options for configuring certificate APNS connections.
+
+  ## Configuration Options
+  - `:name` - Registered worker name.
+  - `:mode` - If set to `:dev` or `:prod`, will set the appropriate `:uri`
+  - `:cert` - Push certificate. Can be one of three options:
+    - Static file path
+    - Full-text string of the file contents (useful for environment variables)
+    - `{:my_app, "certs/cert.pem"}` (indicates path relative to the `priv`
+      folder of the given application)
+  - `:key` - Push private key. Same as `:cert`
+  - `:uri` - Push server uri. If set, overrides uri defined by `:mode`.
+    Useful for test environments.
+  - `:port` - Push server port. Can be any value, but APNS only accepts
+    `443` and `2197`
+  - `:ping_period` - Interval between server pings. Necessary to keep long
+    running APNS connections alive. Defaults to 10 minutes.
+
+  ## Deprecated Options
+  - `:reconnect` - No longer used as of `v1.2.0`.
+  """
+  @type config_opts :: [
+          name: atom | nil,
+          mode: :dev | :prod | nil,
+          cert: binary | {atom, binary},
+          key: binary | {atom, binary},
+          reconnect: boolean,
+          ping_period: pos_integer,
+          port: pos_integer,
+          uri: binary,
+          jwt_key: binary | {atom, binary},
+          jwt_key_identifier: binary | nil,
+          jwt_team_id: binary | nil
+        ]
+
   alias Pigeon.APNS.ConfigParser
 
   @doc false
   def default_name, do: :apns_default
 
   @doc ~S"""
-  Returns a new `APNS.Config` or `APNS.JWTConfig` with given `opts` or name.
+  Returns a new `APNS.Config` with given `opts` or name.
 
-  If given an atom, returns the config specified in your `mix.exs`.
+  If given an atom, returns the config specified in your `config.exs`.
 
   ## Examples
 

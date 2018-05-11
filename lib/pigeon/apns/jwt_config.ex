@@ -1,6 +1,6 @@
 defmodule Pigeon.APNS.JWTConfig do
   @moduledoc """
-  Configuration for APNS Workers
+  Configuration for APNS Workers using JWT.
   """
 
   defstruct name: nil,
@@ -16,7 +16,7 @@ defmodule Pigeon.APNS.JWTConfig do
   alias Pigeon.APNS.{Config, ConfigParser}
 
   @typedoc ~S"""
-  APNS JWT configuration struct
+  JWT APNS configuration struct
 
   This struct should not be set directly. Instead use `new/1`
   with `t:config_opts/0`.
@@ -29,7 +29,7 @@ defmodule Pigeon.APNS.JWTConfig do
         uri: "api.push.apple.com",
         port: 443,
         ping_period: 600_000,
-        key: {:app, "key.p8"},
+        key: nil,
         keyfile: "key.p8",
         key_identifier: "ABC1234567",
         team_id: "DEF1234567"
@@ -43,14 +43,50 @@ defmodule Pigeon.APNS.JWTConfig do
           ping_period: pos_integer,
           key: binary | nil,
           keyfile: binary | nil,
-          key_identifier: nil,
-          team_id: nil
+          key_identifier: binary | nil,
+          team_id: binary | nil
         }
+
+  @typedoc ~S"""
+  Options for configuring JWT APNS connections.
+
+  ## Configuration Options
+  - `:name` - Registered worker name.
+  - `:mode` - If set to `:dev` or `:prod`, will set the appropriate `:uri`
+  - `:key` - JWT private key. Can be one of three options:
+    - Static file path
+    - Full-text string of the file contents (useful for environment variables)
+    - `{:my_app, "keys/private_key.p8"}` (indicates path relative to the `priv`
+      folder of the given application)
+  - `:key_identifier` - A 10-character key identifier (kid) key, obtained from
+    your developer account
+  - `:team_id` - Your 10-character Team ID, obtained from your developer account
+  - `:uri` - Push server uri. If set, overrides uri defined by `:mode`.
+    Useful for test environments.
+  - `:port` - Push server port. Can be any value, but APNS only accepts
+    `443` and `2197`
+  - `:ping_period` - Interval between server pings. Necessary to keep long
+    running APNS connections alive. Defaults to 10 minutes.
+
+  ## Deprecated Options
+  - `:reconnect` - No longer used as of `v1.2.0`.
+  """
+  @type config_opts :: [
+          name: atom | nil,
+          mode: :dev | :prod | nil,
+          key: binary | {atom, binary},
+          key_identifier: binary | nil,
+          team_id: binary | nil,
+          reconnect: boolean,
+          ping_period: pos_integer,
+          port: pos_integer,
+          uri: binary
+        ]
 
   @doc ~S"""
   Returns a new `APNS.JWTConfig` with given `opts` or name.
 
-  If given an atom, returns the config specified in your `mix.exs`.
+  If given an atom, returns the config specified in your `config.exs`.
 
   ## Examples
 
