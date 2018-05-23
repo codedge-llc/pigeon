@@ -56,7 +56,7 @@ defmodule Pigeon.FCM.Notification do
           | {:update, {binary, binary}}
 
   @type regid_error_response ::
-          :device_essage_rate_exceeded
+          :device_message_rate_exceeded
           | :invalid_data_key
           | :invalid_package_name
           | :invalid_paramteres
