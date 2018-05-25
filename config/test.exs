@@ -8,11 +8,14 @@ config :pigeon, :test,
   apns_key: "key_unencrypted.pem",
   apns_topic: System.get_env("APNS_TOPIC")
 
-config :pigeon, workers: [
-  {Pigeon.TestConfig, :apns_dynamic},
-  {Pigeon.TestConfig, :fcm_dynamic},
-  {Pigeon.TestConfig, :adm_dynamic}
-]
+config :pigeon,
+  debug_log: true,
+  workers: [
+    {Pigeon.TestConfig, :apns_dynamic},
+    {Pigeon.TestConfig, :apns_jwt_dynamic},
+    {Pigeon.TestConfig, :fcm_dynamic},
+    {Pigeon.TestConfig, :adm_dynamic}
+  ]
 
 config :pigeon, :fcm,
   fcm_default: %{
@@ -23,6 +26,12 @@ config :pigeon, :apns,
   apns_default: %{
     cert: "cert.pem",
     key: "key_unencrypted.pem",
+    mode: :dev
+  },
+  apns_jwt_static: %{
+    key: "AuthKey.p8",
+    key_identifier: System.get_env("APNS_JWT_KEY_IDENTIFIER"),
+    team_id: System.get_env("APNS_JWT_TEAM_ID"),
     mode: :dev
   }
 

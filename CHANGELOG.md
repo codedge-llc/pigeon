@@ -1,8 +1,12 @@
 # Changelog
 
+## v1.2.0
+* Support for APNS JWT configuration
+* Bump `kadabra` dependency to `v0.4.2`
+
 ## v1.1.6
 * Relax `gen_stage` dependency to `~> 0.12`
-* Bump `kadabra` dependency to 0.3.7
+* Bump `kadabra` dependency to `v0.3.7`
 
 ## v1.1.5
 * Fix: relax `httpoison` dependency to allow `0.x` or `1.0`

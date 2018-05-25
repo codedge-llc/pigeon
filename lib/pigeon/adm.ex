@@ -26,7 +26,7 @@ defmodule Pigeon.ADM do
       n = Pigeon.ADM.Notification.new("token", %{"message" => "test"})
       Pigeon.ADM.push(n, on_response: handler)
   """
-  @type on_response :: ((Notification.t) -> no_return)
+  @type on_response :: (Notification.t() -> no_return)
 
   @typedoc ~S"""
   Options for sending push notifications.
@@ -36,12 +36,13 @@ defmodule Pigeon.ADM do
     See `t:on_response/0`
   """
   @type push_opts :: [
-    to: atom | pid | nil,
-    on_response: on_response | nil
-  ]
+          to: atom | pid | nil,
+          on_response: on_response | nil
+        ]
 
-  @type connection_response :: {:ok, pid}
-                             | {:error, {:already_started, pid}}
+  @type connection_response ::
+          {:ok, pid}
+          | {:error, {:already_started, pid}}
 
   @default_timeout 5_000
 
@@ -87,28 +88,30 @@ defmodule Pigeon.ADM do
       iex> notif.response
       :timeout
   """
-  @spec push(Notification.t | [Notification.t], Keyword.t) :: no_return
+  @spec push(Notification.t() | [Notification.t()], Keyword.t()) :: no_return
   def push(notifications, opts \\ [])
+
   def push(notifications, opts) when is_list(notifications) do
-    worker_name = opts[:to] || Config.default_name
+    worker_name = opts[:to] || Config.default_name()
 
     if Keyword.has_key?(opts, :on_response) do
       cast_push(worker_name, notifications, opts[:on_response])
     else
       notifications
-      |> Enum.map(& Task.async(fn -> sync_push(worker_name, &1) end))
+      |> Enum.map(&Task.async(fn -> sync_push(worker_name, &1) end))
       |> Task.yield_many(@default_timeout + 500)
       |> Enum.map(fn {task, response} ->
-           case response do
-             nil -> Task.shutdown(task, :brutal_kill)
-             {:ok, resp} -> resp
-             _error -> nil
-           end
-         end)
+        case response do
+          nil -> Task.shutdown(task, :brutal_kill)
+          {:ok, resp} -> resp
+          _error -> nil
+        end
+      end)
     end
   end
+
   def push(notification, opts) do
-    worker_name = opts[:to] || Config.default_name
+    worker_name = opts[:to] || Config.default_name()
 
     if Keyword.has_key?(opts, :on_response) do
       cast_push(worker_name, notification, opts[:on_response])
@@ -117,17 +120,19 @@ defmodule Pigeon.ADM do
     end
   end
 
-  defp cast_push(worker_name, notifications, on_response) when is_list(notifications) do
+  defp cast_push(worker_name, notifications, on_response)
+       when is_list(notifications) do
     for n <- notifications, do: cast_push(worker_name, n, on_response)
   end
+
   defp cast_push(worker_name, notification, on_response) do
     GenServer.cast(worker_name, {:push, :adm, notification, on_response})
   end
 
   defp sync_push(worker_name, notification) do
     pid = self()
-    ref = :erlang.make_ref
-    on_response = fn(x) -> send pid, {ref, x} end
+    ref = :erlang.make_ref()
+    on_response = fn x -> send(pid, {ref, x}) end
 
     GenServer.cast(worker_name, {:push, :adm, notification, on_response})
 
@@ -148,17 +153,19 @@ defmodule Pigeon.ADM do
       iex> Process.alive?(pid)
       true
   """
-  @spec start_connection(atom | Config.t | Keyword.t) :: connection_response
+  @spec start_connection(atom | Config.t() | Keyword.t()) :: connection_response
   def start_connection(name) when is_atom(name) do
     config = Config.new(name)
     Supervisor.start_child(:pigeon, worker(Worker, [config], id: name))
   end
+
   def start_connection(%Config{} = config) do
     Worker.start_link(config)
   end
+
   def start_connection(opts) when is_list(opts) do
     opts
-    |> Config.new
+    |> Config.new()
     |> start_connection()
   end
 

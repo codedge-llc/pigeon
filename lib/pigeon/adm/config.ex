@@ -6,10 +6,10 @@ defmodule Pigeon.ADM.Config do
   defstruct name: nil, client_id: nil, client_secret: nil
 
   @type t :: %__MODULE__{
-    client_id: String.t | nil,
-    client_secret: String.t | nil,
-    name: atom | nil
-  }
+          client_id: String.t() | nil,
+          client_secret: String.t() | nil,
+          name: atom | nil
+        }
 
   def default_name, do: :adm_default
 
@@ -26,7 +26,7 @@ defmodule Pigeon.ADM.Config do
       %Pigeon.ADM.Config{name: :test, client_id: "amzn.client.id",
       client_secret: "1234secret"}
   """
-  @spec new(Keyword.t | atom) :: t
+  @spec new(Keyword.t() | atom) :: t
   def new(opts) when is_list(opts) do
     %__MODULE__{
       name: opts[:name],
@@ -34,9 +34,10 @@ defmodule Pigeon.ADM.Config do
       client_secret: opts[:client_secret]
     }
   end
+
   def new(name) when is_atom(name) do
     Application.get_env(:pigeon, :adm)[name]
-    |> Enum.to_list
+    |> Enum.to_list()
     |> Keyword.put(:name, name)
     |> new()
   end

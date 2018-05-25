@@ -12,7 +12,7 @@ defmodule Pigeon.APNS do
   @typedoc ~S"""
   Can be either a single notification or a list.
   """
-  @type notification :: Notification.t | [Notification.t, ...]
+  @type notification :: Notification.t() | [Notification.t(), ...]
 
   @typedoc ~S"""
   Async callback for push notification response.
@@ -33,7 +33,7 @@ defmodule Pigeon.APNS do
       n = Pigeon.APNS.Notification.new("msg", "device token", "push topic")
       Pigeon.APNS.push(n, on_response: handler)
   """
-  @type on_response :: ((Notification.t) -> no_return)
+  @type on_response :: (Notification.t() -> no_return)
 
   @typedoc ~S"""
   Options for sending push notifications.
@@ -43,9 +43,9 @@ defmodule Pigeon.APNS do
     See `t:on_response/0`
   """
   @type push_opts :: [
-    to: atom | pid | nil,
-    on_response: on_response | nil
-  ]
+          to: atom | pid | nil,
+          on_response: on_response | nil
+        ]
 
   @default_timeout 5_000
 
@@ -73,25 +73,27 @@ defmodule Pigeon.APNS do
          response: :bad_device_token, id: nil,
          payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"}]
   """
-  @spec push(notification, push_opts) :: {:ok, term} | {:error, term, term}
+  @spec push(notification, push_opts) :: notification | :ok
   def push(notification, opts \\ [])
+
   def push(notification, opts) when is_list(notification) do
     if Keyword.has_key?(opts, :on_response) do
       push(notification, opts[:on_response], opts)
       :ok
     else
       notification
-      |> Enum.map(& Task.async(fn -> sync_push(&1, opts) end))
+      |> Enum.map(&Task.async(fn -> sync_push(&1, opts) end))
       |> Task.yield_many(@default_timeout + 500)
       |> Enum.map(fn {task, response} ->
-           case response do
-             nil -> Task.shutdown(task, :brutal_kill)
-             {:ok, resp} -> resp
-             _error -> nil
-           end
-         end)
+        case response do
+          nil -> Task.shutdown(task, :brutal_kill)
+          {:ok, resp} -> resp
+          _error -> nil
+        end
+      end)
     end
   end
+
   def push(notification, opts) do
     if Keyword.has_key?(opts, :on_response) do
       push(notification, opts[:on_response], opts)
@@ -104,8 +106,9 @@ defmodule Pigeon.APNS do
   defp push(notification, on_response, opts) when is_list(notification) do
     for n <- notification, do: push(n, on_response, opts)
   end
+
   defp push(notification, on_response, opts) do
-    worker_name = opts[:to] || Config.default_name
+    worker_name = opts[:to] || Config.default_name()
     Worker.send_push(worker_name, notification, on_response: on_response)
   end
 
@@ -119,17 +122,19 @@ defmodule Pigeon.APNS do
       iex> Process.alive?(pid)
       true
   """
-  @spec start_connection(atom | Config.t | Keyword.t) :: {:ok, pid}
+  @spec start_connection(atom | Config.t() | Keyword.t()) :: {:ok, pid}
   def start_connection(name) when is_atom(name) do
     config = Config.new(name)
     Supervisor.start_child(:pigeon, worker(Pigeon.Worker, [config], id: name))
   end
-  def start_connection(%Config{} = config) do
+
+  def start_connection(%_{} = config) do
     Worker.start_link(config)
   end
+
   def start_connection(opts) when is_list(opts) do
     opts
-    |> Config.new
+    |> Config.new()
     |> start_connection()
   end
 
@@ -151,10 +156,10 @@ defmodule Pigeon.APNS do
 
   defp sync_push(notification, opts) do
     pid = self()
-    ref = :erlang.make_ref
-    on_response = fn(x) -> send pid, {ref, x} end
+    ref = :erlang.make_ref()
+    on_response = fn x -> send(pid, {ref, x}) end
 
-    worker_name = opts[:to] || Config.default_name
+    worker_name = opts[:to] || Config.default_name()
     Worker.send_push(worker_name, notification, on_response: on_response)
 
     receive do

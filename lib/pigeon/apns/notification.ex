@@ -27,13 +27,13 @@ defmodule Pigeon.APNS.Notification do
       }
   """
   @type t :: %__MODULE__{
-    device_token: String.t | nil,
-    expiration: String.t | nil,
-    id: String.t | nil,
-    payload: %{String.t => String.t},
-    response: response,
-    topic: String.t | nil
-  }
+          device_token: String.t() | nil,
+          expiration: String.t() | nil,
+          id: String.t() | nil,
+          payload: %{String.t() => String.t()},
+          response: response,
+          topic: String.t() | nil
+        }
 
   @typedoc ~S"""
   APNS push response
@@ -44,7 +44,7 @@ defmodule Pigeon.APNS.Notification do
      server responded with error
   - `:timeout` - Internal error. Push did not reach APNS servers
   """
-  @type response :: nil | :success | Error.error_response | :timeout
+  @type response :: nil | :success | Error.error_response() | :timeout
 
   @doc """
   Returns an `APNS.Notification` struct with given message, device token, and
@@ -63,7 +63,7 @@ defmodule Pigeon.APNS.Notification do
         topic: nil
       }
   """
-  @spec new(String.t, String.t, String.t | nil) :: t
+  @spec new(String.t(), String.t(), String.t() | nil) :: t
   def new(msg, token, topic \\ nil) do
     %Notification{
       device_token: token,
@@ -89,7 +89,7 @@ defmodule Pigeon.APNS.Notification do
         topic: "topic"
       }
   """
-  @spec new(String.t, String.t, String.t, String.t) :: t
+  @spec new(String.t(), String.t(), String.t(), String.t()) :: t
   def new(msg, token, topic, id) do
     %Notification{
       device_token: token,
@@ -115,8 +115,9 @@ defmodule Pigeon.APNS.Notification do
         topic: nil
       }
   """
-  @spec put_alert(t, String.t) :: t
-  def put_alert(notification, alert), do: update_payload(notification, "alert", alert)
+  @spec put_alert(t, String.t()) :: t
+  def put_alert(notification, alert),
+    do: update_payload(notification, "alert", alert)
 
   @doc """
   Updates `"badge"` key in push payload.
@@ -135,7 +136,8 @@ defmodule Pigeon.APNS.Notification do
       }
   """
   @spec put_badge(t, integer) :: t
-  def put_badge(notification, badge), do: update_payload(notification, "badge", badge)
+  def put_badge(notification, badge),
+    do: update_payload(notification, "badge", badge)
 
   @doc """
   Updates `"sound"` key in push payload.
@@ -154,8 +156,9 @@ defmodule Pigeon.APNS.Notification do
         topic: nil
       }
   """
-  @spec put_sound(t, String.t) :: t
-  def put_sound(notification, sound), do: update_payload(notification, "sound", sound)
+  @spec put_sound(t, String.t()) :: t
+  def put_sound(notification, sound),
+    do: update_payload(notification, "sound", sound)
 
   @doc """
   Sets `"content-available"` flag in push payload.
@@ -175,7 +178,8 @@ defmodule Pigeon.APNS.Notification do
       }
   """
   @spec put_content_available(t) :: t
-  def put_content_available(notification), do: update_payload(notification, "content-available", 1)
+  def put_content_available(notification),
+    do: update_payload(notification, "content-available", 1)
 
   @doc """
   Updates `"category"` key in push payload.
@@ -191,8 +195,9 @@ defmodule Pigeon.APNS.Notification do
         topic: nil
       }
   """
-  @spec put_category(t, String.t) :: t
-  def put_category(notification, category), do: update_payload(notification, "category", category)
+  @spec put_category(t, String.t()) :: t
+  def put_category(notification, category),
+    do: update_payload(notification, "category", category)
 
   @doc """
   Sets `"mutable-content"` flag in push payload.
@@ -211,13 +216,15 @@ defmodule Pigeon.APNS.Notification do
       }
   """
   @spec put_mutable_content(t) :: t
-  def put_mutable_content(notification), do: update_payload(notification, "mutable-content", 1)
+  def put_mutable_content(notification),
+    do: update_payload(notification, "mutable-content", 1)
 
   defp update_payload(notification, key, value) do
     new_aps =
       notification.payload
       |> Map.get("aps")
       |> Map.put(key, value)
+
     new_payload = notification.payload |> Map.put("aps", new_aps)
     %{notification | payload: new_payload}
   end
@@ -237,7 +244,7 @@ defmodule Pigeon.APNS.Notification do
         topic: nil
       }
   """
-  @spec put_custom(t, %{String.t => String.t}) :: t
+  @spec put_custom(t, %{String.t() => String.t()}) :: t
   def put_custom(notification, data) do
     new_payload = Map.merge(notification.payload, data)
     %{notification | payload: new_payload}

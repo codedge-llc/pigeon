@@ -12,15 +12,17 @@ defmodule Pigeon.FCM.WorkerTest do
       pid
       |> :sys.get_state()
       |> Map.get(:consumers)
-      |> Map.values
-      |> List.first
+      |> Map.values()
+      |> List.first()
+
     conn_pid
   end
 
   defp send_push(pid, count) do
     n = FCM.Notification.new(valid_fcm_reg_id(), %{}, %{"message" => "Test"})
+
     1..count
-    |> Enum.each(fn(_x) -> 
+    |> Enum.each(fn _x ->
       assert _notif = Pigeon.FCM.push(n, to: pid)
     end)
   end
@@ -33,6 +35,7 @@ defmodule Pigeon.FCM.WorkerTest do
     opts = [
       key: Application.get_env(:pigeon, :test)[:fcm_key]
     ]
+
     {:ok, pid} = FCM.start_connection(opts)
 
     send_push(pid, 3)
@@ -56,6 +59,7 @@ defmodule Pigeon.FCM.WorkerTest do
     opts = [
       key: Application.get_env(:pigeon, :test)[:fcm_key]
     ]
+
     {:ok, pid} = FCM.start_connection(opts)
 
     send_push(pid, 1)

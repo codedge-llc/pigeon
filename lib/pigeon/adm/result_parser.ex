@@ -25,7 +25,7 @@ defmodule Pigeon.ADM.ResultParser do
   end
 
   def parse(notification, %{"reason" => error}, on_response) do
-    error = error |> Macro.underscore |> String.to_existing_atom
+    error = error |> Macro.underscore() |> String.to_existing_atom()
     n = %{notification | response: error}
     on_response.(n)
   end

@@ -1,4 +1,6 @@
 defmodule Pigeon.TestConfig do
+  @moduledoc false
+
   alias Pigeon.{APNS, FCM, ADM}
 
   def apns_dynamic do
@@ -6,6 +8,16 @@ defmodule Pigeon.TestConfig do
       name: :apns_dynamic,
       cert: "cert.pem",
       key: "key_unencrypted.pem",
+      mode: :dev
+    )
+  end
+
+  def apns_jwt_dynamic do
+    APNS.JWTConfig.new(
+      name: :apns_jwt_dynamic,
+      key: "AuthKey.p8",
+      key_identifier: System.get_env("APNS_JWT_KEY_IDENTIFIER"),
+      team_id: System.get_env("APNS_JWT_TEAM_ID"),
       mode: :dev
     )
   end

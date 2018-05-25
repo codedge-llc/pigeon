@@ -4,7 +4,7 @@ defmodule Pigeon.Worker do
   defstruct config: nil,
             connections: 0,
             pending_demand: 0,
-            queue: :queue.new
+            queue: :queue.new()
 
   use GenStage
 
@@ -12,10 +12,11 @@ defmodule Pigeon.Worker do
 
   require Logger
 
-  @type config :: APNS.Config.t | FCM.Config.t
+  @type config :: APNS.Config.t() | FCM.Config.t()
 
-  @type notification :: APNS.Notification.t
-                        | FCM.Notification.t
+  @type notification ::
+          APNS.Notification.t()
+          | FCM.Notification.t()
 
   @spec start_link(config) :: {:ok, pid}
   def start_link(config) do
@@ -30,7 +31,7 @@ defmodule Pigeon.Worker do
     GenStage.cast(pid, :stop)
   end
 
-  @spec send_push(atom | pid, notification, Keyword.t) :: :ok
+  @spec send_push(atom | pid, notification, Keyword.t()) :: :ok
   def send_push(name, notification, opts) do
     # Ensure connections are live before trying to push
     # Doesn't play nice if you try to do it all in one step
@@ -50,8 +51,9 @@ defmodule Pigeon.Worker do
 
   def handle_call({:push, _notif, _opts} = msg, from, state) do
     GenStage.reply(from, :ok)
+
     state
-    |> Map.update(:queue, :queue.new, &(:queue.in(msg, &1)))
+    |> Map.update(:queue, :queue.new(), &:queue.in(msg, &1))
     |> dispatch_events([])
   end
 
@@ -89,11 +91,13 @@ defmodule Pigeon.Worker do
     Pigeon.start_connection({state.config, self()})
     %{state | connections: state.connections + 1}
   end
+
   defp ensure_connections(state), do: state
 
   defp dispatch_events(%{pending_demand: 0} = state, events) do
     {:noreply, Enum.reverse(events), state}
   end
+
   defp dispatch_events(%{queue: queue} = state, events) do
     case :queue.out(queue) do
       {{:value, event}, queue} ->
@@ -101,6 +105,7 @@ defmodule Pigeon.Worker do
         |> Map.put(:queue, queue)
         |> increment_demand(-1)
         |> dispatch_events([event | events])
+
       {:empty, _queue} ->
         {:noreply, Enum.reverse(events), state}
     end

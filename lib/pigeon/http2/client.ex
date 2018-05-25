@@ -77,6 +77,8 @@ defmodule Pigeon.Http2.Client do
       config :pigeon, http2_client: Pigeon.YourCustomAdapter
   """
 
+  @type uri :: charlist
+
   @doc ~S"""
   Default http2 client to use.
 
@@ -93,15 +95,14 @@ defmodule Pigeon.Http2.Client do
 
   @callback start() :: no_return
 
-  @callback connect(uri :: charlist, scheme :: :https, options :: Keyword.t)
-    :: {:ok, pid}
-     | {:error, any}
+  @callback connect(uri :: uri, scheme :: :https, options :: Keyword.t()) ::
+              {:ok, pid} | {:error, any}
 
   @callback send_ping(pid) :: :ok
 
-  @callback send_request(pid, headers :: Keyword.t, data :: String.t) :: :ok
+  @callback send_request(pid, headers :: Keyword.t(), data :: String.t()) :: :ok
 
-  @callback handle_end_stream(msg :: term, state :: term)
-    :: {:ok, %Pigeon.Http2.Stream{}}
-     | any
+  @callback handle_end_stream(msg :: term, state :: term) ::
+              {:ok, %Pigeon.Http2.Stream{}}
+              | any
 end

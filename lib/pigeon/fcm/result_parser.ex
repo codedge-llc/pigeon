@@ -3,8 +3,6 @@ defmodule Pigeon.FCM.ResultParser do
 
   import Pigeon.Tasks, only: [process_on_response: 2]
 
-  alias Pigeon.FCM.Notification
-
   def parse([], [], on_response, notif) do
     process_on_response(on_response, notif)
   end
@@ -13,36 +11,39 @@ defmodule Pigeon.FCM.ResultParser do
     parse([regid], results, on_response, notif)
   end
 
-  # Handle RegID updates
-  def parse([regid | reg_res],
-            [%{"message_id" => id, "registration_id" => new_regid} | rest],
-            on_response,
-            %Notification{response: resp} = notif) do
+  def parse([regid | reg_res], [result | rest_results], on_response, notif) do
+    updated_notif =
+      case result do
+        %{"message_id" => id, "registration_id" => new_regid} ->
+          notif
+          |> put_update(regid, new_regid)
+          |> Map.put(:message_id, id)
 
+        %{"message_id" => id} ->
+          notif
+          |> put_success(regid)
+          |> Map.put(:message_id, id)
+
+        %{"error" => error} ->
+          notif
+          |> put_error(regid, error)
+      end
+
+    parse(reg_res, rest_results, on_response, updated_notif)
+  end
+
+  defp put_update(%{response: resp} = notif, regid, new_regid) do
     new_resp = [{:update, {regid, new_regid}} | resp]
-    notif = %{notif | message_id: id, response: new_resp}
-    parse(reg_res, rest, on_response, notif)
+    %{notif | response: new_resp}
   end
 
-  # Handle successful RegIDs, also parse `message_id`
-  def parse([regid | reg_res],
-            [%{"message_id" => id} | rest_results],
-            on_response,
-            %Notification{response: resp} = notif) do
-
+  defp put_success(%{response: resp} = notif, regid) do
     new_resp = [{:success, regid} | resp]
-    n = %{notif | message_id: id, response: new_resp}
-    parse(reg_res, rest_results, on_response, n)
+    %{notif | response: new_resp}
   end
 
-  # Handle error RegIDs
-  def parse([regid | reg_res],
-            [%{"error" => error} | rest_results],
-            on_response,
-            %Notification{response: resp} = notif) do
-
-    error = error |> Macro.underscore |> String.to_atom
-    n = %{notif | response: [{error, regid} | resp]}
-    parse(reg_res, rest_results, on_response, n)
+  defp put_error(%{response: resp} = notif, regid, error) do
+    error = error |> Macro.underscore() |> String.to_atom()
+    %{notif | response: [{error, regid} | resp]}
   end
 end

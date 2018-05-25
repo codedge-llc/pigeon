@@ -29,14 +29,14 @@ defmodule Pigeon.ADM.Notification do
       }
   """
   @type t :: %__MODULE__{
-    consolidation_key: String.t,
-    expires_after: integer,
-    md5: binary,
-    payload: %{},
-    registration_id: String.t,
-    response: response,
-    updated_registration_id: String.t
-  }
+          consolidation_key: String.t(),
+          expires_after: integer,
+          md5: binary,
+          payload: %{},
+          registration_id: String.t(),
+          response: response,
+          updated_registration_id: String.t()
+        }
 
   @typedoc ~S"""
   ADM push response
@@ -52,16 +52,17 @@ defmodule Pigeon.ADM.Notification do
   @typedoc ~S"""
   ADM error responses
   """
-  @type error_response :: :access_token_expired
-                        | :invalid_registration_id
-                        | :invalid_data
-                        | :invalid_consolidation_key
-                        | :invalid_expiration
-                        | :invalid_checksum
-                        | :invalid_type
-                        | :max_rate_exceeded
-                        | :message_too_large
-                        | :unregistered
+  @type error_response ::
+          :access_token_expired
+          | :invalid_registration_id
+          | :invalid_data
+          | :invalid_consolidation_key
+          | :invalid_expiration
+          | :invalid_checksum
+          | :invalid_type
+          | :max_rate_exceeded
+          | :message_too_large
+          | :unregistered
 
   @doc ~S"""
   Creates `ADM.Notification` struct with device registration ID and optional data payload.
@@ -97,7 +98,7 @@ defmodule Pigeon.ADM.Notification do
         updated_registration_id: nil
       }
   """
-  @spec new(String.t, %{required(String.t) => term}) :: t
+  @spec new(String.t(), %{required(String.t()) => term}) :: t
   def new(registration_id, data \\ %{}) do
     %Pigeon.ADM.Notification{registration_id: registration_id}
     |> put_data(data)
@@ -130,6 +131,7 @@ defmodule Pigeon.ADM.Notification do
     payload =
       notification.payload
       |> Map.put(key, value)
+
     %{notification | payload: payload}
   end
 
@@ -139,20 +141,23 @@ defmodule Pigeon.ADM.Notification do
     |> Enum.map(fn {key, value} -> {"#{key}", "#{value}"} end)
     |> Enum.into(%{})
   end
+
   def ensure_strings(_else), do: %{}
 
   @doc false
-  def calculate_md5(%{payload: %{"data" => data}} = notification) when is_map(data) do
+  def calculate_md5(%{payload: %{"data" => data}} = notification)
+      when is_map(data) do
     concat =
       data
-      |> Map.keys
-      |> Enum.sort
+      |> Map.keys()
+      |> Enum.sort()
       |> Enum.map(fn key -> "#{key}:#{data[key]}" end)
       |> Enum.join(",")
 
-    md5 = :md5 |> :crypto.hash(concat) |> Base.encode64
+    md5 = :md5 |> :crypto.hash(concat) |> Base.encode64()
 
     %{notification | md5: md5}
   end
+
   def calculate_md5(notification), do: notification
 end

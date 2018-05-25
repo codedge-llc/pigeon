@@ -13,13 +13,13 @@ defmodule Pigeon.FCM.Notification do
   alias Pigeon.FCM.Notification
 
   @type t :: %__MODULE__{
-    message_id: nil | String.t,
-    payload: %{},
-    priority: :normal | :high,
-    registration_id: String.t | [String.t],
-    status: status | nil,
-    response: [] | [regid_response, ...]
-  }
+          message_id: nil | String.t(),
+          payload: %{},
+          priority: :normal | :high,
+          registration_id: String.t() | [String.t()],
+          status: status | nil,
+          response: [] | [regid_response, ...]
+        }
 
   @typedoc ~S"""
   Status of FCM request
@@ -33,12 +33,13 @@ defmodule Pigeon.FCM.Notification do
      to process the request
   - `:unavailable` - FCM server couldn't process the request in time
   """
-  @type status :: :success
-                | :timeout
-                | :unauthorized
-                | :malformed_json
-                | :internal_server_error
-                | :unavailable
+  @type status ::
+          :success
+          | :timeout
+          | :unauthorized
+          | :malformed_json
+          | :internal_server_error
+          | :unavailable
 
   @typedoc ~S"""
   FCM push response for individual registration IDs
@@ -49,22 +50,24 @@ defmodule Pigeon.FCM.Notification do
   - `{regid_error_response, "reg_id"}` - Push attempted but server responded
     with error
   """
-  @type regid_response :: {:success, binary}
-                        | {regid_error_response, binary}
-                        | {:update, {binary, binary}}
+  @type regid_response ::
+          {:success, binary}
+          | {regid_error_response, binary}
+          | {:update, {binary, binary}}
 
-  @type regid_error_response :: :device_essage_rate_exceeded
-                              | :invalid_data_key
-                              | :invalid_package_name
-                              | :invalid_paramteres
-                              | :invalid_registration
-                              | :invalid_ttl
-                              | :message_too_big
-                              | :missing_registration
-                              | :mismatch_sender_id
-                              | :not_registered
-                              | :topics_message_rate_exceeded
-                              | :unavailable
+  @type regid_error_response ::
+          :device_message_rate_exceeded
+          | :invalid_data_key
+          | :invalid_package_name
+          | :invalid_paramteres
+          | :invalid_registration
+          | :invalid_ttl
+          | :message_too_big
+          | :missing_registration
+          | :mismatch_sender_id
+          | :not_registered
+          | :topics_message_rate_exceeded
+          | :unavailable
 
   @chunk_size 1_000
 
@@ -108,21 +111,24 @@ defmodule Pigeon.FCM.Notification do
       500
   """
   def new(registration_ids, notification \\ %{}, data \\ %{})
+
   def new(reg_id, notification, data) when is_binary(reg_id) do
     %Pigeon.FCM.Notification{registration_id: reg_id}
     |> put_notification(notification)
     |> put_data(data)
   end
+
   def new(reg_ids, notification, data) when length(reg_ids) < 1001 do
     %Pigeon.FCM.Notification{registration_id: reg_ids}
     |> put_notification(notification)
     |> put_data(data)
   end
+
   def new(reg_ids, notification, data) do
     reg_ids
     |> chunk(@chunk_size, @chunk_size, [])
-    |> Enum.map(& new(&1, notification, data))
-    |> List.flatten
+    |> Enum.map(&new(&1, notification, data))
+    |> List.flatten()
   end
 
   defp chunk(collection, chunk_size, step, padding) do
@@ -158,7 +164,8 @@ defmodule Pigeon.FCM.Notification do
         registration_id: nil
       }
   """
-  def put_notification(n, notification), do: update_payload(n, "notification", notification)
+  def put_notification(n, notification),
+    do: update_payload(n, "notification", notification)
 
   @doc """
   Updates `"priority"` key.
@@ -175,14 +182,17 @@ defmodule Pigeon.FCM.Notification do
       %Pigeon.FCM.Notification{priority: :normal}
   """
   def put_priority(n, :normal), do: %{n | priority: :normal}
-  def put_priority(n, :high),   do: %{n | priority: :high}
-  def put_priority(n, _),       do: n
+  def put_priority(n, :high), do: %{n | priority: :high}
+  def put_priority(n, _), do: n
 
-  defp update_payload(notification, _key, value) when value == %{}, do: notification
+  defp update_payload(notification, _key, value) when value == %{},
+    do: notification
+
   defp update_payload(notification, key, value) do
     payload =
       notification.payload
       |> Map.put(key, value)
+
     %{notification | payload: payload}
   end
 
@@ -248,10 +258,10 @@ defmodule Pigeon.FCM.Notification do
   """
   def remove?(%{response: response}) do
     response
-    |> Enum.filter(fn({k, _v}) ->
+    |> Enum.filter(fn {k, _v} ->
       k == :invalid_registration || k == :not_registered
     end)
-    |> Keyword.values
+    |> Keyword.values()
   end
 end
 
@@ -261,17 +271,22 @@ defimpl Pigeon.Encodable, for: Pigeon.FCM.Notification do
   end
 
   @doc false
-  def encode_requests(%{registration_id: regid} = notification) when is_binary(regid) do
+  def encode_requests(%{registration_id: regid} = notification)
+      when is_binary(regid) do
     encode_requests(%{notification | registration_id: [regid]})
   end
-  def encode_requests(%{registration_id: regid} = notification) when is_list(regid) do
+
+  def encode_requests(%{registration_id: regid} = notification)
+      when is_list(regid) do
     regid
     |> recipient_attr()
     |> Map.merge(notification.payload)
     |> Map.put("priority", to_string(notification.priority))
-    |> Poison.encode!
+    |> Poison.encode!()
   end
 
   defp recipient_attr([regid]), do: %{"to" => regid}
-  defp recipient_attr(regid) when is_list(regid), do: %{"registration_ids" => regid}
+
+  defp recipient_attr(regid) when is_list(regid),
+    do: %{"registration_ids" => regid}
 end

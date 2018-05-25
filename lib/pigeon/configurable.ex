@@ -15,7 +15,7 @@ defprotocol Pigeon.Configurable do
   @spec worker_name(any) :: atom | nil
   def worker_name(config)
 
-  @spec connect(any) :: {:ok, sock} | {:error, String.t}
+  @spec connect(any) :: {:ok, sock} | {:error, String.t()}
   def connect(config)
 
   def push_headers(config, notification, opts)
