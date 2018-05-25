@@ -1,7 +1,7 @@
 defmodule Pigeon.Mixfile do
   use Mix.Project
 
-  @version "1.1.6"
+  @version "1.2.0"
 
   def project do
     [
@@ -33,7 +33,6 @@ defmodule Pigeon.Mixfile do
           "docs/APNS Apple iOS.md",
           "docs/FCM Android.md",
           "docs/ADM Amazon Android.md",
-          "docs/Migrating to v1-1-0.md",
           "CHANGELOG.md"
         ]
       ],
@@ -54,7 +53,7 @@ defmodule Pigeon.Mixfile do
       {:httpoison, "~> 0.7 or ~> 1.0"},
       {:gen_stage, "~> 0.12"},
       {:joken, "~> 1.5.0"},
-      {:kadabra, "~> 0.4.0", optional: true},
+      {:kadabra, "~> 0.4.2", optional: true},
       {:earmark, "~> 1.0", only: :dev},
       {:ex_doc, "~> 0.18", only: :dev},
       {:excoveralls, "~> 0.5", only: :test},

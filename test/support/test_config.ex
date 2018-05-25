@@ -1,4 +1,6 @@
 defmodule Pigeon.TestConfig do
+  @moduledoc false
+
   alias Pigeon.{APNS, FCM, ADM}
 
   def apns_dynamic do

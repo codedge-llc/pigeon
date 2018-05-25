@@ -2,9 +2,9 @@
 > HTTP2-compliant wrapper for sending iOS and Android push notifications.
 
 [![Build Status](https://travis-ci.org/codedge-llc/pigeon.svg?branch=master)](https://travis-ci.org/codedge-llc/pigeon)
-[![Coverage Status](https://coveralls.io/repos/github/codedge-llc/pigeon/badge.svg?branch=v1.1.0)](https://coveralls.io/github/codedge-llc/pigeon)
-[![Hex.pm](http://img.shields.io/hexpm/v/pigeon.svg)](https://hex.pm/packages/pigeon) [![Hex.pm](http://img.shields.io/hexpm/dt/pigeon.svg)](https://hex.pm/packages/pigeon)
-[![Deps Status](https://beta.hexfaktor.org/badge/all/github/codedge-llc/pigeon.svg)](https://beta.hexfaktor.org/github/codedge-llc/pigeon)
+[![Coverage Status](https://coveralls.io/repos/github/codedge-llc/pigeon/badge.svg)](https://coveralls.io/github/codedge-llc/pigeon)
+[![Hex.pm](http://img.shields.io/hexpm/v/pigeon.svg)](https://hex.pm/packages/pigeon)
+[![Hex.pm](http://img.shields.io/hexpm/dt/pigeon.svg)](https://hex.pm/packages/pigeon)
 
 ## Installation
 
@@ -12,8 +12,8 @@ Add pigeon and kadabra as `mix.exs` dependencies:
   ```elixir
   def deps do
     [
-      {:pigeon, "~> 1.1.6"},
-      {:kadabra, "~> 0.3.7"}
+      {:pigeon, "~> 1.2.0"},
+      {:kadabra, "~> 0.4.2"}
     ]
   end
   ```
