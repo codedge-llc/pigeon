@@ -1,11 +1,12 @@
 language: elixir
-elixir:
-- 1.4.5
-- 1.5.3
-- 1.6.5
-otp_release:
-- 19.2
-- 20.0
+matrix:
+  include:
+    - elixir: 1.4.5
+      otp_release: 19.2
+    - elixir: 1.5.3
+      otp_release: 20.3.1
+    - elixir: 1.6.6
+      otp_release: 20.1
 before_install:
 - openssl aes-256-cbc -K $encrypted_3033c569c247_key -iv $encrypted_3033c569c247_iv -in secrets.tar.enc -out secrets.tar -d
 - tar xvf secrets.tar
