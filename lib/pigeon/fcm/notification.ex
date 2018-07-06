@@ -3,22 +3,30 @@ defmodule Pigeon.FCM.Notification do
   Defines FCM notification struct and convenience constructor functions.
   """
 
-  defstruct message_id: nil,
+  defstruct collapse_key: nil,
+            dry_run: false,
+            message_id: nil,
             payload: %{},
             priority: :normal,
             registration_id: nil,
+            response: [],
+            restricted_package_name: nil,
             status: nil,
-            response: []
+            time_to_live: 2_419_200
 
   alias Pigeon.FCM.Notification
 
   @type t :: %__MODULE__{
+          collapse_key: nil | String.t(),
+          dry_run: boolean,
           message_id: nil | String.t(),
-          payload: %{},
+          payload: map,
           priority: :normal | :high,
           registration_id: String.t() | [String.t()],
+          response: [] | [regid_response, ...],
+          restricted_package_name: nil | String.t(),
           status: status | nil,
-          response: [] | [regid_response, ...]
+          time_to_live: non_neg_integer
         }
 
   @typedoc ~S"""
@@ -185,6 +193,49 @@ defmodule Pigeon.FCM.Notification do
   def put_priority(n, :high), do: %{n | priority: :high}
   def put_priority(n, _), do: n
 
+  @doc """
+  Updates `"time_to_live"` key. Time-to-live is measured in seconds.
+
+  ## Examples
+
+      iex> put_time_to_live(%Pigeon.FCM.Notification{}, 60 * 60 * 24)
+      %Pigeon.FCM.Notification{time_to_live: 86_400}
+  """
+  def put_time_to_live(n, ttl) when is_integer(ttl),
+    do: %{n | time_to_live: ttl}
+
+  @doc """
+  Sets `"dry_run"` key to true. Pushes will be processed but not actually
+  delivered to the device.
+
+  ## Examples
+
+      iex> put_dry_run(%Pigeon.FCM.Notification{})
+      %Pigeon.FCM.Notification{dry_run: true}
+  """
+  def put_dry_run(n), do: %{n | dry_run: true}
+
+  @doc """
+  Updates `"collapse_key"` key.
+
+  ## Examples
+
+      iex> put_collapse_key(%Pigeon.FCM.Notification{}, "Updates available")
+      %Pigeon.FCM.Notification{collapse_key: "Updates available"}
+  """
+  def put_collapse_key(n, key) when is_binary(key), do: %{n | collapse_key: key}
+
+  @doc """
+  Updates `"restricted_package_name"` key.
+
+  ## Examples
+
+      iex> put_restricted_package_name(%Pigeon.FCM.Notification{}, "com.example.app")
+      %Pigeon.FCM.Notification{restricted_package_name: "com.example.app"}
+  """
+  def put_restricted_package_name(n, name) when is_binary(name),
+    do: %{n | restricted_package_name: name}
+
   defp update_payload(notification, _key, value) when value == %{},
     do: notification
 
@@ -271,18 +322,27 @@ defimpl Pigeon.Encodable, for: Pigeon.FCM.Notification do
   end
 
   @doc false
-  def encode_requests(%{registration_id: regid} = notification)
+  def encode_requests(%{registration_id: regid} = notif)
       when is_binary(regid) do
-    encode_requests(%{notification | registration_id: [regid]})
+    encode_requests(%{notif | registration_id: [regid]})
   end
 
-  def encode_requests(%{registration_id: regid} = notification)
-      when is_list(regid) do
+  def encode_requests(%{registration_id: regid} = notif) when is_list(regid) do
     regid
     |> recipient_attr()
-    |> Map.merge(notification.payload)
-    |> Map.put("priority", to_string(notification.priority))
+    |> Map.merge(notif.payload)
+    |> encode_attr("priority", to_string(notif.priority))
+    |> encode_attr("time_to_live", notif.time_to_live)
+    |> encode_attr("collapse_key", notif.collapse_key)
+    |> encode_attr("restricted_package_name", notif.restricted_package_name)
+    |> encode_attr("dry_run", notif.dry_run)
     |> Poison.encode!()
+  end
+
+  defp encode_attr(map, _key, nil), do: map
+
+  defp encode_attr(map, key, val) do
+    Map.put(map, key, val)
   end
 
   defp recipient_attr([regid]), do: %{"to" => regid}

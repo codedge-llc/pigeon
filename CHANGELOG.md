@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.2.1
+* FCM notifications can now handle `time_to_live`, `collapse_key`, `restricted_package_name`
+  and `dry_run` keys
+
 ## v1.2.0
 * Support for APNS JWT configuration
 * Bump `kadabra` dependency to `v0.4.2`
