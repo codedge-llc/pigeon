@@ -194,7 +194,7 @@ defmodule Pigeon.FCM.Notification do
   def put_priority(n, _), do: n
 
   @doc """
-  Updates `"ttl"` key. Time-to-live is measured in seconds.
+  Updates `"time_to_live"` key. Time-to-live is measured in seconds.
 
   ## Examples
 
