@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.2.2
+* Fixed APNS handling of notification `expiration`
+* Added APNS support for `collapse_id`
+
 ## v1.2.1
 * FCM notifications can now handle `time_to_live`, `collapse_key`, `restricted_package_name`
   and `dry_run` keys
