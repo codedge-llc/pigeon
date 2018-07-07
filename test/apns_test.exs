@@ -17,8 +17,9 @@ defmodule Pigeon.APNSTest do
   def bad_id, do: "123e4567-e89b-12d3-a456-42665544000"
 
   def test_notification(msg) do
-    Pigeon.APNS.Notification.new(
-      test_message(msg),
+    msg
+    |> test_message()
+    |> Pigeon.APNS.Notification.new(
       test_token(),
       test_topic()
     )
