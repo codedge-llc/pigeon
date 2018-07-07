@@ -14,7 +14,7 @@
 2. Create a notification packet. 
 
     ```elixir
-    msg = %{ "body" => "your message" }
+    msg = %{"body" => "your message"}
     n = Pigeon.FCM.Notification.new("your device registration ID", msg)
     ```
  
@@ -31,7 +31,7 @@
 Pass in a list of registration IDs, as many as you want.
 
   ```elixir
-  msg = %{ "body" => "your message" }
+  msg = %{"body" => "your message"}
   n = Pigeon.FCM.Notification.new(["first ID", "second ID"], msg)
   ```
 
@@ -39,10 +39,16 @@ Pass in a list of registration IDs, as many as you want.
 
   ```elixir
   %Pigeon.FCM.Notification{
-      payload: %{...},
-      registration_id: String.t | [String.t],
-      response: [] | [{atom, String.t}, ...], | atom,
-      priority: :normal | :high
+    collapse_key: nil | String.t(),
+    dry_run: boolean,
+    message_id: nil | String.t(),
+    payload: %{...},
+    priority: :normal | :high,
+    registration_id: String.t() | [String.t(), ...],
+    response: [] | [{atom, String.t()}, ...], | atom,
+    restricted_package_name: nil | String.t(),
+    status: atom | nil,
+    time_to_live: non_neg_integer
   }
   ```
 
@@ -51,8 +57,8 @@ Pass in a list of registration IDs, as many as you want.
 FCM accepts both `notification` and `data` keys in its JSON payload. Set them like so:
 
   ```elixir
-  notification = %{ "body" => "your message" }
-  data = %{ "key" => "value" }
+  notification = %{"body" => "your message"}
+  data = %{"key" => "value"}
   Pigeon.FCM.Notification.new("registration ID", notification, data)
   ```
 
@@ -60,8 +66,8 @@ or
 
   ```elixir
   Pigeon.FCM.Notification.new("registration ID")
-  |> put_notification(%{ "body" => "your message" })
-  |> put_data(%{ "key" => "value" })
+  |> put_notification(%{"body" => "your message"})
+  |> put_data(%{"key" => "value"})
   ```
  
 ## Handling Push Responses
