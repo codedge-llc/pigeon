@@ -63,6 +63,8 @@ defmodule Pigeon.APNSTest do
           test_token(),
           test_topic()
         )
+        |> Map.put(:expiration, 0)
+        |> Map.put(:collapse_id, "test")
 
       assert Pigeon.APNS.push(n).response == :success
     end

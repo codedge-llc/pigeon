@@ -3,7 +3,8 @@ defmodule Pigeon.APNS.Notification do
   Defines APNS notification struct and constructor functions.
   """
 
-  defstruct device_token: nil,
+  defstruct collapse_id: nil,
+            device_token: nil,
             expiration: nil,
             id: nil,
             payload: %{"aps" => %{}},
@@ -18,6 +19,7 @@ defmodule Pigeon.APNS.Notification do
   ## Examples
 
       %Pigeon.APNS.Notification{
+          collapse_id: nil,
           device_token: "device token",
           expiration: nil,
           id: nil, # Set on push response if nil
@@ -27,8 +29,9 @@ defmodule Pigeon.APNS.Notification do
       }
   """
   @type t :: %__MODULE__{
+          collapse_id: String.t() | nil,
           device_token: String.t() | nil,
-          expiration: String.t() | nil,
+          expiration: non_neg_integer | nil,
           id: String.t() | nil,
           payload: %{String.t() => String.t()},
           response: response,
