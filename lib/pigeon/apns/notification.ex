@@ -3,7 +3,8 @@ defmodule Pigeon.APNS.Notification do
   Defines APNS notification struct and constructor functions.
   """
 
-  defstruct device_token: nil,
+  defstruct collapse_id: nil,
+            device_token: nil,
             expiration: nil,
             id: nil,
             payload: %{"aps" => %{}},
@@ -18,6 +19,7 @@ defmodule Pigeon.APNS.Notification do
   ## Examples
 
       %Pigeon.APNS.Notification{
+          collapse_id: nil,
           device_token: "device token",
           expiration: nil,
           id: nil, # Set on push response if nil
@@ -27,8 +29,9 @@ defmodule Pigeon.APNS.Notification do
       }
   """
   @type t :: %__MODULE__{
+          collapse_id: String.t() | nil,
           device_token: String.t() | nil,
-          expiration: String.t() | nil,
+          expiration: non_neg_integer | nil,
           id: String.t() | nil,
           payload: %{String.t() => String.t()},
           response: response,
@@ -82,6 +85,7 @@ defmodule Pigeon.APNS.Notification do
 
       iex> Pigeon.APNS.Notification.new("push message", "device token", "topic", "id_1234")
       %Pigeon.APNS.Notification{
+        collapse_id: nil,
         device_token: "device token",
         expiration: nil,
         id: "id_1234",
@@ -108,6 +112,7 @@ defmodule Pigeon.APNS.Notification do
 
       iex> Pigeon.APNS.Notification.put_alert(%Pigeon.APNS.Notification{}, "push message")
       %Pigeon.APNS.Notification{
+        collapse_id: nil,
         device_token: nil,
         expiration: nil,
         id: nil,
@@ -128,6 +133,7 @@ defmodule Pigeon.APNS.Notification do
 
       iex> Pigeon.APNS.Notification.put_badge(%Pigeon.APNS.Notification{}, 5)
       %Pigeon.APNS.Notification{
+        collapse_id: nil,
         device_token: nil,
         expiration: nil,
         id: nil,
@@ -149,6 +155,7 @@ defmodule Pigeon.APNS.Notification do
 
       iex> Pigeon.APNS.Notification.put_sound(%Pigeon.APNS.Notification{}, "custom.aiff")
       %Pigeon.APNS.Notification{
+        collapse_id: nil,
         device_token: nil,
         expiration: nil,
         id: nil,
@@ -170,6 +177,7 @@ defmodule Pigeon.APNS.Notification do
 
       iex> Pigeon.APNS.Notification.put_content_available(%Pigeon.APNS.Notification{})
       %Pigeon.APNS.Notification{
+        collapse_id: nil,
         device_token: nil,
         expiration: nil,
         id: nil,
@@ -188,6 +196,7 @@ defmodule Pigeon.APNS.Notification do
 
       iex> Pigeon.APNS.Notification.put_category(%Pigeon.APNS.Notification{}, "category")
       %Pigeon.APNS.Notification{
+        collapse_id: nil,
         device_token: nil,
         expiration: nil,
         id: nil,
@@ -208,6 +217,7 @@ defmodule Pigeon.APNS.Notification do
 
       iex> Pigeon.APNS.Notification.put_mutable_content(%Pigeon.APNS.Notification{})
       %Pigeon.APNS.Notification{
+        collapse_id: nil,
         device_token: nil,
         expiration: nil,
         id: nil,
@@ -237,6 +247,7 @@ defmodule Pigeon.APNS.Notification do
       iex> n = Pigeon.APNS.Notification.new("test message", "device token")
       iex> Pigeon.APNS.Notification.put_custom(n, %{"custom-key" => 1234})
       %Pigeon.APNS.Notification{
+        collapse_id: nil,
         device_token: "device token",
         expiration: nil,
         id: nil,

@@ -3,16 +3,29 @@ defmodule Pigeon.APNSTest do
   doctest Pigeon.APNS
   doctest Pigeon.APNS.Notification
 
-  def test_message(msg),
-    do: "#{DateTime.to_string(DateTime.utc_now())} - #{msg}"
+  def test_message(msg) do
+    "#{DateTime.to_string(DateTime.utc_now())} - #{msg}"
+  end
 
   def test_topic, do: Application.get_env(:pigeon, :test)[:apns_topic]
   def test_token, do: Application.get_env(:pigeon, :test)[:valid_apns_token]
 
-  def bad_token,
-    do: "00fc13adff785122b4ad28809a3420982341241421348097878e577c991de8f0"
+  def bad_token do
+    "00fc13adff785122b4ad28809a3420982341241421348097878e577c991de8f0"
+  end
 
   def bad_id, do: "123e4567-e89b-12d3-a456-42665544000"
+
+  def test_notification(msg) do
+    msg
+    |> test_message()
+    |> Pigeon.APNS.Notification.new(
+      test_token(),
+      test_topic()
+    )
+    |> Map.put(:expiration, 0)
+    |> Map.put(:collapse_id, "test")
+  end
 
   describe "start_connection/1" do
     test "starts connection with opts keyword list" do
@@ -57,13 +70,7 @@ defmodule Pigeon.APNSTest do
 
   describe "push/1" do
     test "returns notification with :success on successful push" do
-      n =
-        Pigeon.APNS.Notification.new(
-          test_message("push/1"),
-          test_token(),
-          test_topic()
-        )
-
+      n = test_notification("push/1")
       assert Pigeon.APNS.push(n).response == :success
     end
 
@@ -79,12 +86,7 @@ defmodule Pigeon.APNSTest do
     end
 
     test "returns list for multiple notifications" do
-      n =
-        Pigeon.APNS.Notification.new(
-          test_message("push/1"),
-          test_token(),
-          test_topic()
-        )
+      n = test_notification("push/1")
 
       bad_n =
         Pigeon.APNS.Notification.new(
@@ -105,14 +107,8 @@ defmodule Pigeon.APNSTest do
 
   describe "push/1 with custom worker" do
     test "pushes to worker pid" do
-      n =
-        Pigeon.APNS.Notification.new(
-          test_message("push/1, custom worker"),
-          test_token(),
-          test_topic()
-        )
+      n = test_notification("push/1, custom_worker")
 
-      # Pigeon.APNS.stop_connection(:apns_default)
       opts = [
         cert: Application.get_env(:pigeon, :test)[:apns_cert],
         key: Application.get_env(:pigeon, :test)[:apns_key],
@@ -126,19 +122,11 @@ defmodule Pigeon.APNSTest do
       {:ok, worker_pid} = Pigeon.APNS.start_connection(opts)
 
       assert Pigeon.APNS.push(n, to: worker_pid).response == :success
-
-      # Pigeon.APNS.start_connection(:apns_default)
     end
 
     test "pushes to worker's atom name" do
-      n =
-        Pigeon.APNS.Notification.new(
-          test_message("push/1, custom worker"),
-          test_token(),
-          test_topic()
-        )
+      n = test_notification("push/1, custom_worker")
 
-      # Pigeon.APNS.stop_connection(:default)
       opts = [
         cert: Application.get_env(:pigeon, :test)[:apns_cert],
         key: Application.get_env(:pigeon, :test)[:apns_key],
@@ -153,8 +141,6 @@ defmodule Pigeon.APNSTest do
       {:ok, _worker_pid} = Pigeon.APNS.start_connection(opts)
 
       assert Pigeon.APNS.push(n, to: :custom).response == :success
-
-      # Pigeon.APNS.start_connection(:apns_default)
     end
   end
 
@@ -162,11 +148,7 @@ defmodule Pigeon.APNSTest do
     test "returns :success response on successful push" do
       pid = self()
       on_response = fn x -> send(pid, x) end
-
-      n =
-        "push/2 :ok"
-        |> test_message()
-        |> Pigeon.APNS.Notification.new(test_token(), test_topic())
+      n = test_notification("push/2 :ok")
 
       assert Pigeon.APNS.push(n, on_response: on_response) == :ok
 
@@ -226,11 +208,7 @@ defmodule Pigeon.APNSTest do
     test "sends to pid if specified" do
       pid = self()
       on_response = fn x -> send(pid, x) end
-
-      n =
-        "push/2 :ok, custom worker"
-        |> test_message()
-        |> Pigeon.APNS.Notification.new(test_token(), test_topic())
+      n = test_notification("push/2 :ok, custom worker")
 
       Pigeon.APNS.stop_connection(:default)
 
@@ -257,13 +235,8 @@ defmodule Pigeon.APNSTest do
     test "sends to worker's atom name if specified" do
       pid = self()
       on_response = fn x -> send(pid, x) end
+      n = test_notification("push/2 :ok, custom worker")
 
-      n =
-        "push/2 :ok, custom worker"
-        |> test_message()
-        |> Pigeon.APNS.Notification.new(test_token(), test_topic())
-
-      # Pigeon.APNS.stop_connection(:default)
       opts = [
         cert: Application.get_env(:pigeon, :test)[:apns_cert],
         key: Application.get_env(:pigeon, :test)[:apns_key],
@@ -280,8 +253,6 @@ defmodule Pigeon.APNSTest do
       assert Pigeon.APNS.push(n, on_response: on_response, to: :custom) == :ok
 
       assert_receive(%Pigeon.APNS.Notification{response: :success}, 5_000)
-
-      # Pigeon.APNS.start_connection(:apns_default)
     end
   end
 end

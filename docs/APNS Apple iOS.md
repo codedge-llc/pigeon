@@ -58,8 +58,9 @@ redeliver it.
 
   ```elixir
   %Pigeon.APNS.Notification{
+    collapse_id: String.t() | nil,
     device_token: String.t() | nil,
-    expiration: String.t() | nil,
+    expiration: non_neg_integer | nil,
     id: String.t() | nil,
     payload: %{String.t() => String.t()},
     response: atom,

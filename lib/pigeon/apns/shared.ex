@@ -9,6 +9,11 @@ defmodule Pigeon.APNS.Shared do
 
   @type headers :: [{binary(), any()}]
 
+  @apns_id "apns-id"
+  @apns_topic "apns-topic"
+  @apns_expiration "apns-expiration"
+  @apns_collapse_id "apns-collapse-id"
+
   @spec worker_name(any) :: atom | nil
   def worker_name(%{name: name}), do: name
 
@@ -24,8 +29,10 @@ defmodule Pigeon.APNS.Shared do
       {":path", "/3/device/#{notification.device_token}"},
       {"content-length", "#{byte_size(json)}"}
     ]
-    |> put_apns_id(notification)
-    |> put_apns_topic(notification)
+    |> put_header(@apns_id, notification.id)
+    |> put_header(@apns_topic, notification.topic)
+    |> put_header(@apns_expiration, notification.expiration)
+    |> put_header(@apns_collapse_id, notification.collapse_id)
   end
 
   @spec push_payload(config, Notification.t(), Keyword.t()) ::
@@ -39,7 +46,11 @@ defmodule Pigeon.APNS.Shared do
 
     case status do
       200 ->
-        n = %{notification | id: get_apns_id(headers), response: :success}
+        n =
+          notification
+          |> Map.put(:id, get_header(headers, @apns_id))
+          |> Map.put(:response, :success)
+
         process_on_response(on_response, n)
 
       _error ->
@@ -58,23 +69,19 @@ defmodule Pigeon.APNS.Shared do
   def close(_config) do
   end
 
-  def put_apns_id(headers, notification) do
-    case notification.id do
-      nil -> headers
-      id -> headers ++ [{"apns-id", id}]
-    end
+  def put_header(headers, _key, nil), do: headers
+
+  def put_header(headers, key, val) when is_binary(val) do
+    headers ++ [{key, val}]
   end
 
-  def put_apns_topic(headers, notification) do
-    case notification.topic do
-      nil -> headers
-      topic -> headers ++ [{"apns-topic", topic}]
-    end
+  def put_header(headers, key, val) do
+    put_header(headers, key, to_string(val))
   end
 
-  def get_apns_id(headers) do
-    case Enum.find(headers, fn {key, _val} -> key == "apns-id" end) do
-      {"apns-id", id} -> id
+  def get_header(headers, key) do
+    case Enum.find(headers, fn {k, _val} -> k == key end) do
+      {^key, val} -> val
       nil -> nil
     end
   end
