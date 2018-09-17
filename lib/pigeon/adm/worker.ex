@@ -9,6 +9,7 @@ defmodule Pigeon.ADM.Worker do
   alias Pigeon.ADM.ResultParser
 
   @token_refresh_uri "https://api.amazon.com/auth/O2/token"
+  @token_refresh_early_seconds 5
 
   def start_link(config) do
     case config.name do
@@ -73,7 +74,7 @@ defmodule Pigeon.ADM.Worker do
   defp access_token_expired?(_refreshed_datetime_erl, 0), do: true
 
   defp access_token_expired?(refreshed_datetime_erl, expiration_seconds) do
-    seconds_since(refreshed_datetime_erl) >= expiration_seconds
+    seconds_since(refreshed_datetime_erl) >= expiration_seconds - @token_refresh_early_seconds
   end
 
   defp seconds_since(datetime_erl) do
