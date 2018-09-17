@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.2.3
+* Fixed APNS, FCM and ADM error response parse crashes. Error responses not
+  listed in the documentation are returned as `:unknown_error`
+
 ## v1.2.2
 * Fixed APNS handling of notification `expiration`
 * Added APNS support for `collapse_id`
