@@ -63,6 +63,7 @@ defmodule Pigeon.ADM.Notification do
           | :max_rate_exceeded
           | :message_too_large
           | :unregistered
+          | :unknown_error
 
   @doc ~S"""
   Creates `ADM.Notification` struct with device registration ID and optional data payload.

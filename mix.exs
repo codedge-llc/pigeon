@@ -53,7 +53,7 @@ defmodule Pigeon.Mixfile do
       {:httpoison, "~> 0.7 or ~> 1.0"},
       {:gen_stage, "~> 0.12"},
       {:joken, "~> 1.5.0"},
-      {:kadabra, "~> 0.4.2", optional: true},
+      {:kadabra, "~> 0.4.3", optional: true},
       {:earmark, "~> 1.0", only: :dev},
       {:ex_doc, "~> 0.18", only: :dev},
       {:excoveralls, "~> 0.5", only: :test},

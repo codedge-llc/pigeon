@@ -65,9 +65,11 @@ defmodule Pigeon.FCM.Notification do
 
   @type regid_error_response ::
           :device_message_rate_exceeded
+          | :internal_server_error
+          | :invalid_apns_credential
           | :invalid_data_key
           | :invalid_package_name
-          | :invalid_paramteres
+          | :invalid_parameters
           | :invalid_registration
           | :invalid_ttl
           | :message_too_big
@@ -76,6 +78,7 @@ defmodule Pigeon.FCM.Notification do
           | :not_registered
           | :topics_message_rate_exceeded
           | :unavailable
+          | :unknown_error
 
   @chunk_size 1_000
 
