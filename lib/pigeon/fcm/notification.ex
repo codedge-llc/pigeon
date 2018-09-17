@@ -77,6 +77,7 @@ defmodule Pigeon.FCM.Notification do
           | :not_registered
           | :topics_message_rate_exceeded
           | :unavailable
+          | :unknown_error
 
   @chunk_size 1_000
 
