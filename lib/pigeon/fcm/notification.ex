@@ -65,6 +65,7 @@ defmodule Pigeon.FCM.Notification do
 
   @type regid_error_response ::
           :device_message_rate_exceeded
+          | :internal_server_error
           | :invalid_apns_credential
           | :invalid_data_key
           | :invalid_package_name

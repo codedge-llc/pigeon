@@ -48,6 +48,7 @@ defmodule Pigeon.FCM.ResultParser do
   end
 
   def parse_error("DeviceMessageRateExceeded"), do: :device_message_rate_exceeded
+  def parse_error("InternalServerError"), do: :internal_server_error
   def parse_error("InvalidApnsCredential"), do: :invalid_apns_credential
   def parse_error("InvalidDataKey"), do: :invalid_data_key
   def parse_error("InvalidPackageName"), do: :invalid_package_name
