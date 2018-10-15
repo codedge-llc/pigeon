@@ -155,11 +155,15 @@ defmodule Pigeon.ADM.Worker do
 
         _ ->
           fn {reg_id, payload} ->
-            {:ok, %HTTPoison.Response{status_code: status, body: body}} =
-              HTTPoison.post(adm_uri(reg_id), payload, adm_headers(state))
+            case HTTPoison.post(adm_uri(reg_id), payload, adm_headers(state)) do
+              {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
+                notification = %{notification | registration_id: reg_id}
+                process_response(status, body, notification, on_response)
 
-            notification = %{notification | registration_id: reg_id}
-            process_response(status, body, notification, on_response)
+              {:error, %HTTPoison.Error{reason: :connect_timeout}} ->
+                notification = %{notification | response: :timeout}
+                process_on_response(on_response, notification)
+            end
           end
       end
 
