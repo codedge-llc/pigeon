@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.2.4
+* Fixed ADM handling of connection timeouts
+
 ## v1.2.3
 * Fixed APNS, FCM and ADM error response parse crashes. Error responses not
   listed in the documentation are returned as `:unknown_error`
