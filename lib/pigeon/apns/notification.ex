@@ -66,7 +66,7 @@ defmodule Pigeon.APNS.Notification do
         topic: nil
       }
   """
-  @spec new(String.t(), String.t(), String.t() | nil) :: t
+  @spec new(String.t() | map, String.t(), String.t() | nil) :: t
   def new(msg, token, topic \\ nil) do
     %Notification{
       device_token: token,
@@ -93,7 +93,7 @@ defmodule Pigeon.APNS.Notification do
         topic: "topic"
       }
   """
-  @spec new(String.t(), String.t(), String.t(), String.t()) :: t
+  @spec new(String.t() | map, String.t(), String.t(), String.t()) :: t
   def new(msg, token, topic, id) do
     %Notification{
       device_token: token,
@@ -120,7 +120,7 @@ defmodule Pigeon.APNS.Notification do
         topic: nil
       }
   """
-  @spec put_alert(t, String.t()) :: t
+  @spec put_alert(t, String.t() | map) :: t
   def put_alert(notification, alert),
     do: update_payload(notification, "alert", alert)
 
