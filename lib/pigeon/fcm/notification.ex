@@ -337,8 +337,8 @@ defmodule Pigeon.FCM.Notification do
 
   ## Examples
 
-      iex> put_condition(%Pigeon.FCM.Notification{}, true)
-      %Pigeon.FCM.Notification{condition: true}
+      iex> put_condition(%Pigeon.FCM.Notification{}, "'test' in topics")
+      %Pigeon.FCM.Notification{condition: "'test' in topics"}
   """
   def put_condition(n, condition) when is_binary(condition),
     do: %{n | condition: condition}
