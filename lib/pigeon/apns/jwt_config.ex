@@ -208,20 +208,19 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
 
   @spec generate_apns_jwt(JWTConfig.t(), String.t()) :: String.t()
   defp generate_apns_jwt(config, token_storage_key) do
-    import Joken
+    import Joken.Config
 
     key = get_token_key(config)
 
     now = :os.system_time(:seconds)
 
     token =
-      token()
-      |> with_claims(%{"iss" => config.team_id, "iat" => now})
-      |> with_header_arg("alg", "ES256")
-      |> with_header_arg("typ", "JWT")
-      |> with_header_arg("kid", config.key_identifier)
-      |> sign(es256(key))
-      |> get_compact
+      default_claims()
+       |> add_claim("iss", nil, &(&1 == config.team_id)) # explicit no generate function
+       |> add_claim("iat", nil, &(&1 == now)) # explicit no generate function
+
+    ## ... or if you want to keep the explicit signer creation
+    token = Joken.generate_and_sign(token, %{}, Joken.Signer.create("ES256", key, %{"typ" => "JWT", "kid" => config.key_identifier}))
 
     :ok = Pigeon.APNS.Token.update(token_storage_key, {now, token})
 
