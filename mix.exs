@@ -58,7 +58,7 @@ defmodule Pigeon.Mixfile do
       {:ex_doc, "~> 0.18", only: :dev},
       {:excoveralls, "~> 0.5", only: :test},
       {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
-      {:credo, "~> 0.8", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.0", only: [:dev, :test], runtime: false}
     ]
   end
 
