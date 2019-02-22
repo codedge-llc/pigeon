@@ -444,6 +444,7 @@ defimpl Pigeon.Encodable, for: Pigeon.FCM.Notification do
     |> encode_attr("restricted_package_name", notif.restricted_package_name)
     |> encode_attr("dry_run", notif.dry_run)
     |> encode_attr("content_available", notif.content_available)
+    |> encode_attr("mutable_content", notif.mutable_content)
     |> Poison.encode!()
   end
 
