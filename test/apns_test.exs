@@ -33,8 +33,7 @@ defmodule Pigeon.APNSTest do
         cert: Application.get_env(:pigeon, :test)[:apns_cert],
         key: Application.get_env(:pigeon, :test)[:apns_key],
         jwt_key: Application.get_env(:pigeon, :test)[:apns_jwt_key],
-        jwt_key_identifier:
-          Application.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
+        jwt_key_identifier: Application.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
         jwt_team_id: Application.get_env(:pigeon, :test)[:apns_jwt_team_id],
         mode: :dev
       ]
@@ -55,8 +54,7 @@ defmodule Pigeon.APNSTest do
         cert: Application.get_env(:pigeon, :test)[:apns_cert],
         key: Application.get_env(:pigeon, :test)[:apns_key],
         jwt_key: Application.get_env(:pigeon, :test)[:apns_jwt_key],
-        jwt_key_identifier:
-          Application.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
+        jwt_key_identifier: Application.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
         jwt_team_id: Application.get_env(:pigeon, :test)[:apns_jwt_team_id],
         mode: :dev,
         ping_period: 30_000
@@ -113,8 +111,7 @@ defmodule Pigeon.APNSTest do
         cert: Application.get_env(:pigeon, :test)[:apns_cert],
         key: Application.get_env(:pigeon, :test)[:apns_key],
         jwt_key: Application.get_env(:pigeon, :test)[:apns_jwt_key],
-        jwt_key_identifier:
-          Application.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
+        jwt_key_identifier: Application.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
         jwt_team_id: Application.get_env(:pigeon, :test)[:apns_jwt_team_id],
         mode: :dev
       ]
@@ -131,8 +128,7 @@ defmodule Pigeon.APNSTest do
         cert: Application.get_env(:pigeon, :test)[:apns_cert],
         key: Application.get_env(:pigeon, :test)[:apns_key],
         jwt_key: Application.get_env(:pigeon, :test)[:apns_jwt_key],
-        jwt_key_identifier:
-          Application.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
+        jwt_key_identifier: Application.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
         jwt_team_id: Application.get_env(:pigeon, :test)[:apns_jwt_team_id],
         mode: :dev,
         name: :custom
@@ -216,8 +212,7 @@ defmodule Pigeon.APNSTest do
         cert: Application.get_env(:pigeon, :test)[:apns_cert],
         key: Application.get_env(:pigeon, :test)[:apns_key],
         jwt_key: Application.get_env(:pigeon, :test)[:apns_jwt_key],
-        jwt_key_identifier:
-          Application.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
+        jwt_key_identifier: Application.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
         jwt_team_id: Application.get_env(:pigeon, :test)[:apns_jwt_team_id],
         mode: :dev
       ]
@@ -241,8 +236,7 @@ defmodule Pigeon.APNSTest do
         cert: Application.get_env(:pigeon, :test)[:apns_cert],
         key: Application.get_env(:pigeon, :test)[:apns_key],
         jwt_key: Application.get_env(:pigeon, :test)[:apns_jwt_key],
-        jwt_key_identifier:
-          Application.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
+        jwt_key_identifier: Application.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
         jwt_team_id: Application.get_env(:pigeon, :test)[:apns_jwt_team_id],
         mode: :dev,
         name: :custom

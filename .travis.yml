@@ -9,6 +9,8 @@ matrix:
       otp_release: 20.1
     - elixir: 1.7.3
       otp_release: 21.0.9
+    - elixir: 1.8.1
+      otp_release: 21.0.9
 before_install:
 - openssl aes-256-cbc -K $encrypted_3033c569c247_key -iv $encrypted_3033c569c247_iv -in secrets.tar.enc -out secrets.tar -d
 - tar xvf secrets.tar

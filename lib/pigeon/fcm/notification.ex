@@ -4,8 +4,11 @@ defmodule Pigeon.FCM.Notification do
   """
 
   defstruct collapse_key: nil,
+            condition: nil,
+            content_available: false,
             dry_run: false,
             message_id: nil,
+            mutable_content: false,
             payload: %{},
             priority: :normal,
             registration_id: nil,
@@ -18,8 +21,11 @@ defmodule Pigeon.FCM.Notification do
 
   @type t :: %__MODULE__{
           collapse_key: nil | String.t(),
+          condition: nil | String.t(),
+          content_available: boolean,
           dry_run: boolean,
           message_id: nil | String.t(),
+          mutable_content: boolean,
           payload: map,
           priority: :normal | :high,
           registration_id: String.t() | [String.t()],
@@ -153,6 +159,24 @@ defmodule Pigeon.FCM.Notification do
   @doc """
   Updates `"data"` key in push payload.
 
+  This parameter specifies the custom key-value pairs of the message's payload.
+
+  For example, with data:{"score":"3x1"}:
+
+  On iOS, if the message is sent via APNs, it represents the custom data fields.
+  If it is sent via FCM connection server, it would be represented as key value
+  dictionary in AppDelegate application:didReceiveRemoteNotification:.
+
+  On Android, this would result in an intent extra named score with the string
+  value 3x1.
+
+  The key should not be a reserved word ("from" or any word starting with
+  "google" or "gcm"). Do not use any of the words defined in this table
+  (such as collapse_key).
+
+  Values in string types are recommended. You have to convert values in objects
+  or other non-string data types (e.g., integers or booleans) to string.
+
   ## Examples
 
       iex> put_data(%Pigeon.FCM.Notification{}, %{"key" => 1234})
@@ -165,6 +189,14 @@ defmodule Pigeon.FCM.Notification do
 
   @doc """
   Updates `"notification"` key in push payload.
+
+  This parameter specifies the predefined, user-visible key-value pairs of the
+  notification payload. See Notification payload support for detail. For more
+  information about notification message and data message options, see
+  [Message types](https://firebase.google.com/docs/cloud-messaging/concept-options#notifications_and_data_messages).
+  If a notification payload is provided, or the content_available option is set
+  to true for a message to an iOS device, the message is sent through APNs,
+  otherwise it is sent through the FCM connection server.
 
   ## Examples
 
@@ -180,6 +212,18 @@ defmodule Pigeon.FCM.Notification do
 
   @doc """
   Updates `"priority"` key.
+
+  Sets the priority of the message. Valid values are "normal" and "high." On
+  iOS, these correspond to APNs priorities 5 and 10.
+
+  By default, notification messages are sent with high priority, and data
+  messages are sent with normal priority. Normal priority optimizes the client
+  app's battery consumption and should be used unless immediate delivery is
+  required. For messages with normal priority, the app may receive the message
+  with unspecified delay.
+
+  When a message is sent with high priority, it is sent immediately, and the app
+  can display a notification.
 
   ## Examples
 
@@ -197,7 +241,12 @@ defmodule Pigeon.FCM.Notification do
   def put_priority(n, _), do: n
 
   @doc """
-  Updates `"time_to_live"` key. Time-to-live is measured in seconds.
+  Updates `"time_to_live"` key.
+
+  This parameter specifies how long (in seconds) the message should be kept in
+  FCM storage if the device is offline. The maximum time to live supported is 4
+  weeks, and the default value is 4 weeks. For more information, see
+  [Setting the lifespan of a message](https://firebase.google.com/docs/cloud-messaging/concept-options#ttl).
 
   ## Examples
 
@@ -208,8 +257,12 @@ defmodule Pigeon.FCM.Notification do
     do: %{n | time_to_live: ttl}
 
   @doc """
-  Sets `"dry_run"` key to true. Pushes will be processed but not actually
-  delivered to the device.
+  Sets `"dry_run"` key to true.
+
+  This parameter, when set to true, allows developers to test a request without
+  actually sending a message.
+
+  The default value is false.
 
   ## Examples
 
@@ -231,6 +284,9 @@ defmodule Pigeon.FCM.Notification do
   @doc """
   Updates `"restricted_package_name"` key.
 
+  This parameter specifies the package name of the application where the
+  registration tokens must match in order to receive the message. (Only affects android)
+
   ## Examples
 
       iex> put_restricted_package_name(%Pigeon.FCM.Notification{}, "com.example.app")
@@ -238,6 +294,54 @@ defmodule Pigeon.FCM.Notification do
   """
   def put_restricted_package_name(n, name) when is_binary(name),
     do: %{n | restricted_package_name: name}
+
+  @doc """
+  Updates `"content_available"` key.
+
+  On iOS, use this field to represent content-available in the APNs payload.
+  When a notification or message is sent and this is set to true, an inactive
+  client app is awoken, and the message is sent through APNs as a silent
+  notification and not through the FCM connection server. Note that silent
+  notifications in APNs are not guaranteed to be delivered, and can depend on
+  factors such as the user turning on Low Power Mode, force quitting the app,
+  etc. On Android, data messages wake the app by default. On Chrome, currently
+  not supported.
+
+  ## Examples
+
+      iex> put_content_available(%Pigeon.FCM.Notification{}, true)
+      %Pigeon.FCM.Notification{content_available: true}
+  """
+  def put_content_available(n, enabled) when is_boolean(enabled),
+    do: %{n | content_available: enabled}
+
+  @doc """
+  Updates `"mutable_content"` key.
+
+  Currently for iOS 10+ devices only. On iOS, use this field to represent
+  mutable-content in the APNs payload. When a notification is sent and this is
+  set to true, the content of the notification can be modified before it is
+  displayed, using a Notification Service app extension. This parameter will be
+  ignored for Android and web.
+
+  ## Examples
+
+      iex> put_mutable_content(%Pigeon.FCM.Notification{}, true)
+      %Pigeon.FCM.Notification{mutable_content: true}
+  """
+  def put_mutable_content(n, enabled) when is_boolean(enabled),
+    do: %{n | mutable_content: enabled}
+
+  @doc """
+  Updates `"condition"` key.
+
+  ## Examples
+
+      iex> put_condition(%Pigeon.FCM.Notification{}, "'test' in topics")
+      %Pigeon.FCM.Notification{condition: "'test' in topics"}
+  """
+  def put_condition(n, condition) when is_binary(condition),
+    do: %{n | condition: condition}
 
   defp update_payload(notification, _key, value) when value == %{},
     do: notification
@@ -339,6 +443,8 @@ defimpl Pigeon.Encodable, for: Pigeon.FCM.Notification do
     |> encode_attr("collapse_key", notif.collapse_key)
     |> encode_attr("restricted_package_name", notif.restricted_package_name)
     |> encode_attr("dry_run", notif.dry_run)
+    |> encode_attr("content_available", notif.content_available)
+    |> encode_attr("mutable_content", notif.mutable_content)
     |> Poison.encode!()
   end
 
