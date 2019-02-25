@@ -129,6 +129,8 @@ end
 defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
   @moduledoc false
 
+  import Joken.Config
+
   alias Pigeon.APNS.{Config, JWTConfig, Notification, Shared}
 
   @type sock :: {:sslsocket, any, pid | {any, any}}
@@ -208,19 +210,14 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
 
   @spec generate_apns_jwt(JWTConfig.t(), String.t()) :: String.t()
   defp generate_apns_jwt(config, token_storage_key) do
-    import Joken.Config
-
     key = get_token_key(config)
-
     now = :os.system_time(:seconds)
 
-    token =
-      default_claims()
-       |> add_claim("iss", nil, &(&1 == config.team_id)) # explicit no generate function
-       |> add_claim("iat", nil, &(&1 == now)) # explicit no generate function
+    signer = Joken.Signer.create("ES256", key, %{"kid" => config.key_identifier})
 
-    ## ... or if you want to keep the explicit signer creation
-    token = Joken.generate_and_sign(token, %{}, Joken.Signer.create("ES256", key, %{"typ" => "JWT", "kid" => config.key_identifier}))
+    {:ok, token, _claims} =
+      default_claims(iss: config.team_id, iat: now)
+      |> Joken.generate_and_sign(nil, signer)
 
     :ok = Pigeon.APNS.Token.update(token_storage_key, {now, token})
 
@@ -229,10 +226,10 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
 
   @spec get_token_key(JWTConfig.t()) :: JOSE.JWK.t()
   defp get_token_key(%JWTConfig{keyfile: nil} = config) do
-    JOSE.JWK.from_pem(config.key)
+    %{"pem" => config.key}
   end
 
   defp get_token_key(%JWTConfig{keyfile: file}) do
-    JOSE.JWK.from_pem_file(file)
+    %{"pem" => File.read!(file)}
   end
 end
