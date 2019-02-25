@@ -335,6 +335,11 @@ defmodule Pigeon.FCM.Notification do
   @doc """
   Updates `"condition"` key.
 
+  Supported condition: Topic, formatted as "'yourTopic' in topics". This value
+  is case-insensitive.
+
+  Supported operators: &&, ||. Maximum two operators per topic message supported.
+
   ## Examples
 
       iex> put_condition(%Pigeon.FCM.Notification{}, "'test' in topics")
@@ -445,6 +450,7 @@ defimpl Pigeon.Encodable, for: Pigeon.FCM.Notification do
     |> encode_attr("dry_run", notif.dry_run)
     |> encode_attr("content_available", notif.content_available)
     |> encode_attr("mutable_content", notif.mutable_content)
+    |> encode_attr("condition", notif.condition)
     |> Poison.encode!()
   end
 
