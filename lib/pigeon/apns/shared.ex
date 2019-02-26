@@ -11,6 +11,7 @@ defmodule Pigeon.APNS.Shared do
 
   @apns_id "apns-id"
   @apns_topic "apns-topic"
+  @apns_priority "apns-priority"
   @apns_expiration "apns-expiration"
   @apns_collapse_id "apns-collapse-id"
 
@@ -31,6 +32,7 @@ defmodule Pigeon.APNS.Shared do
     ]
     |> put_header(@apns_id, notification.id)
     |> put_header(@apns_topic, notification.topic)
+    |> put_header(@apns_priority, notification.priority)
     |> put_header(@apns_expiration, notification.expiration)
     |> put_header(@apns_collapse_id, notification.collapse_id)
   end
