@@ -25,6 +25,7 @@ defmodule Pigeon.APNSTest do
     )
     |> Map.put(:expiration, 0)
     |> Map.put(:collapse_id, "test")
+    |> Map.put(:priority, 10)
   end
 
   describe "start_connection/1" do
