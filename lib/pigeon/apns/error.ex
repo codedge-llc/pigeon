@@ -149,14 +149,14 @@ defmodule Pigeon.APNS.Error do
   def msg(:invalid_provider_token) do
     """
     The provider token is not valid or the token signature could not
-    be verified."
+    be verified.
     """
   end
 
   def msg(:missing_provider_token) do
     """
     No provider certificate was used to connect to APNs and Authorization
-    header was missing or no provider token was specified."
+    header was missing or no provider token was specified.
     """
   end
 
