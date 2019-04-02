@@ -19,21 +19,21 @@ defmodule Pigeon.FCM do
 
   ## Examples
 
-    handler = fn(n) ->
-      case n.status do
-        :success ->
-          bad_regids = FCM.Notification.remove?(n)
-          to_retry = FCM.Notification.retry?(n)
-          # Handle updated regids, remove bad ones, etc
-        :unauthorized ->
-          # Bad FCM key
-        error ->
-          # Some other error
+      handler = fn(n) ->
+        case n.status do
+          :success ->
+            bad_regids = FCM.Notification.remove?(n)
+            to_retry = FCM.Notification.retry?(n)
+            # Handle updated regids, remove bad ones, etc
+          :unauthorized ->
+            # Bad FCM key
+          error ->
+            # Some other error
+        end
       end
-    end
 
-    n = Pigeon.FCM.Notification.new("device token", %{}, %{"message" => "test"})
-    Pigeon.FCM.push(n, on_response: handler)
+      n = Pigeon.FCM.Notification.new("device token", %{}, %{"message" => "test"})
+      Pigeon.FCM.push(n, on_response: handler)
   """
   @type on_response :: (Notification.t() -> no_return)
 
