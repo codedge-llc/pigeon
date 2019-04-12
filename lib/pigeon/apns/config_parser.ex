@@ -30,7 +30,7 @@ defmodule Pigeon.APNS.ConfigParser do
   end
 
   def parse(name) when is_atom(name) do
-    Application.get_env(:pigeon, :apns)[name]
+    Confex.get_env(:pigeon, :apns)[name]
     |> Enum.to_list()
     |> Keyword.put(:name, name)
     |> parse()

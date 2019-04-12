@@ -5,8 +5,8 @@ defmodule Pigeon.APNS.JWTConfigTest do
   def test_message(msg),
     do: "#{DateTime.to_string(DateTime.utc_now())} - #{msg}"
 
-  def test_topic, do: Application.get_env(:pigeon, :test)[:apns_topic]
-  def test_token, do: Application.get_env(:pigeon, :test)[:valid_apns_token]
+  def test_topic, do: Confex.get_env(:pigeon, :test)[:apns_topic]
+  def test_token, do: Confex.get_env(:pigeon, :test)[:valid_apns_token]
 
   test "sends a push with valid config" do
     n =

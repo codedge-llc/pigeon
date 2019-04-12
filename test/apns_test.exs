@@ -7,8 +7,8 @@ defmodule Pigeon.APNSTest do
     "#{DateTime.to_string(DateTime.utc_now())} - #{msg}"
   end
 
-  def test_topic, do: Application.get_env(:pigeon, :test)[:apns_topic]
-  def test_token, do: Application.get_env(:pigeon, :test)[:valid_apns_token]
+  def test_topic, do: Confex.get_env(:pigeon, :test)[:apns_topic]
+  def test_token, do: Confex.get_env(:pigeon, :test)[:valid_apns_token]
 
   def bad_token do
     "00fc13adff785122b4ad28809a3420982341241421348097878e577c991de8f0"
@@ -31,11 +31,11 @@ defmodule Pigeon.APNSTest do
   describe "start_connection/1" do
     test "starts connection with opts keyword list" do
       opts = [
-        cert: Application.get_env(:pigeon, :test)[:apns_cert],
-        key: Application.get_env(:pigeon, :test)[:apns_key],
-        jwt_key: Application.get_env(:pigeon, :test)[:apns_jwt_key],
-        jwt_key_identifier: Application.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
-        jwt_team_id: Application.get_env(:pigeon, :test)[:apns_jwt_team_id],
+        cert: Confex.get_env(:pigeon, :test)[:apns_cert],
+        key: Confex.get_env(:pigeon, :test)[:apns_key],
+        jwt_key: Confex.get_env(:pigeon, :test)[:apns_jwt_key],
+        jwt_key_identifier: Confex.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
+        jwt_team_id: Confex.get_env(:pigeon, :test)[:apns_jwt_team_id],
         mode: :dev
       ]
 
@@ -52,11 +52,11 @@ defmodule Pigeon.APNSTest do
 
     test "configures ping_period if specified" do
       opts = [
-        cert: Application.get_env(:pigeon, :test)[:apns_cert],
-        key: Application.get_env(:pigeon, :test)[:apns_key],
-        jwt_key: Application.get_env(:pigeon, :test)[:apns_jwt_key],
-        jwt_key_identifier: Application.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
-        jwt_team_id: Application.get_env(:pigeon, :test)[:apns_jwt_team_id],
+        cert: Confex.get_env(:pigeon, :test)[:apns_cert],
+        key: Confex.get_env(:pigeon, :test)[:apns_key],
+        jwt_key: Confex.get_env(:pigeon, :test)[:apns_jwt_key],
+        jwt_key_identifier: Confex.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
+        jwt_team_id: Confex.get_env(:pigeon, :test)[:apns_jwt_team_id],
         mode: :dev,
         ping_period: 30_000
       ]
@@ -109,11 +109,11 @@ defmodule Pigeon.APNSTest do
       n = test_notification("push/1, custom_worker")
 
       opts = [
-        cert: Application.get_env(:pigeon, :test)[:apns_cert],
-        key: Application.get_env(:pigeon, :test)[:apns_key],
-        jwt_key: Application.get_env(:pigeon, :test)[:apns_jwt_key],
-        jwt_key_identifier: Application.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
-        jwt_team_id: Application.get_env(:pigeon, :test)[:apns_jwt_team_id],
+        cert: Confex.get_env(:pigeon, :test)[:apns_cert],
+        key: Confex.get_env(:pigeon, :test)[:apns_key],
+        jwt_key: Confex.get_env(:pigeon, :test)[:apns_jwt_key],
+        jwt_key_identifier: Confex.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
+        jwt_team_id: Confex.get_env(:pigeon, :test)[:apns_jwt_team_id],
         mode: :dev
       ]
 
@@ -126,11 +126,11 @@ defmodule Pigeon.APNSTest do
       n = test_notification("push/1, custom_worker")
 
       opts = [
-        cert: Application.get_env(:pigeon, :test)[:apns_cert],
-        key: Application.get_env(:pigeon, :test)[:apns_key],
-        jwt_key: Application.get_env(:pigeon, :test)[:apns_jwt_key],
-        jwt_key_identifier: Application.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
-        jwt_team_id: Application.get_env(:pigeon, :test)[:apns_jwt_team_id],
+        cert: Confex.get_env(:pigeon, :test)[:apns_cert],
+        key: Confex.get_env(:pigeon, :test)[:apns_key],
+        jwt_key: Confex.get_env(:pigeon, :test)[:apns_jwt_key],
+        jwt_key_identifier: Confex.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
+        jwt_team_id: Confex.get_env(:pigeon, :test)[:apns_jwt_team_id],
         mode: :dev,
         name: :custom
       ]
@@ -210,11 +210,11 @@ defmodule Pigeon.APNSTest do
       Pigeon.APNS.stop_connection(:default)
 
       opts = [
-        cert: Application.get_env(:pigeon, :test)[:apns_cert],
-        key: Application.get_env(:pigeon, :test)[:apns_key],
-        jwt_key: Application.get_env(:pigeon, :test)[:apns_jwt_key],
-        jwt_key_identifier: Application.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
-        jwt_team_id: Application.get_env(:pigeon, :test)[:apns_jwt_team_id],
+        cert: Confex.get_env(:pigeon, :test)[:apns_cert],
+        key: Confex.get_env(:pigeon, :test)[:apns_key],
+        jwt_key: Confex.get_env(:pigeon, :test)[:apns_jwt_key],
+        jwt_key_identifier: Confex.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
+        jwt_team_id: Confex.get_env(:pigeon, :test)[:apns_jwt_team_id],
         mode: :dev
       ]
 
@@ -234,11 +234,11 @@ defmodule Pigeon.APNSTest do
       n = test_notification("push/2 :ok, custom worker")
 
       opts = [
-        cert: Application.get_env(:pigeon, :test)[:apns_cert],
-        key: Application.get_env(:pigeon, :test)[:apns_key],
-        jwt_key: Application.get_env(:pigeon, :test)[:apns_jwt_key],
-        jwt_key_identifier: Application.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
-        jwt_team_id: Application.get_env(:pigeon, :test)[:apns_jwt_team_id],
+        cert: Confex.get_env(:pigeon, :test)[:apns_cert],
+        key: Confex.get_env(:pigeon, :test)[:apns_key],
+        jwt_key: Confex.get_env(:pigeon, :test)[:apns_jwt_key],
+        jwt_key_identifier: Confex.get_env(:pigeon, :test)[:apns_jwt_key_identifier],
+        jwt_team_id: Confex.get_env(:pigeon, :test)[:apns_jwt_team_id],
         mode: :dev,
         name: :custom
       ]

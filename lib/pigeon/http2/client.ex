@@ -90,7 +90,7 @@ defmodule Pigeon.Http2.Client do
       Pigeon.Http2.Client.Kadabra
   """
   def default do
-    Application.get_env(:pigeon, :http2_client, Pigeon.Http2.Client.Kadabra)
+    Confex.get_env(:pigeon, :http2_client, Pigeon.Http2.Client.Kadabra)
   end
 
   @callback start() :: no_return

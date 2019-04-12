@@ -37,7 +37,7 @@ defmodule Pigeon.FCM.Config do
   end
 
   def new(name) when is_atom(name) do
-    Application.get_env(:pigeon, :fcm)[name]
+    Confex.get_env(:pigeon, :fcm)[name]
     |> Enum.to_list()
     |> Keyword.put(:name, name)
     |> new()

@@ -4,7 +4,7 @@ defmodule Pigeon.FCM.WorkerTest do
   alias Pigeon.FCM
 
   defp valid_fcm_reg_id do
-    Application.get_env(:pigeon, :test)[:valid_fcm_reg_id]
+    Confex.get_env(:pigeon, :test)[:valid_fcm_reg_id]
   end
 
   defp get_consumer_pid(pid) do
@@ -33,7 +33,7 @@ defmodule Pigeon.FCM.WorkerTest do
 
   test "decrements connection count after disconnect" do
     opts = [
-      key: Application.get_env(:pigeon, :test)[:fcm_key]
+      key: Confex.get_env(:pigeon, :test)[:fcm_key]
     ]
 
     {:ok, pid} = FCM.start_connection(opts)
@@ -57,7 +57,7 @@ defmodule Pigeon.FCM.WorkerTest do
 
   test "decrements connection count after :down message" do
     opts = [
-      key: Application.get_env(:pigeon, :test)[:fcm_key]
+      key: Confex.get_env(:pigeon, :test)[:fcm_key]
     ]
 
     {:ok, pid} = FCM.start_connection(opts)

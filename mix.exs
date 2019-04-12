@@ -44,7 +44,7 @@ defmodule Pigeon.Mixfile do
   defp elixirc_paths(_), do: ["lib"]
 
   def application do
-    [extra_applications: [:logger], mod: {Pigeon, []}]
+    [extra_applications: [:logger, :confex], mod: {Pigeon, []}]
   end
 
   defp deps do
@@ -53,6 +53,7 @@ defmodule Pigeon.Mixfile do
       {:httpoison, "~> 0.7 or ~> 1.0"},
       {:gen_stage, "~> 0.12"},
       {:joken, "~> 2.0.0"},
+      {:confex, "~> 3.4.0"},
       {:kadabra, "~> 0.4.3", optional: true},
       {:earmark, "~> 1.0", only: :dev},
       {:ex_doc, "~> 0.18", only: :dev},

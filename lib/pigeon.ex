@@ -39,7 +39,7 @@ defmodule Pigeon do
   end
 
   defp env_workers do
-    case Application.get_env(:pigeon, :workers) do
+    case Confex.get_env(:pigeon, :workers) do
       nil ->
         []
 
@@ -91,5 +91,5 @@ defmodule Pigeon do
     Supervisor.start_child(:pigeon, spec)
   end
 
-  def debug_log?, do: Application.get_env(:pigeon, :debug_log, false)
+  def debug_log?, do: Confex.get_env(:pigeon, :debug_log, false)
 end

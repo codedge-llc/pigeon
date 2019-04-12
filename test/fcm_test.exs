@@ -9,12 +9,12 @@ defmodule Pigeon.FCMTest do
   @data %{"message" => "Test push"}
 
   defp valid_fcm_reg_id do
-    Application.get_env(:pigeon, :test)[:valid_fcm_reg_id]
+    Confex.get_env(:pigeon, :test)[:valid_fcm_reg_id]
   end
 
   describe "start_connection/1" do
     test "starts conneciton with opts keyword list" do
-      fcm_key = Application.get_env(:pigeon, :test)[:fcm_key]
+      fcm_key = Confex.get_env(:pigeon, :test)[:fcm_key]
 
       opts = [
         key: fcm_key
@@ -36,7 +36,7 @@ defmodule Pigeon.FCMTest do
         |> Notification.new(%{}, @data)
 
       opts = [
-        key: Application.get_env(:pigeon, :test)[:fcm_key]
+        key: Confex.get_env(:pigeon, :test)[:fcm_key]
       ]
 
       {:ok, worker_pid} = Pigeon.FCM.start_connection(opts)
@@ -52,7 +52,7 @@ defmodule Pigeon.FCMTest do
         |> Notification.new(%{}, @data)
 
       opts = [
-        key: Application.get_env(:pigeon, :test)[:fcm_key],
+        key: Confex.get_env(:pigeon, :test)[:fcm_key],
         name: :custom
       ]
 
