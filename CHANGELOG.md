@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.3.1
+* Joken dependency bumped to 2.1
+
 ## v1.3.0
 * Support for FCM `content_available`, `mutable_content`, and `condition` keys
 * Set `priority` of APNS notifications
