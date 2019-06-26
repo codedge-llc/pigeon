@@ -1,5 +1,5 @@
 defmodule Pigeon.FCM.Config do
-  @moduledoc false
+  @moduledoc "FCM Configuration for Pigeon"
 
   defstruct key: nil,
             uri: 'fcm.googleapis.com',
