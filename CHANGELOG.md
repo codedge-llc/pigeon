@@ -1,6 +1,6 @@
 # Changelog
 
-## NEXT
+## v1.3.2
 
 * Document workers configuration for run-time configuration of push workers.
 * Modify run-time configuration of push workers so that multiple (or no)
