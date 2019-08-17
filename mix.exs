@@ -29,7 +29,7 @@ defmodule Pigeon.Mixfile do
       docs: [
         main: "getting-started",
         extras: [
-          "docs/Getting Started.md",
+          {"README.md", [filename: "getting-started", title: "Getting Started"]},
           "docs/APNS Apple iOS.md",
           "docs/FCM Android.md",
           "docs/ADM Amazon Android.md",

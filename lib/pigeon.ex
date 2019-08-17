@@ -44,9 +44,12 @@ defmodule Pigeon do
         []
 
       workers ->
-        Enum.map(workers, fn {mod, fun} ->
-          config = apply(mod, fun, [])
-          worker(config)
+        Enum.flat_map(workers, fn {mod, fun} ->
+          mod
+          |> apply(fun, [])
+          |> List.wrap()
+          |> Enum.map(&worker/1)
+          |> Enum.filter(& &1)
         end)
     end
   end
