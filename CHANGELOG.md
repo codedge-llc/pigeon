@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.0
+* `apns-push-type` header support for iOS 13. An additional `:push_type` key has been
+  added to the `APNS.Notification` struct.
+
 ## v1.3.2
 
 * Document workers configuration for run-time configuration of push workers.
