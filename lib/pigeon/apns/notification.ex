@@ -7,6 +7,7 @@ defmodule Pigeon.APNS.Notification do
             device_token: nil,
             expiration: nil,
             priority: nil,
+            push_type: "alert",
             id: nil,
             payload: %{"aps" => %{}},
             topic: nil,
@@ -24,6 +25,7 @@ defmodule Pigeon.APNS.Notification do
           device_token: "device token",
           expiration: nil,
           priority: nil,
+          push_type: "alert",
           id: nil, # Set on push response if nil
           payload: %{"aps" => %{"alert" => "push message"}},
           response: nil, # Set on push response
@@ -35,6 +37,7 @@ defmodule Pigeon.APNS.Notification do
           device_token: String.t() | nil,
           expiration: non_neg_integer | nil,
           priority: non_neg_integer | nil,
+          push_type: String.t() | nil,
           id: String.t() | nil,
           payload: %{String.t() => String.t()},
           response: response,
@@ -65,6 +68,7 @@ defmodule Pigeon.APNS.Notification do
         device_token: "device token",
         expiration: nil,
         priority: nil,
+        push_type: "alert",
         id: nil,
         payload: %{"aps" => %{"alert" => "push message"}},
         topic: nil
@@ -93,6 +97,7 @@ defmodule Pigeon.APNS.Notification do
         device_token: "device token",
         expiration: nil,
         priority: nil,
+        push_type: "alert",
         id: "id_1234",
         payload: %{"aps" => %{"alert" => "push message"}},
         topic: "topic"
@@ -121,6 +126,7 @@ defmodule Pigeon.APNS.Notification do
         device_token: nil,
         expiration: nil,
         priority: nil,
+        push_type: "alert",
         id: nil,
         payload: %{"aps" => %{"alert" => "push message"}},
         topic: nil
@@ -143,6 +149,7 @@ defmodule Pigeon.APNS.Notification do
         device_token: nil,
         expiration: nil,
         priority: nil,
+        push_type: "alert",
         id: nil,
         payload: %{"aps" => %{"badge" => 5}},
         topic: nil
@@ -166,6 +173,7 @@ defmodule Pigeon.APNS.Notification do
         device_token: nil,
         expiration: nil,
         priority: nil,
+        push_type: "alert",
         id: nil,
         payload: %{"aps" => %{"sound" => "custom.aiff"}},
         topic: nil
@@ -189,6 +197,7 @@ defmodule Pigeon.APNS.Notification do
         device_token: nil,
         expiration: nil,
         priority: nil,
+        push_type: "alert",
         id: nil,
         payload: %{"aps" => %{"content-available" => 1}},
         topic: nil
@@ -209,6 +218,7 @@ defmodule Pigeon.APNS.Notification do
         device_token: nil,
         expiration: nil,
         priority: nil,
+        push_type: "alert",
         id: nil,
         payload: %{"aps" => %{"category" => "category"}},
         topic: nil
@@ -231,6 +241,7 @@ defmodule Pigeon.APNS.Notification do
         device_token: nil,
         expiration: nil,
         priority: nil,
+        push_type: "alert",
         id: nil,
         payload: %{"aps" => %{"mutable-content" => 1}},
         topic: nil
@@ -262,6 +273,7 @@ defmodule Pigeon.APNS.Notification do
         device_token: "device token",
         expiration: nil,
         priority: nil,
+        push_type: "alert",
         id: nil,
         payload: %{"aps" => %{"alert" => "test message"}, "custom-key" => 1234},
         topic: nil
