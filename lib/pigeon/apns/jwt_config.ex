@@ -101,7 +101,6 @@ defmodule Pigeon.APNS.JWTConfig do
       ...> )
       %Pigeon.APNS.JWTConfig{uri: "api.push.apple.com", name: :test,
       team_id: "DEF1234567", key_identifier: "ABC1234567", 
-      key: "test/support/AuthKey.p8-mock",
       keyfile: Path.expand("test/support/AuthKey.p8-mock"),
       ping_period: 300000, port: 2197, reconnect: false}
 
