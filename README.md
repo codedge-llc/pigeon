@@ -267,7 +267,7 @@ more complex.
         )
       end
 
-      defp build_config(%{"type: "fcm"} = config) do
+      defp build_config(%{type: "fcm"} = config) do
         Pigeon.FCM.Config.new(
           name: Atom.to_string(config.name),
           key: config.key
