@@ -118,7 +118,7 @@ defmodule Pigeon.APNS.JWTConfig do
       uri: Keyword.get(opts, :uri, ConfigParser.uri_for_mode(opts[:mode])),
       port: Keyword.get(opts, :port, 443),
       ping_period: Keyword.get(opts, :ping_period, 600_000),
-      key: opts[:key],
+      key: ConfigParser.key(opts[:key]),
       keyfile: ConfigParser.file_path(opts[:key]),
       key_identifier: Keyword.get(opts, :key_identifier),
       team_id: Keyword.get(opts, :team_id)
@@ -175,6 +175,28 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
   defdelegate schedule_ping(any), to: Shared
 
   defdelegate close(config), to: Shared
+
+  def validate!(config) do
+    case config do
+      %{team_id: nil} ->
+        raise Pigeon.ConfigError,
+          reason: "attempted to start without valid team_id",
+          config: config
+
+      %{key_identifier: nil} ->
+        raise Pigeon.ConfigError,
+          reason: "attempted to start without valid key_identifier",
+          config: config
+
+      %{key: nil, keyfile: nil} ->
+        raise Pigeon.ConfigError,
+          reason: "attempted to start without valid key",
+          config: config
+
+      _ ->
+        :ok
+    end
+  end
 
   def connect_socket_options(%{key: nil}) do
     {:error, :invalid_config}

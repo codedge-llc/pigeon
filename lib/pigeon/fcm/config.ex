@@ -150,6 +150,18 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   def close(_config) do
   end
 
+  def validate!(config) do
+    case config do
+      %{key: nil} ->
+        raise Pigeon.ConfigError,
+          reason: "attempted to start with missing key",
+          config: config
+
+      _ ->
+        :ok
+    end
+  end
+
   # no on_response callback, ignore
   def parse_result(_, _, nil, _notif), do: :ok
 

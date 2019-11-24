@@ -166,6 +166,23 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
 
   defdelegate close(config), to: Shared
 
+  def validate!(config) do
+    case config do
+      %{cert: nil, certfile: nil} ->
+        raise Pigeon.ConfigError,
+          reason: "attempted to start without valid certificate",
+          config: config
+
+      %{key: nil, keyfile: nil} ->
+        raise Pigeon.ConfigError,
+          reason: "attempted to start without valid key",
+          config: config
+
+      _ ->
+        :ok
+    end
+  end
+
   def connect_socket_options(%{cert: nil, certfile: nil}) do
     {:error, :invalid_config}
   end

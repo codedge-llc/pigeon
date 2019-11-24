@@ -52,4 +52,7 @@ defprotocol Pigeon.Configurable do
   def schedule_ping(config)
 
   def close(config)
+
+  @spec validate!(any) :: :ok
+  def validate!(config)
 end
