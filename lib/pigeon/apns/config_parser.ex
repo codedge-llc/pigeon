@@ -45,22 +45,15 @@ defmodule Pigeon.APNS.ConfigParser do
   def file_path(nil), do: nil
 
   def file_path(path) when is_binary(path) do
-    with full_path <- Path.expand(path),
-         true <- :filelib.is_file(full_path) do
-      full_path
-    else
-      false ->
-        raise "File not found: #{path}"
-    end
+    path
+    |> Path.expand()
+    |> validate_file_path!()
   end
 
   def file_path({app_name, path}) when is_atom(app_name) do
-    with full_path <- Path.expand(path, :code.priv_dir(app_name)),
-         true <- :filelib.is_file(full_path) do
-      full_path
-    else
-      false -> raise "File not found: #{path}"
-    end
+    path
+    |> Path.expand(:code.priv_dir(app_name))
+    |> validate_file_path!()
   end
 
   @doc false
@@ -88,4 +81,8 @@ defmodule Pigeon.APNS.ConfigParser do
   def uri_for_mode(:dev), do: @apns_development_api_uri
   def uri_for_mode(:prod), do: @apns_production_api_uri
   def uri_for_mode(_else), do: nil
+
+  defp validate_file_path!(path) do
+    if :filelib.is_file(path), do: path, else: raise("file not found: #{path}")
+  end
 end

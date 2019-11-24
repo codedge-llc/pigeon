@@ -93,14 +93,16 @@ defmodule Pigeon.APNS.JWTConfig do
       iex> Pigeon.APNS.JWTConfig.new(
       ...>   name: :test,
       ...>   mode: :prod,
-      ...>   key: "key.p8",
+      ...>   key: "test/support/AuthKey.p8-mock",
       ...>   key_identifier: "ABC1234567",
       ...>   team_id: "DEF1234567",
       ...>   port: 2197,
       ...>   ping_period: 300_000
       ...> )
       %Pigeon.APNS.JWTConfig{uri: "api.push.apple.com", name: :test,
-      team_id: "DEF1234567", key_identifier: "ABC1234567", key: "key.p8",
+      team_id: "DEF1234567", key_identifier: "ABC1234567", 
+      key: "test/support/AuthKey.p8-mock",
+      keyfile: Path.expand("test/support/AuthKey.p8-mock"),
       ping_period: 300000, port: 2197, reconnect: false}
 
       iex> config = Pigeon.APNS.JWTConfig.new(:apns_jwt_static)

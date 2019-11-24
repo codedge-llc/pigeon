@@ -96,12 +96,14 @@ defmodule Pigeon.APNS.Config do
       iex> Pigeon.APNS.Config.new(
       ...>   name: :test,
       ...>   mode: :prod,
-      ...>   cert: "test_cert.pem",
-      ...>   key: "test_key.pem",
+      ...>   cert: "test/support/test_cert.pem-mock",
+      ...>   key: "test/support/test_key.pem-mock",
       ...>   port: 2197,
       ...>   ping_period: 300_000
       ...> )
       %Pigeon.APNS.Config{uri: "api.push.apple.com", name: :test,
+      certfile: Path.expand("test/support/test_cert.pem-mock"),
+      keyfile: Path.expand("test/support/test_key.pem-mock"),
       ping_period: 300000, port: 2197, reconnect: false}
 
       iex> config = Pigeon.APNS.Config.new(:apns_default)
