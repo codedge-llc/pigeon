@@ -154,7 +154,7 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
     case config do
       %{key: nil} ->
         raise Pigeon.ConfigError,
-          reason: "attempted to start with missing key",
+          reason: "attempted to start without valid key",
           config: config
 
       _ ->
