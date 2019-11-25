@@ -49,7 +49,9 @@ defmodule Pigeon.APNS.ConfigParser do
   end
 
   def file_path({app_name, path}) when is_atom(app_name) do
-    Path.expand(path, :code.priv_dir(app_name))
+    path
+    |> Path.expand(:code.priv_dir(app_name))
+    |> file_path()
   end
 
   @doc false
