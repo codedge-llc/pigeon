@@ -25,6 +25,7 @@ defmodule Pigeon.ADM.Worker do
   def init({:ok, config}), do: initialize_worker(config)
 
   def initialize_worker(config) do
+    Pigeon.ADM.Config.validate!(config)
     {:ok,
      %{
        config: config,

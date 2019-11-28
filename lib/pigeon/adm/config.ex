@@ -55,4 +55,29 @@ defmodule Pigeon.ADM.Config do
   end
 
   defp valid_item?(item), do: is_binary(item) and String.length(item) > 0
+
+  @spec validate!(any) :: :ok
+  def validate!(config) do
+    if valid?(config) do
+      :ok
+    else
+      raise Pigeon.ConfigError,
+        reason: "attempted to start without valid client id and secret",
+        config: redact_config(config)
+    end
+  end
+
+  defp redact_config(config) do
+    config =
+      case config.client_id do
+        nil -> config
+        _ -> %{config | client_id: "<redacted>"}
+      end
+    config =
+      case config.client_secret do
+        nil -> config
+        _ -> %{config | client_secret: "<redacted>"}
+      end
+    config
+  end
 end
