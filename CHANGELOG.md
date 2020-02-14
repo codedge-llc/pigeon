@@ -1,11 +1,26 @@
 # Changelog
 
+## v1.5.0
+* Raise `Pigeon.ConfigError` when booting invalid config structs. 
+  See below for validated keys and error types.
+* `APNS.JWTConfig` now validates key p8 content before connecting.
+* Relaxed `gen_stage` dependency to allow `~> 1.0`
+
+Validated config keys:
+- `ADM.Config` - `:client_id`, `:client_secret`
+- `APNS.Config` - `:cert`, `:key`
+- `APNS.JWTConfig` - `:team_id`, `:key`, `:key_identifier`
+- `FCM.Config` - `:key`
+
+Possible error values:
+  - `{:error, {:invalid, value}}`
+  - `{:error, {:nofile, value}}`
+
 ## v1.4.0
 * `apns-push-type` header support for iOS 13. An additional `:push_type` key has been
   added to the `APNS.Notification` struct.
 
 ## v1.3.2
-
 * Document workers configuration for run-time configuration of push workers.
 * Modify run-time configuration of push workers so that multiple (or no)
   workers may be returned by the startup configuration.

@@ -1,7 +1,7 @@
 defmodule Pigeon.Mixfile do
   use Mix.Project
 
-  @version "1.4.0"
+  @version "1.5.0"
 
   def project do
     [
@@ -51,7 +51,7 @@ defmodule Pigeon.Mixfile do
     [
       {:poison, "~> 2.0 or ~> 3.0 or ~> 4.0"},
       {:httpoison, "~> 0.7 or ~> 1.0"},
-      {:gen_stage, "~> 0.12"},
+      {:gen_stage, "~> 0.12 or ~> 1.0"},
       {:joken, "~> 2.1"},
       {:kadabra, "~> 0.4.3", optional: true},
       {:earmark, "~> 1.0", only: :dev},
