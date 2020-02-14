@@ -124,6 +124,8 @@ defmodule Pigeon.APNS.Config do
       port: Keyword.get(opts, :port, 443),
       ping_period: Keyword.get(opts, :ping_period, 600_000)
     }
+    |> ConfigParser.strip_errors(:cert, :certfile)
+    |> ConfigParser.strip_errors(:key, :keyfile)
   end
 
   def new(name) when is_atom(name), do: ConfigParser.parse(name)
@@ -168,19 +170,30 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
 
   def validate!(config) do
     case config do
-      %{cert: nil, certfile: nil} ->
+      %{cert: {:error, _}, certfile: {:error, _}} ->
         raise Pigeon.ConfigError,
           reason: "attempted to start without valid certificate",
-          config: config
+          config: redact(config)
 
-      %{key: nil, keyfile: nil} ->
+      %{key: {:error, _}, keyfile: {:error, _}} ->
         raise Pigeon.ConfigError,
           reason: "attempted to start without valid key",
-          config: config
+          config: redact(config)
 
       _ ->
         :ok
     end
+  end
+
+  defp redact(config) do
+    [:cert, :certfile, :key, :keyfile]
+    |> Enum.reduce(config, fn key, acc ->
+      case Map.get(acc, key) do
+        bin when is_binary(bin) -> Map.put(acc, key, "[FILTERED]")
+        {:RSAPrivateKey, _bin} -> Map.put(acc, key, "[FILTERED]")
+        _ -> acc
+      end
+    end)
   end
 
   def connect_socket_options(%{cert: nil, certfile: nil}) do

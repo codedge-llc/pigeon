@@ -122,6 +122,7 @@ defmodule Pigeon.APNS.JWTConfig do
       key_identifier: Keyword.get(opts, :key_identifier),
       team_id: Keyword.get(opts, :team_id)
     }
+    |> ConfigParser.strip_errors(:key, :keyfile)
   end
 
   def new(name) when is_atom(name), do: ConfigParser.parse(name)
@@ -180,21 +181,32 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
       %{team_id: nil} ->
         raise Pigeon.ConfigError,
           reason: "attempted to start without valid team_id",
-          config: config
+          config: redact(config)
 
       %{key_identifier: nil} ->
         raise Pigeon.ConfigError,
           reason: "attempted to start without valid key_identifier",
-          config: config
+          config: redact(config)
 
-      %{key: nil, keyfile: nil} ->
+      %{key: {:error, _}, keyfile: {:error, _}} ->
         raise Pigeon.ConfigError,
           reason: "attempted to start without valid key",
-          config: config
+          config: redact(config)
 
       _ ->
         :ok
     end
+  end
+
+  defp redact(config) do
+    [:key, :keyfile]
+    |> Enum.reduce(config, fn key, acc ->
+      case Map.get(acc, key) do
+        bin when is_binary(bin) -> Map.put(acc, key, "[FILTERED]")
+        {:RSAPrivateKey, _bin} -> Map.put(acc, key, "[FILTERED]")
+        _ -> acc
+      end
+    end)
   end
 
   def connect_socket_options(%{key: nil}) do

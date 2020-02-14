@@ -42,10 +42,10 @@ defmodule Pigeon.APNS.ConfigParser do
   defp config_type(_else), do: :error
 
   @doc false
-  def file_path(nil), do: nil
+  def file_path(nil), do: {:error, {:nofile, nil}}
 
   def file_path(path) when is_binary(path) do
-    if :filelib.is_file(path), do: Path.expand(path), else: nil
+    if :filelib.is_file(path), do: Path.expand(path), else: {:error, {:nofile, path}}
   end
 
   def file_path({app_name, path}) when is_atom(app_name) do
@@ -55,13 +55,14 @@ defmodule Pigeon.APNS.ConfigParser do
   end
 
   @doc false
-  def cert({_app_name, _path}), do: nil
-  def cert(nil), do: nil
+  def cert({app_name, path}), do: {:error, {:invalid, {app_name, path}}}
+
+  def cert(nil), do: {:error, {:invalid, nil}}
 
   def cert(bin) do
     case :public_key.pem_decode(bin) do
       [{:Certificate, cert, _}] -> cert
-      _ -> nil
+      _ -> {:error, {:invalid, bin}}
     end
   end
 
@@ -72,7 +73,16 @@ defmodule Pigeon.APNS.ConfigParser do
   def key(bin) do
     case :public_key.pem_decode(bin) do
       [{:RSAPrivateKey, key, _}] -> {:RSAPrivateKey, key}
-      _ -> nil
+      _ -> {:error, {:invalid, bin}}
+    end
+  end
+
+  @doc false
+  def strip_errors(config, key1, key2) do
+    case {Map.get(config, key1), Map.get(config, key2)} do
+      {{:error, _}, {:error, _}} -> config
+      {{:error, _}, _} -> Map.put(config, key1, nil)
+      {_, {:error, _}} -> Map.put(config, key2, nil)
     end
   end
 

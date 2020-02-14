@@ -63,21 +63,17 @@ defmodule Pigeon.ADM.Config do
     else
       raise Pigeon.ConfigError,
         reason: "attempted to start without valid client id and secret",
-        config: redact_config(config)
+        config: redact(config)
     end
   end
 
-  defp redact_config(config) do
-    config =
-      case config.client_id do
-        nil -> config
-        _ -> %{config | client_id: "<redacted>"}
+  defp redact(config) do
+    [:client_id, :client_secret]
+    |> Enum.reduce(config, fn k, acc ->
+      case Map.get(acc, k) do
+        nil -> acc
+        _ -> Map.put(acc, k, "[FILTERED]")
       end
-    config =
-      case config.client_secret do
-        nil -> config
-        _ -> %{config | client_secret: "<redacted>"}
-      end
-    config
+    end)
   end
 end
