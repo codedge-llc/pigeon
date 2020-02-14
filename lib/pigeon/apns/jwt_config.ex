@@ -218,10 +218,6 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
     end)
   end
 
-  def connect_socket_options(%{key: nil}) do
-    {:error, :invalid_config}
-  end
-
   def connect_socket_options(%{key: _jwt_key} = config) do
     options =
       [
@@ -236,8 +232,6 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
   end
 
   @spec put_bearer_token(Config.headers(), JWTConfig.t()) :: Config.headers()
-  defp put_bearer_token(headers, %{key: nil}), do: headers
-
   defp put_bearer_token(headers, config) do
     token_storage_key = config.key_identifier <> ":" <> config.team_id
     {timestamp, saved_token} = Pigeon.APNS.Token.get(token_storage_key)

@@ -214,14 +214,6 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
     end)
   end
 
-  def connect_socket_options(%{cert: nil, certfile: nil}) do
-    {:error, :invalid_config}
-  end
-
-  def connect_socket_options(%{key: nil, keyfile: nil}) do
-    {:error, :invalid_config}
-  end
-
   def connect_socket_options(config) do
     options =
       [

@@ -150,7 +150,7 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   def close(_config) do
   end
 
-  def validate!(%{key: key} = config) when is_binary(key) do
+  def validate!(%{key: key}) when is_binary(key) do
     :ok
   end
 
