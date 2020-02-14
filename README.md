@@ -7,7 +7,6 @@
 [![Hex.pm](http://img.shields.io/hexpm/dt/pigeon.svg)](https://hex.pm/packages/pigeon)
 
 ## Installation
-*Requires Elixir 1.4/OTP 19.2 or later.*
 
 Add pigeon and kadabra as `mix.exs` dependencies:
 

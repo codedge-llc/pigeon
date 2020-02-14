@@ -49,7 +49,7 @@ defmodule Pigeon.Mixfile do
 
   defp deps do
     [
-      {:poison, "~> 2.0 or ~> 3.0"},
+      {:poison, "~> 2.0 or ~> 3.0 or ~> 4.0"},
       {:httpoison, "~> 0.7 or ~> 1.0"},
       {:gen_stage, "~> 0.12"},
       {:joken, "~> 2.1"},
