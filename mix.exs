@@ -8,7 +8,7 @@ defmodule Pigeon.Mixfile do
       app: :pigeon,
       name: "Pigeon",
       version: @version,
-      elixir: "~> 1.4",
+      elixir: "~> 1.6",
       elixirc_paths: elixirc_paths(Mix.env()),
       source_url: "https://github.com/codedge-llc/pigeon",
       description: description(),
