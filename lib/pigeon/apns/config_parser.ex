@@ -43,7 +43,11 @@ defmodule Pigeon.APNS.ConfigParser do
 
   @doc false
   def file_path(path) when is_binary(path) do
-    if :filelib.is_file(path), do: Path.expand(path), else: {:error, {:nofile, path}}
+    if :filelib.is_file(path) do
+      Path.expand(path)
+    else
+      {:error, {:nofile, path}}
+    end
   end
 
   def file_path({app_name, path}) when is_atom(app_name) do
@@ -53,26 +57,6 @@ defmodule Pigeon.APNS.ConfigParser do
   end
 
   def file_path(other), do: {:error, {:nofile, other}}
-
-  @doc false
-  def cert(bin) when is_binary(bin) do
-    case :public_key.pem_decode(bin) do
-      [{:Certificate, cert, _}] -> cert
-      _ -> {:error, {:invalid, bin}}
-    end
-  end
-
-  def cert(other), do: {:error, {:invalid, other}}
-
-  @doc false
-  def key(bin) when is_binary(bin) do
-    case :public_key.pem_decode(bin) do
-      [{:RSAPrivateKey, key, _}] -> {:RSAPrivateKey, key}
-      _ -> {:error, {:invalid, bin}}
-    end
-  end
-
-  def key(other), do: {:error, {:invalid, other}}
 
   @doc false
   def strip_errors(config, key1, key2) do

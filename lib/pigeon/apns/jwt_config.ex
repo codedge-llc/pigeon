@@ -117,7 +117,7 @@ defmodule Pigeon.APNS.JWTConfig do
       uri: Keyword.get(opts, :uri, ConfigParser.uri_for_mode(opts[:mode])),
       port: Keyword.get(opts, :port, 443),
       ping_period: Keyword.get(opts, :ping_period, 600_000),
-      key: ConfigParser.key(opts[:key]),
+      key: key(opts[:key]),
       keyfile: ConfigParser.file_path(opts[:key]),
       key_identifier: Keyword.get(opts, :key_identifier),
       team_id: Keyword.get(opts, :team_id)
@@ -126,6 +126,15 @@ defmodule Pigeon.APNS.JWTConfig do
   end
 
   def new(name) when is_atom(name), do: ConfigParser.parse(name)
+
+  defp key(bin) when is_binary(bin) do
+    case :public_key.pem_decode(bin) do
+      [] -> {:error, {:invalid, bin}}
+      [{_, _, _}] -> bin
+    end
+  end
+
+  defp key(other), do: {:error, {:invalid, other}}
 end
 
 defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do

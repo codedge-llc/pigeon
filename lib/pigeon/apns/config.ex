@@ -116,9 +116,9 @@ defmodule Pigeon.APNS.Config do
     %__MODULE__{
       name: opts[:name],
       reconnect: Keyword.get(opts, :reconnect, false),
-      cert: ConfigParser.cert(opts[:cert]),
+      cert: cert(opts[:cert]),
       certfile: ConfigParser.file_path(opts[:cert]),
-      key: ConfigParser.key(opts[:key]),
+      key: key(opts[:key]),
       keyfile: ConfigParser.file_path(opts[:key]),
       uri: Keyword.get(opts, :uri, ConfigParser.uri_for_mode(opts[:mode])),
       port: Keyword.get(opts, :port, 443),
@@ -129,6 +129,24 @@ defmodule Pigeon.APNS.Config do
   end
 
   def new(name) when is_atom(name), do: ConfigParser.parse(name)
+
+  defp cert(bin) when is_binary(bin) do
+    case :public_key.pem_decode(bin) do
+      [{:Certificate, cert, _}] -> cert
+      _ -> {:error, {:invalid, bin}}
+    end
+  end
+
+  defp cert(other), do: {:error, {:invalid, other}}
+
+  defp key(bin) when is_binary(bin) do
+    case :public_key.pem_decode(bin) do
+      [{:RSAPrivateKey, key, _}] -> {:RSAPrivateKey, key}
+      _ -> {:error, {:invalid, bin}}
+    end
+  end
+
+  defp key(other), do: {:error, {:invalid, other}}
 end
 
 defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
@@ -186,7 +204,7 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
   end
 
   defp redact(config) do
-    [:cert, :certfile, :key, :keyfile]
+    [:cert, :key]
     |> Enum.reduce(config, fn key, acc ->
       case Map.get(acc, key) do
         bin when is_binary(bin) -> Map.put(acc, key, "[FILTERED]")
