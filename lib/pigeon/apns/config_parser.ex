@@ -42,8 +42,6 @@ defmodule Pigeon.APNS.ConfigParser do
   defp config_type(_else), do: :error
 
   @doc false
-  def file_path(nil), do: {:error, {:nofile, nil}}
-
   def file_path(path) when is_binary(path) do
     if :filelib.is_file(path), do: Path.expand(path), else: {:error, {:nofile, path}}
   end
@@ -54,28 +52,27 @@ defmodule Pigeon.APNS.ConfigParser do
     |> file_path()
   end
 
+  def file_path(other), do: {:error, {:nofile, other}}
+
   @doc false
-  def cert({app_name, path}), do: {:error, {:invalid, {app_name, path}}}
-
-  def cert(nil), do: {:error, {:invalid, nil}}
-
-  def cert(bin) do
+  def cert(bin) when is_binary(bin) do
     case :public_key.pem_decode(bin) do
       [{:Certificate, cert, _}] -> cert
       _ -> {:error, {:invalid, bin}}
     end
   end
 
-  @doc false
-  def key({_app_name, _path}), do: nil
-  def key(nil), do: nil
+  def cert(other), do: {:error, {:invalid, other}}
 
-  def key(bin) do
+  @doc false
+  def key(bin) when is_binary(bin) do
     case :public_key.pem_decode(bin) do
       [{:RSAPrivateKey, key, _}] -> {:RSAPrivateKey, key}
       _ -> {:error, {:invalid, bin}}
     end
   end
+
+  def key(other), do: {:error, {:invalid, other}}
 
   @doc false
   def strip_errors(config, key1, key2) do
