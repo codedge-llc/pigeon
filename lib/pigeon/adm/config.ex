@@ -55,4 +55,25 @@ defmodule Pigeon.ADM.Config do
   end
 
   defp valid_item?(item), do: is_binary(item) and String.length(item) > 0
+
+  @spec validate!(any) :: :ok
+  def validate!(config) do
+    if valid?(config) do
+      :ok
+    else
+      raise Pigeon.ConfigError,
+        reason: "attempted to start without valid client id and secret",
+        config: redact(config)
+    end
+  end
+
+  defp redact(config) do
+    [:client_id, :client_secret]
+    |> Enum.reduce(config, fn k, acc ->
+      case Map.get(acc, k) do
+        nil -> acc
+        _ -> Map.put(acc, k, "[FILTERED]")
+      end
+    end)
+  end
 end

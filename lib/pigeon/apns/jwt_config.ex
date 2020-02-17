@@ -101,7 +101,6 @@ defmodule Pigeon.APNS.JWTConfig do
       ...> )
       %Pigeon.APNS.JWTConfig{uri: "api.push.apple.com", name: :test,
       team_id: "DEF1234567", key_identifier: "ABC1234567", 
-      key: "test/support/AuthKey.p8-mock",
       keyfile: Path.expand("test/support/AuthKey.p8-mock"),
       ping_period: 300000, port: 2197, reconnect: false}
 
@@ -118,14 +117,24 @@ defmodule Pigeon.APNS.JWTConfig do
       uri: Keyword.get(opts, :uri, ConfigParser.uri_for_mode(opts[:mode])),
       port: Keyword.get(opts, :port, 443),
       ping_period: Keyword.get(opts, :ping_period, 600_000),
-      key: opts[:key],
+      key: key(opts[:key]),
       keyfile: ConfigParser.file_path(opts[:key]),
       key_identifier: Keyword.get(opts, :key_identifier),
       team_id: Keyword.get(opts, :team_id)
     }
+    |> ConfigParser.strip_errors(:key, :keyfile)
   end
 
   def new(name) when is_atom(name), do: ConfigParser.parse(name)
+
+  defp key(bin) when is_binary(bin) do
+    case :public_key.pem_decode(bin) do
+      [] -> {:error, {:invalid, bin}}
+      [{_, _, _}] -> bin
+    end
+  end
+
+  defp key(other), do: {:error, {:invalid, other}}
 end
 
 defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
@@ -176,8 +185,37 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
 
   defdelegate close(config), to: Shared
 
-  def connect_socket_options(%{key: nil}) do
-    {:error, :invalid_config}
+  def validate!(config) do
+    case config do
+      %{team_id: nil} ->
+        raise Pigeon.ConfigError,
+          reason: "attempted to start without valid team_id",
+          config: redact(config)
+
+      %{key_identifier: nil} ->
+        raise Pigeon.ConfigError,
+          reason: "attempted to start without valid key_identifier",
+          config: redact(config)
+
+      %{key: {:error, _}, keyfile: {:error, _}} ->
+        raise Pigeon.ConfigError,
+          reason: "attempted to start without valid key",
+          config: redact(config)
+
+      _ ->
+        :ok
+    end
+  end
+
+  defp redact(config) do
+    [:key, :keyfile]
+    |> Enum.reduce(config, fn key, acc ->
+      case Map.get(acc, key) do
+        bin when is_binary(bin) -> Map.put(acc, key, "[FILTERED]")
+        {:RSAPrivateKey, _bin} -> Map.put(acc, key, "[FILTERED]")
+        _ -> acc
+      end
+    end)
   end
 
   def connect_socket_options(%{key: _jwt_key} = config) do
@@ -194,8 +232,6 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
   end
 
   @spec put_bearer_token(Config.headers(), JWTConfig.t()) :: Config.headers()
-  defp put_bearer_token(headers, %{key: nil}), do: headers
-
   defp put_bearer_token(headers, config) do
     token_storage_key = config.key_identifier <> ":" <> config.team_id
     {timestamp, saved_token} = Pigeon.APNS.Token.get(token_storage_key)

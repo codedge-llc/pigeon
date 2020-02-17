@@ -24,7 +24,7 @@ defmodule Pigeon.APNS.ConfigParser do
   @spec parse(atom | config_opts) :: config | {:error, :invalid_config}
   def parse(opts) when is_list(opts) do
     case config_type(Enum.into(opts, %{})) do
-      :error -> raise "invalid apns configuration #{inspect(opts)}"
+      :error -> raise Pigeon.ConfigError, reason: "configuration is invalid", config: opts
       type -> type.new(opts)
     end
   end
@@ -42,47 +42,32 @@ defmodule Pigeon.APNS.ConfigParser do
   defp config_type(_else), do: :error
 
   @doc false
-  def file_path(nil), do: nil
-
   def file_path(path) when is_binary(path) do
-    path
-    |> Path.expand()
-    |> validate_file_path!()
+    if :filelib.is_file(path) do
+      Path.expand(path)
+    else
+      {:error, {:nofile, path}}
+    end
   end
 
   def file_path({app_name, path}) when is_atom(app_name) do
     path
     |> Path.expand(:code.priv_dir(app_name))
-    |> validate_file_path!()
+    |> file_path()
   end
 
-  @doc false
-  def cert({_app_name, _path}), do: nil
-  def cert(nil), do: nil
-
-  def cert(bin) do
-    case :public_key.pem_decode(bin) do
-      [{:Certificate, cert, _}] -> cert
-      _ -> nil
-    end
-  end
+  def file_path(other), do: {:error, {:nofile, other}}
 
   @doc false
-  def key({_app_name, _path}), do: nil
-  def key(nil), do: nil
-
-  def key(bin) do
-    case :public_key.pem_decode(bin) do
-      [{:RSAPrivateKey, key, _}] -> {:RSAPrivateKey, key}
-      _ -> nil
+  def strip_errors(config, key1, key2) do
+    case {Map.get(config, key1), Map.get(config, key2)} do
+      {{:error, _}, {:error, _}} -> config
+      {{:error, _}, _} -> Map.put(config, key1, nil)
+      {_, {:error, _}} -> Map.put(config, key2, nil)
     end
   end
 
   def uri_for_mode(:dev), do: @apns_development_api_uri
   def uri_for_mode(:prod), do: @apns_production_api_uri
   def uri_for_mode(_else), do: nil
-
-  defp validate_file_path!(path) do
-    if :filelib.is_file(path), do: path, else: raise("file not found: #{path}")
-  end
 end

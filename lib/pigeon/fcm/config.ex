@@ -150,6 +150,22 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   def close(_config) do
   end
 
+  def validate!(%{key: key}) when is_binary(key) do
+    :ok
+  end
+
+  def validate!(config) do
+    raise Pigeon.ConfigError,
+      reason: "attempted to start without valid key",
+      config: redact(config)
+  end
+
+  defp redact(%{key: key} = config) when is_binary(key) do
+    Map.put(config, :key, "[FILTERED]")
+  end
+
+  defp redact(config), do: config
+
   # no on_response callback, ignore
   def parse_result(_, _, nil, _notif), do: :ok
 

@@ -41,6 +41,7 @@ defmodule Pigeon.Worker do
   end
 
   def init({:ok, config}) do
+    Configurable.validate!(config)
     state = %Worker{config: config}
     {:producer, state}
   end

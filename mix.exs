@@ -1,14 +1,14 @@
 defmodule Pigeon.Mixfile do
   use Mix.Project
 
-  @version "1.4.0"
+  @version "1.5.0"
 
   def project do
     [
       app: :pigeon,
       name: "Pigeon",
       version: @version,
-      elixir: "~> 1.4",
+      elixir: "~> 1.6",
       elixirc_paths: elixirc_paths(Mix.env()),
       source_url: "https://github.com/codedge-llc/pigeon",
       description: description(),
@@ -51,7 +51,7 @@ defmodule Pigeon.Mixfile do
     [
       {:poison, "~> 2.0 or ~> 3.0 or ~> 4.0"},
       {:httpoison, "~> 0.7 or ~> 1.0"},
-      {:gen_stage, "~> 0.12"},
+      {:gen_stage, "~> 0.12 or ~> 1.0"},
       {:joken, "~> 2.1"},
       {:kadabra, "~> 0.4.3", optional: true},
       {:earmark, "~> 1.0", only: :dev},

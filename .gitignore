@@ -11,3 +11,4 @@ secrets.tar
 scratchpad.txt
 .DS_Store
 .iex.exs
+*.swp

@@ -143,17 +143,9 @@ defmodule Pigeon.FCM.Notification do
 
   def new(reg_ids, notification, data) do
     reg_ids
-    |> chunk(@chunk_size, @chunk_size, [])
+    |> Enum.chunk_every(@chunk_size, @chunk_size, [])
     |> Enum.map(&new(&1, notification, data))
     |> List.flatten()
-  end
-
-  defp chunk(collection, chunk_size, step, padding) do
-    if Kernel.function_exported?(Enum, :chunk_every, 4) do
-      Enum.chunk_every(collection, chunk_size, step, padding)
-    else
-      Enum.chunk(collection, chunk_size, step, padding)
-    end
   end
 
   @doc """
