@@ -142,6 +142,7 @@ defmodule Pigeon.APNS.Config do
   defp key(bin) when is_binary(bin) do
     case :public_key.pem_decode(bin) do
       [{:RSAPrivateKey, key, _}] -> {:RSAPrivateKey, key}
+      [{:PrivateKeyInfo, key, _}] -> {:PrivateKeyInfo, key}
       _ -> {:error, {:invalid, bin}}
     end
   end
