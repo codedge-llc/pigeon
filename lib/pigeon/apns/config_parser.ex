@@ -36,12 +36,14 @@ defmodule Pigeon.APNS.ConfigParser do
     |> parse()
   end
 
+  @spec config_type(any) :: module | :error
   defp config_type(%{cert: _cert, key_identifier: _key_id}), do: :error
   defp config_type(%{cert: _cert}), do: Config
   defp config_type(%{key_identifier: _jwt_key}), do: JWTConfig
   defp config_type(_else), do: :error
 
   @doc false
+  @spec file_path(binary) :: binary | {:error, {:nofile, binary}}
   def file_path(path) when is_binary(path) do
     if :filelib.is_file(path) do
       Path.expand(path)
@@ -59,6 +61,18 @@ defmodule Pigeon.APNS.ConfigParser do
   def file_path(other), do: {:error, {:nofile, other}}
 
   @doc false
+  def redact(config) when is_map(config) do
+    [:cert, :key, :keyfile]
+    |> Enum.reduce(config, fn key, acc ->
+      case Map.get(acc, key) do
+        bin when is_binary(bin) -> Map.put(acc, key, "[FILTERED]")
+        {:RSAPrivateKey, _bin} -> Map.put(acc, key, "[FILTERED]")
+        _ -> acc
+      end
+    end)
+  end
+
+  @doc false
   def strip_errors(config, key1, key2) do
     case {Map.get(config, key1), Map.get(config, key2)} do
       {{:error, _}, {:error, _}} -> config
@@ -67,6 +81,7 @@ defmodule Pigeon.APNS.ConfigParser do
     end
   end
 
+  @spec uri_for_mode(atom) :: binary | nil
   def uri_for_mode(:dev), do: @apns_development_api_uri
   def uri_for_mode(:prod), do: @apns_production_api_uri
   def uri_for_mode(_else), do: nil

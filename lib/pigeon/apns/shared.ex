@@ -7,7 +7,8 @@ defmodule Pigeon.APNS.Shared do
 
   @type config :: Config.t() | JWTConfig.t()
 
-  @type headers :: [{binary(), any()}]
+  @type headers :: [{String.t(), String.t()}]
+  @type opts :: Keyword.t()
 
   @apns_id "apns-id"
   @apns_topic "apns-topic"
@@ -22,7 +23,7 @@ defmodule Pigeon.APNS.Shared do
   @spec max_demand(any) :: non_neg_integer
   def max_demand(_config), do: 1_000
 
-  @spec push_headers(Config.t(), Notification.t(), Keyword.t()) :: headers()
+  @spec push_headers(config, Notification.t(), opts) :: headers()
   def push_headers(_config, notification, _opts) do
     json = Poison.encode!(notification.payload)
 
@@ -39,8 +40,7 @@ defmodule Pigeon.APNS.Shared do
     |> put_header(@apns_collapse_id, notification.collapse_id)
   end
 
-  @spec push_payload(config, Notification.t(), Keyword.t()) ::
-          iodata | no_return
+  @spec push_payload(config, Notification.t(), opts) :: iodata | no_return
   def push_payload(_config, notification, _opts) do
     Poison.encode!(notification.payload)
   end

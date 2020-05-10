@@ -1,5 +1,8 @@
 # Changelog
 
+# v1.5.1
+* Fixed various typespecs.
+
 ## v1.5.0
 * Bumped minimum Elixir version to 1.6
 * Raise `Pigeon.ConfigError` when booting invalid config structs. 

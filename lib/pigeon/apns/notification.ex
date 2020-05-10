@@ -39,7 +39,7 @@ defmodule Pigeon.APNS.Notification do
           priority: non_neg_integer | nil,
           push_type: String.t() | nil,
           id: String.t() | nil,
-          payload: %{String.t() => String.t()},
+          payload: %{String.t() => String.t() | map},
           response: response,
           topic: String.t() | nil
         }

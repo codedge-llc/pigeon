@@ -3,15 +3,15 @@ defmodule Pigeon.APNS.Config do
   Configuration for APNS Workers using certificates.
   """
 
-  defstruct name: nil,
-            reconnect: true,
-            cert: nil,
+  defstruct cert: nil,
             certfile: nil,
             key: nil,
             keyfile: nil,
-            uri: nil,
+            name: nil,
             port: 443,
-            ping_period: 600_000
+            ping_period: 600_000,
+            reconnect: true,
+            uri: nil
 
   @typedoc ~S"""
   Certificate APNS configuration struct
@@ -152,9 +152,14 @@ end
 defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
   @moduledoc false
 
-  alias Pigeon.APNS.Shared
+  alias Pigeon.APNS.{
+    Config,
+    ConfigParser,
+    Shared
+  }
 
   @type sock :: {:sslsocket, any, pid | {any, any}}
+  @type socket_opts :: maybe_improper_list(atom, integer | boolean)
 
   # Configurable Callbacks
 
@@ -166,13 +171,8 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
   def connect(%{uri: uri} = config) do
     uri = to_charlist(uri)
 
-    case connect_socket_options(config) do
-      {:ok, options} ->
-        Pigeon.Http2.Client.default().connect(uri, :https, options)
-
-      error ->
-        error
-    end
+    options = connect_socket_options(config)
+    Pigeon.Http2.Client.default().connect(uri, :https, options)
   end
 
   defdelegate push_headers(config, notification, opts), to: Shared
@@ -186,53 +186,42 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
 
   defdelegate close(config), to: Shared
 
-  def validate!(config) do
-    case config do
-      %{cert: {:error, _}, certfile: {:error, _}} ->
-        raise Pigeon.ConfigError,
-          reason: "attempted to start without valid certificate",
-          config: redact(config)
-
-      %{key: {:error, _}, keyfile: {:error, _}} ->
-        raise Pigeon.ConfigError,
-          reason: "attempted to start without valid key",
-          config: redact(config)
-
-      _ ->
-        :ok
-    end
+  @spec validate!(Config.t()) :: :ok | no_return
+  def validate!(%Config{cert: {:error, _}, certfile: {:error, _}} = config) do
+    raise Pigeon.ConfigError,
+      reason: "attempted to start without valid certificate",
+      config: ConfigParser.redact(config)
   end
 
-  defp redact(config) do
-    [:cert, :key]
-    |> Enum.reduce(config, fn key, acc ->
-      case Map.get(acc, key) do
-        bin when is_binary(bin) -> Map.put(acc, key, "[FILTERED]")
-        {:RSAPrivateKey, _bin} -> Map.put(acc, key, "[FILTERED]")
-        _ -> acc
-      end
-    end)
+  def validate!(%Config{key: {:error, _}, keyfile: {:error, _}} = config) do
+    raise Pigeon.ConfigError,
+      reason: "attempted to start without valid key",
+      config: ConfigParser.redact(config)
   end
 
+  def validate!(%Config{}) do
+    :ok
+  end
+
+  @spec connect_socket_options(Config.t()) :: socket_opts
   def connect_socket_options(config) do
-    options =
-      [
-        cert_option(config),
-        key_option(config),
-        {:password, ''},
-        {:packet, 0},
-        {:reuseaddr, true},
-        {:active, true},
-        :binary
-      ]
-      |> Shared.add_port(config)
-
-    {:ok, options}
+    [
+      cert_option(config),
+      key_option(config),
+      {:password, ''},
+      {:packet, 0},
+      {:reuseaddr, true},
+      {:active, true},
+      :binary
+    ]
+    |> Shared.add_port(config)
   end
 
+  @spec cert_option(Config.t()) :: {:cert, binary} | {:certfile, binary}
   def cert_option(%{cert: cert, certfile: nil}), do: {:cert, cert}
   def cert_option(%{cert: nil, certfile: file}), do: {:certfile, file}
 
+  @spec key_option(Config.t()) :: {:key, binary} | {:keyfile, binary}
   def key_option(%{key: key, keyfile: nil}), do: {:key, key}
   def key_option(%{key: nil, keyfile: file}), do: {:keyfile, file}
 end

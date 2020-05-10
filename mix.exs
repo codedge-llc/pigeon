@@ -1,27 +1,14 @@
 defmodule Pigeon.Mixfile do
   use Mix.Project
 
-  @version "1.5.0"
+  @version "1.5.1"
 
   def project do
     [
       app: :pigeon,
-      name: "Pigeon",
-      version: @version,
-      elixir: "~> 1.6",
-      elixirc_paths: elixirc_paths(Mix.env()),
-      source_url: "https://github.com/codedge-llc/pigeon",
-      description: description(),
-      package: package(),
       build_embedded: Mix.env() == :prod,
-      start_permanent: Mix.env() == :prod,
-      test_coverage: [tool: ExCoveralls],
-      preferred_cli_env: [
-        coveralls: :test,
-        "coveralls.detail": :test,
-        "coveralls.post": :test,
-        "coveralls.html": :test
-      ],
+      deps: deps(),
+      description: description(),
       dialyzer: [
         plt_add_apps: [:kadabra, :poison],
         ignore_warnings: "config/dialyzer.ignore-warnings"
@@ -36,7 +23,21 @@ defmodule Pigeon.Mixfile do
           "CHANGELOG.md"
         ]
       ],
-      deps: deps()
+      elixir: "~> 1.6",
+      elixirc_options: [warnings_as_errors: true],
+      elixirc_paths: elixirc_paths(Mix.env()),
+      name: "Pigeon",
+      package: package(),
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test
+      ],
+      source_url: "https://github.com/codedge-llc/pigeon",
+      start_permanent: Mix.env() == :prod,
+      test_coverage: [tool: ExCoveralls],
+      version: @version
     ]
   end
 
@@ -49,16 +50,16 @@ defmodule Pigeon.Mixfile do
 
   defp deps do
     [
-      {:poison, "~> 2.0 or ~> 3.0 or ~> 4.0"},
-      {:httpoison, "~> 0.7 or ~> 1.0"},
+      {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
+      {:earmark, "~> 1.0", only: :dev},
+      {:excoveralls, "~> 0.5", only: :test},
+      {:ex_doc, "~> 0.18", only: :dev},
       {:gen_stage, "~> 0.12 or ~> 1.0"},
+      {:httpoison, "~> 0.7 or ~> 1.0"},
       {:joken, "~> 2.1"},
       {:kadabra, "~> 0.4.3", optional: true},
-      {:earmark, "~> 1.0", only: :dev},
-      {:ex_doc, "~> 0.18", only: :dev},
-      {:excoveralls, "~> 0.5", only: :test},
-      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
-      {:credo, "~> 1.0", only: [:dev, :test], runtime: false}
+      {:poison, "~> 2.0 or ~> 3.0 or ~> 4.0"}
     ]
   end
 
@@ -72,9 +73,9 @@ defmodule Pigeon.Mixfile do
   defp package do
     [
       files: ["lib", "mix.exs", "README*", "LICENSE*"],
-      maintainers: ["Henry Popp", "Tyler Hurst"],
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/codedge-llc/pigeon"}
+      links: %{"GitHub" => "https://github.com/codedge-llc/pigeon"},
+      maintainers: ["Henry Popp", "Tyler Hurst"]
     ]
   end
 end

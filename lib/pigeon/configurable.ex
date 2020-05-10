@@ -53,6 +53,6 @@ defprotocol Pigeon.Configurable do
 
   def close(config)
 
-  @spec validate!(any) :: :ok
+  @spec validate!(any) :: :ok | no_return
   def validate!(config)
 end

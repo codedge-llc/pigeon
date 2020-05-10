@@ -56,7 +56,7 @@ defmodule Pigeon.ADM.Config do
 
   defp valid_item?(item), do: is_binary(item) and String.length(item) > 0
 
-  @spec validate!(any) :: :ok
+  @spec validate!(any) :: :ok | no_return
   def validate!(config) do
     if valid?(config) do
       :ok
