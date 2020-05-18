@@ -17,6 +17,7 @@ defmodule Pigeon.APNS.Error do
           | :device_token_not_for_topic
           | :duplicate_headers
           | :idle_timeout
+          | :invalid_push_type
           | :missing_device_token
           | :missing_topic
           | :payload_empty
@@ -66,6 +67,7 @@ defmodule Pigeon.APNS.Error do
   defp parse_response("DeviceTokenNotForTopic"), do: :device_token_not_for_topic
   defp parse_response("DuplicateHeaders"), do: :duplicate_headers
   defp parse_response("IdleTimeout"), do: :idle_timeout
+  defp parse_response("InvalidPushType"), do: :invalid_push_type
   defp parse_response("MissingDeviceToken"), do: :missing_device_token
   defp parse_response("MissingTopic"), do: :missing_topic
   defp parse_response("PayloadEmpty"), do: :payload_empty
