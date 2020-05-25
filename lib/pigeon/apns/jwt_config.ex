@@ -3,17 +3,19 @@ defmodule Pigeon.APNS.JWTConfig do
   Configuration for APNS Workers using JWT.
   """
 
-  defstruct name: nil,
-            reconnect: true,
-            uri: nil,
-            port: 443,
-            ping_period: 600_000,
-            key: nil,
+  defstruct key: nil,
             keyfile: nil,
             key_identifier: nil,
-            team_id: nil
+            name: nil,
+            ping_period: 600_000,
+            port: 443,
+            reconnect: true,
+            team_id: nil,
+            uri: nil
 
-  alias Pigeon.APNS.{Config, ConfigParser}
+  alias Pigeon.APNS.ConfigParser
+
+  @type headers :: [{binary, binary}]
 
   @typedoc ~S"""
   JWT APNS configuration struct
@@ -41,8 +43,8 @@ defmodule Pigeon.APNS.JWTConfig do
           uri: binary | nil,
           port: pos_integer,
           ping_period: pos_integer,
-          key: binary | nil,
-          keyfile: binary | nil,
+          key: binary | nil | {:error, term},
+          keyfile: binary | nil | {:error, term},
           key_identifier: binary | nil,
           team_id: binary | nil
         }
@@ -142,9 +144,16 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
 
   import Joken.Config
 
-  alias Pigeon.APNS.{Config, JWTConfig, Notification, Shared}
+  alias Pigeon.APNS.{
+    ConfigParser,
+    JWTConfig,
+    Notification,
+    Shared
+  }
 
+  @type headers :: [{binary, binary}]
   @type sock :: {:sslsocket, any, pid | {any, any}}
+  @type socket_opts :: maybe_improper_list(atom, integer | boolean)
 
   # Seconds
   @token_max_age 3_590
@@ -155,22 +164,16 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
 
   defdelegate max_demand(any), to: Shared
 
-  @spec connect(any) :: {:ok, sock} | {:error, String.t()}
+  @spec connect(any) :: {:ok, sock} | {:error, binary}
   def connect(%{uri: uri} = config) do
     uri = to_charlist(uri)
 
-    case connect_socket_options(config) do
-      {:ok, options} ->
-        Pigeon.Http2.Client.default().connect(uri, :https, options)
-
-      error ->
-        error
-    end
+    options = connect_socket_options(config)
+    Pigeon.Http2.Client.default().connect(uri, :https, options)
   end
 
-  @spec push_headers(JWTConfig.t(), Notification.t(), Keyword.t()) ::
-          Shared.headers()
-  def push_headers(config, notification, opts) do
+  @spec push_headers(JWTConfig.t(), Notification.t(), Keyword.t()) :: headers | no_return
+  def push_headers(%JWTConfig{} = config, notification, opts) do
     config
     |> Shared.push_headers(notification, opts)
     |> put_bearer_token(config)
@@ -185,54 +188,42 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
 
   defdelegate close(config), to: Shared
 
-  def validate!(config) do
-    case config do
-      %{team_id: nil} ->
-        raise Pigeon.ConfigError,
-          reason: "attempted to start without valid team_id",
-          config: redact(config)
-
-      %{key_identifier: nil} ->
-        raise Pigeon.ConfigError,
-          reason: "attempted to start without valid key_identifier",
-          config: redact(config)
-
-      %{key: {:error, _}, keyfile: {:error, _}} ->
-        raise Pigeon.ConfigError,
-          reason: "attempted to start without valid key",
-          config: redact(config)
-
-      _ ->
-        :ok
-    end
+  @spec validate!(JWTConfig.t()) :: :ok | no_return
+  def validate!(%JWTConfig{team_id: nil} = config) do
+    raise Pigeon.ConfigError,
+      reason: "attempted to start without valid team_id",
+      config: ConfigParser.redact(config)
   end
 
-  defp redact(config) do
-    [:key, :keyfile]
-    |> Enum.reduce(config, fn key, acc ->
-      case Map.get(acc, key) do
-        bin when is_binary(bin) -> Map.put(acc, key, "[FILTERED]")
-        {:RSAPrivateKey, _bin} -> Map.put(acc, key, "[FILTERED]")
-        _ -> acc
-      end
-    end)
+  def validate!(%JWTConfig{key_identifier: nil} = config) do
+    raise Pigeon.ConfigError,
+      reason: "attempted to start without valid key_identifier",
+      config: ConfigParser.redact(config)
   end
 
+  def validate!(%JWTConfig{key: {:error, _}, keyfile: {:error, _}} = config) do
+    raise Pigeon.ConfigError,
+      reason: "attempted to start without valid key",
+      config: ConfigParser.redact(config)
+  end
+
+  def validate!(%JWTConfig{}) do
+    :ok
+  end
+
+  @spec connect_socket_options(JWTConfig.t()) :: socket_opts
   def connect_socket_options(%{key: _jwt_key} = config) do
-    options =
-      [
-        {:packet, 0},
-        {:reuseaddr, true},
-        {:active, true},
-        :binary
-      ]
-      |> Shared.add_port(config)
-
-    {:ok, options}
+    [
+      {:packet, 0},
+      {:reuseaddr, true},
+      {:active, true},
+      :binary
+    ]
+    |> Shared.add_port(config)
   end
 
-  @spec put_bearer_token(Config.headers(), JWTConfig.t()) :: Config.headers()
-  defp put_bearer_token(headers, config) do
+  @spec put_bearer_token(headers, JWTConfig.t()) :: headers
+  defp put_bearer_token(headers, %JWTConfig{} = config) when is_list(headers) do
     token_storage_key = config.key_identifier <> ":" <> config.team_id
     {timestamp, saved_token} = Pigeon.APNS.Token.get(token_storage_key)
     now = :os.system_time(:seconds)
@@ -246,7 +237,7 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
     [{"authorization", "bearer " <> token} | headers]
   end
 
-  @spec generate_apns_jwt(JWTConfig.t(), String.t()) :: String.t()
+  @spec generate_apns_jwt(JWTConfig.t(), binary) :: binary
   defp generate_apns_jwt(config, token_storage_key) do
     key = get_token_key(config)
     now = :os.system_time(:seconds)
@@ -255,14 +246,14 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
 
     {:ok, token, _claims} =
       default_claims(iss: config.team_id, iat: now)
-      |> Joken.generate_and_sign(nil, signer)
+      |> Joken.generate_and_sign(%{}, signer)
 
     :ok = Pigeon.APNS.Token.update(token_storage_key, {now, token})
 
     token
   end
 
-  @spec get_token_key(JWTConfig.t()) :: JOSE.JWK.t()
+  @spec get_token_key(JWTConfig.t()) :: %{binary => binary}
   defp get_token_key(%JWTConfig{keyfile: nil} = config) do
     %{"pem" => config.key}
   end

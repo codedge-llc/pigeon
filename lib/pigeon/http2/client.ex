@@ -100,7 +100,8 @@ defmodule Pigeon.Http2.Client do
 
   @callback send_ping(pid) :: :ok
 
-  @callback send_request(pid, headers :: Keyword.t(), data :: String.t()) :: :ok
+  @callback send_request(pid, headers :: [{binary, binary}, ...], data :: String.t()) ::
+              :ok
 
   @callback handle_end_stream(msg :: term, state :: term) ::
               {:ok, %Pigeon.Http2.Stream{}}

@@ -39,7 +39,7 @@ defmodule Pigeon.APNS.Notification do
           priority: non_neg_integer | nil,
           push_type: String.t() | nil,
           id: String.t() | nil,
-          payload: %{String.t() => String.t()},
+          payload: %{String.t() => term},
           response: response,
           topic: String.t() | nil
         }
@@ -47,11 +47,11 @@ defmodule Pigeon.APNS.Notification do
   @typedoc ~S"""
   APNS push response
 
-  - nil - Push has not been sent yet
-  - `:success` - Push was successfully sent
+  - nil - Push has not been sent yet.
+  - `:success` - Push was successfully sent.
   - `t:Pigeon.APNS.Error.error_response/0` - Push attempted but
-     server responded with error
-  - `:timeout` - Internal error. Push did not reach APNS servers
+     server responded with error.
+  - `:timeout` - Internal error. Push did not reach APNS servers.
   """
   @type response :: nil | :success | Error.error_response() | :timeout
 
@@ -279,7 +279,7 @@ defmodule Pigeon.APNS.Notification do
         topic: nil
       }
   """
-  @spec put_custom(t, %{String.t() => String.t()}) :: t
+  @spec put_custom(t, %{String.t() => term}) :: t
   def put_custom(notification, data) do
     new_payload = Map.merge(notification.payload, data)
     %{notification | payload: new_payload}
