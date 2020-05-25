@@ -222,6 +222,7 @@ second parameter.
 |`:expired_provider_token`			     	|The provider token is stale and a new token should be generated.|
 |`:forbidden`                         |The specified action is not allowed.|
 |`:invalid_provider_token`			     	|The provider token is not valid or the token signature could not be verified.|
+|`:invalid_push_type`     			     	|The apns-push-type value is invalid.|
 |`:missing_provider_token`			     	|No provider certificate was used to connect to APNs and Authorization header was missing or no provider token was specified.|
 |`:bad_path`                          |The request contained a bad :path value.|
 |`:method_not_allowed`                |The specified :method was not POST.|
