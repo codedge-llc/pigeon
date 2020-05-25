@@ -1,6 +1,6 @@
 # Changelog
 
-# v1.5.1
+## v1.5.1
 
 - Added APNS InvalidPushType error ([#172](https://github.com/codedge-llc/pigeon/pull/172)).
 - Fixed various typespecs ([#170](https://github.com/codedge-llc/pigeon/pull/170)).
