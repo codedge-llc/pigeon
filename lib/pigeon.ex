@@ -92,7 +92,7 @@ defmodule Pigeon do
 
   To customize the JSON library, include the following in your config/config.exs:
 
-      config :phoenix, :json_library, Jason
+      config :pigeon, :json_library, Jason
   """
   @spec json_library :: module
   def json_library do
