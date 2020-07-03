@@ -26,6 +26,7 @@ defmodule Pigeon.ADM.Worker do
 
   def initialize_worker(config) do
     Pigeon.ADM.Config.validate!(config)
+
     {:ok,
      %{
        config: config,
@@ -102,7 +103,7 @@ defmodule Pigeon.ADM.Worker do
 
     case post do
       {:ok, %{status_code: 200, body: response_body}} ->
-        {:ok, response_json} = Poison.decode(response_body)
+        {:ok, response_json} = Pigeon.json_library().decode(response_body)
 
         %{
           "access_token" => access_token,
@@ -123,7 +124,7 @@ defmodule Pigeon.ADM.Worker do
          }}
 
       {:ok, %{body: response_body}} ->
-        {:ok, response_json} = Poison.decode(response_body)
+        {:ok, response_json} = Pigeon.json_library().decode(response_body)
         Logger.error("Refresh token response: #{inspect(response_json)}")
         {:error, response_json["reason"]}
     end
@@ -192,7 +193,7 @@ defmodule Pigeon.ADM.Worker do
     |> put_consolidation_key(notification.consolidation_key)
     |> put_expires_after(notification.expires_after)
     |> put_md5(notification.md5)
-    |> Poison.encode!()
+    |> Pigeon.json_library().encode!()
   end
 
   defp put_consolidation_key(payload, nil), do: payload
@@ -220,12 +221,12 @@ defmodule Pigeon.ADM.Worker do
     do: handle_error_status_code(status, body, notification, on_response)
 
   defp handle_200_status(body, notification, on_response) do
-    {:ok, json} = Poison.decode(body)
+    {:ok, json} = Pigeon.json_library().decode(body)
     parse_result(notification, json, on_response)
   end
 
   defp handle_error_status_code(status, body, notification, on_response) do
-    case Poison.decode(body) do
+    case Pigeon.json_library().decode(body) do
       {:ok, %{"reason" => _reason} = result_json} ->
         parse_result(notification, result_json, on_response)
 

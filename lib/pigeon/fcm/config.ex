@@ -115,7 +115,7 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   end
 
   defp do_handle_end_stream(200, body, notif, on_response) do
-    result = Poison.decode!(body)
+    result = Pigeon.json_library().decode!(body)
     notif = %{notif | status: :success}
     parse_result(notif.registration_id, result, on_response, notif)
   end
@@ -174,12 +174,12 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   end
 
   def parse_error(data) do
-    case Poison.decode(data) do
+    case Pigeon.json_library().decode(data) do
       {:ok, response} ->
         response["reason"] |> Macro.underscore() |> String.to_existing_atom()
 
       error ->
-        "Poison parse failed: #{inspect(error)}, body: #{inspect(data)}"
+        "JSON parse failed: #{inspect(error)}, body: #{inspect(data)}"
         |> Logger.error()
     end
   end

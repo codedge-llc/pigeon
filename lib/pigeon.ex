@@ -87,6 +87,18 @@ defmodule Pigeon do
     end
   end
 
+  @doc """
+  Returns the configured JSON encoding library for Pigeon.
+
+  To customize the JSON library, include the following in your config/config.exs:
+
+      config :phoenix, :json_library, Jason
+  """
+  @spec json_library :: module
+  def json_library do
+    Application.get_env(:pigeon, :json_library, Jason)
+  end
+
   @doc false
   def start_connection(state) do
     opts = [restart: :temporary, id: :erlang.make_ref()]

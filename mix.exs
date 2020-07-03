@@ -1,7 +1,7 @@
 defmodule Pigeon.Mixfile do
   use Mix.Project
 
-  @version "1.5.1"
+  @version "2.0.0"
 
   def project do
     [
@@ -9,10 +9,7 @@ defmodule Pigeon.Mixfile do
       build_embedded: Mix.env() == :prod,
       deps: deps(),
       description: description(),
-      dialyzer: [
-        plt_add_apps: [:kadabra, :poison],
-        ignore_warnings: "config/dialyzer.ignore-warnings"
-      ],
+      dialyzer: dialyzer(),
       docs: [
         main: "getting-started",
         extras: [
@@ -57,9 +54,9 @@ defmodule Pigeon.Mixfile do
       {:ex_doc, "~> 0.18", only: :dev},
       {:gen_stage, "~> 0.12 or ~> 1.0"},
       {:httpoison, "~> 0.7 or ~> 1.0"},
+      {:jason, "~> 1.0", optional: true},
       {:joken, "~> 2.1"},
-      {:kadabra, "~> 0.4.3", optional: true},
-      {:poison, "~> 2.0 or ~> 3.0 or ~> 4.0"}
+      {:kadabra, "~> 0.4.3", optional: true}
     ]
   end
 
@@ -76,6 +73,12 @@ defmodule Pigeon.Mixfile do
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/codedge-llc/pigeon"},
       maintainers: ["Henry Popp", "Tyler Hurst"]
+    ]
+  end
+
+  defp dialyzer do
+    [
+      plt_file: {:no_warn, "priv/plts/dialyzer.plt"}
     ]
   end
 end

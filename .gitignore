@@ -12,3 +12,7 @@ scratchpad.txt
 .DS_Store
 .iex.exs
 *.swp
+
+# Dialyzer artifacts
+/priv/plts/*.plt
+/priv/plts/*.plt.hash
