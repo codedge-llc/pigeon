@@ -443,7 +443,7 @@ defimpl Pigeon.Encodable, for: Pigeon.FCM.Notification do
     |> encode_attr("content_available", notif.content_available)
     |> encode_attr("mutable_content", notif.mutable_content)
     |> encode_attr("condition", notif.condition)
-    |> Poison.encode!()
+    |> Pigeon.json_library().encode!()
   end
 
   defp encode_attr(map, _key, nil), do: map

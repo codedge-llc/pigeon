@@ -53,7 +53,7 @@ defmodule Pigeon.APNS.Error do
   @spec parse(binary) :: error_response
   def parse(data) do
     data
-    |> Poison.decode!()
+    |> Pigeon.json_library().decode!()
     |> Map.get("reason")
     |> parse_response()
   end

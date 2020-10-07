@@ -25,7 +25,7 @@ defmodule Pigeon.APNS.Shared do
 
   @spec push_headers(config, Notification.t(), opts) :: headers()
   def push_headers(_config, notification, _opts) do
-    json = Poison.encode!(notification.payload)
+    json = Pigeon.json_library().encode!(notification.payload)
 
     [
       {":method", "POST"},
@@ -42,7 +42,7 @@ defmodule Pigeon.APNS.Shared do
 
   @spec push_payload(config, Notification.t(), opts) :: iodata | no_return
   def push_payload(_config, notification, _opts) do
-    Poison.encode!(notification.payload)
+    Pigeon.json_library().encode!(notification.payload)
   end
 
   def handle_end_stream(_config, stream, notification, on_response) do
