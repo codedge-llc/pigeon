@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.6.0 (dev)
+
+**Added**
+
+- JSON library made configurable. For backwards compatability, Poison is still a required dependency.
+  Override in your `config.exs`.
+
+  ```
+  config :pigeon, json_library: Jason
+  ```
+
 ## v1.5.1
 
 - Added APNS InvalidPushType error ([#172](https://github.com/codedge-llc/pigeon/pull/172)).
