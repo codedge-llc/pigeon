@@ -95,7 +95,7 @@ defmodule Pigeon do
   """
   @spec json_library :: module
   def json_library do
-    Application.get_env(:pigeon, :json_library, Poison)
+    Application.get_env(:pigeon, :json_library, Jason)
   end
 
   @doc false
