@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.0.0 (dev)
+
+**Changed**
+
+- Default JSON library set to Jason.
+
 ## v1.6.0
 
 **Added**
