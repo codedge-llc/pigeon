@@ -10,7 +10,7 @@ defmodule Pigeon.APNS.ConfigTest do
       config =
         Pigeon.APNS.Config.new(
           cert: "thisisnotacert",
-          key: File.read!("test/support/FakeKey.pem")
+          key: File.read!("test/support/FakeAPNSKey.pem")
         )
 
       Pigeon.Worker.init({:ok, config})
@@ -21,7 +21,7 @@ defmodule Pigeon.APNS.ConfigTest do
     assert_raise(Pigeon.ConfigError, @invalid_key_msg, fn ->
       config =
         Pigeon.APNS.Config.new(
-          cert: File.read!("test/support/FakeCert.pem"),
+          cert: File.read!("test/support/FakeAPNSCert.pem"),
           key: "thisisnotakey"
         )
 
