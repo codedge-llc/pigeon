@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.6.0 (dev)
+## v1.6.0
 
 **Added**
 
@@ -10,6 +10,10 @@
   ```
   config :pigeon, json_library: Jason
   ```
+
+**Fixed**
+
+- Handle FCM single message_id's on topic pushes.
 
 ## v1.5.1
 
