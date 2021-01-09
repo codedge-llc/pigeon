@@ -10,7 +10,7 @@ defmodule Pigeon.Mixfile do
       deps: deps(),
       description: description(),
       dialyzer: [
-        plt_add_apps: [:kadabra, :poison],
+        plt_add_apps: [:kadabra],
         ignore_warnings: "config/dialyzer.ignore-warnings"
       ],
       docs: [
@@ -45,7 +45,10 @@ defmodule Pigeon.Mixfile do
   defp elixirc_paths(_), do: ["lib"]
 
   def application do
-    [extra_applications: [:logger], mod: {Pigeon, []}]
+    [
+      extra_applications: [:logger],
+      mod: {Pigeon.Application, []}
+    ]
   end
 
   defp deps do

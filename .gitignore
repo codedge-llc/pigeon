@@ -4,8 +4,9 @@
 /doc
 erl_crash.dump
 *.ez
-*.pem
-*.p8
+cert.pem
+key_unencrypted.pem
+AuthKey.p8
 *.p12
 secrets.tar
 scratchpad.txt

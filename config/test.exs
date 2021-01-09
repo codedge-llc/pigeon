@@ -4,8 +4,8 @@ config :pigeon, :test,
   fcm_key: System.get_env("GCM_KEY"),
   valid_fcm_reg_id: System.get_env("VALID_GCM_REG_ID"),
   valid_apns_token: System.get_env("VALID_APNS_TOKEN"),
-  apns_cert: "cert.pem",
-  apns_key: "key_unencrypted.pem",
+  apns_cert: File.read!("cert.pem"),
+  apns_key: File.read!("key_unencrypted.pem"),
   apns_topic: System.get_env("APNS_TOPIC")
 
 config :pigeon,
@@ -24,12 +24,12 @@ config :pigeon, :fcm,
 
 config :pigeon, :apns,
   apns_default: %{
-    cert: "cert.pem",
-    key: "key_unencrypted.pem",
+    cert: File.read!("cert.pem"),
+    key: File.read!("key_unencrypted.pem"),
     mode: :dev
   },
   apns_jwt_static: %{
-    key: "AuthKey.p8",
+    key: File.read!("AuthKey.p8"),
     key_identifier: System.get_env("APNS_JWT_KEY_IDENTIFIER"),
     team_id: System.get_env("APNS_JWT_TEAM_ID"),
     mode: :dev

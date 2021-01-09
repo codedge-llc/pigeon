@@ -72,15 +72,6 @@ defmodule Pigeon.APNS.ConfigParser do
     end)
   end
 
-  @doc false
-  def strip_errors(config, key1, key2) do
-    case {Map.get(config, key1), Map.get(config, key2)} do
-      {{:error, _}, {:error, _}} -> config
-      {{:error, _}, _} -> Map.put(config, key1, nil)
-      {_, {:error, _}} -> Map.put(config, key2, nil)
-    end
-  end
-
   @spec uri_for_mode(atom) :: binary | nil
   def uri_for_mode(:dev), do: @apns_development_api_uri
   def uri_for_mode(:prod), do: @apns_production_api_uri
