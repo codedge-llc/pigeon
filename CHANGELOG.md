@@ -4,7 +4,13 @@
 
 **Changed**
 
-- Default JSON library set to Jason.
+- Default JSON library set to Jason. (#182)
+- Pigeon application module moved from `Pigeon` to `Pigeon.Application`
+
+**Removed**
+
+- `:certfile` and `:keyfile` are no longer valid options for APNS configurations. Read
+  the file before loading (e.g. `cert: File.read!("cert.pem")`)
 
 ## v1.6.0
 

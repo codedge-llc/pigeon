@@ -4,12 +4,10 @@ defmodule Pigeon.APNS.JWTConfig do
   """
 
   defstruct key: nil,
-            keyfile: nil,
             key_identifier: nil,
             name: nil,
             ping_period: 600_000,
             port: 443,
-            reconnect: true,
             team_id: nil,
             uri: nil
 
@@ -27,24 +25,20 @@ defmodule Pigeon.APNS.JWTConfig do
 
       %Pigeon.APNS.JWTConfig{
         name: :apns_default,
-        reconnect: true,
         uri: "api.push.apple.com",
         port: 443,
         ping_period: 600_000,
         key: nil,
-        keyfile: "key.p8",
         key_identifier: "ABC1234567",
         team_id: "DEF1234567"
       }
   """
   @type t :: %__MODULE__{
           name: atom | nil,
-          reconnect: boolean,
           uri: binary | nil,
           port: pos_integer,
           ping_period: pos_integer,
           key: binary | nil | {:error, term},
-          keyfile: binary | nil | {:error, term},
           key_identifier: binary | nil,
           team_id: binary | nil
         }
@@ -55,11 +49,7 @@ defmodule Pigeon.APNS.JWTConfig do
   ## Configuration Options
   - `:name` - Registered worker name.
   - `:mode` - If set to `:dev` or `:prod`, will set the appropriate `:uri`
-  - `:key` - JWT private key. Can be one of three options:
-    - Static file path
-    - Full-text string of the file contents (useful for environment variables)
-    - `{:my_app, "keys/private_key.p8"}` (indicates path relative to the `priv`
-      folder of the given application)
+  - `:key` - JWT private key. Must be the full-text string of the file contents.
   - `:key_identifier` - A 10-character key identifier (kid) key, obtained from
     your developer account
   - `:team_id` - Your 10-character Team ID, obtained from your developer account
@@ -69,9 +59,6 @@ defmodule Pigeon.APNS.JWTConfig do
     `443` and `2197`
   - `:ping_period` - Interval between server pings. Necessary to keep long
     running APNS connections alive. Defaults to 10 minutes.
-
-  ## Deprecated Options
-  - `:reconnect` - No longer used as of `v1.2.0`.
   """
   @type config_opts :: [
           name: atom | nil,
@@ -79,7 +66,6 @@ defmodule Pigeon.APNS.JWTConfig do
           key: binary | {atom, binary},
           key_identifier: binary | nil,
           team_id: binary | nil,
-          reconnect: boolean,
           ping_period: pos_integer,
           port: pos_integer,
           uri: binary
@@ -95,48 +81,50 @@ defmodule Pigeon.APNS.JWTConfig do
       iex> Pigeon.APNS.JWTConfig.new(
       ...>   name: :test,
       ...>   mode: :prod,
-      ...>   key: "test/support/AuthKey.p8-mock",
+      ...>   key: File.read!("test/support/FakeAPNSAuthKey.p8"),
       ...>   key_identifier: "ABC1234567",
       ...>   team_id: "DEF1234567",
       ...>   port: 2197,
       ...>   ping_period: 300_000
       ...> )
-      %Pigeon.APNS.JWTConfig{uri: "api.push.apple.com", name: :test,
-      team_id: "DEF1234567", key_identifier: "ABC1234567", 
-      keyfile: Path.expand("test/support/AuthKey.p8-mock"),
-      ping_period: 300000, port: 2197, reconnect: false}
+      %Pigeon.APNS.JWTConfig{
+        uri: "api.push.apple.com", 
+        name: :test,
+        team_id: "DEF1234567", 
+        key_identifier: "ABC1234567", 
+        key: File.read!("test/support/FakeAPNSAuthKey.p8"),
+        ping_period: 300000, 
+        port: 2197
+      }
 
       iex> config = Pigeon.APNS.JWTConfig.new(:apns_jwt_static)
       iex> %{config | key: nil, key_identifier: nil, team_id: nil} # Hide for testing
       iex> match? %_{uri: "api.development.push.apple.com", name: :apns_jwt_static,
-      ...> ping_period: 600_000, port: 443, reconnect: false}, config
+      ...> ping_period: 600_000, port: 443}, config
       true
   """
   def new(opts) when is_list(opts) do
     %__MODULE__{
       name: opts[:name],
-      reconnect: Keyword.get(opts, :reconnect, false),
       uri: Keyword.get(opts, :uri, ConfigParser.uri_for_mode(opts[:mode])),
       port: Keyword.get(opts, :port, 443),
       ping_period: Keyword.get(opts, :ping_period, 600_000),
-      key: key(opts[:key]),
-      keyfile: ConfigParser.file_path(opts[:key]),
+      key: decode_key(opts[:key]),
       key_identifier: Keyword.get(opts, :key_identifier),
       team_id: Keyword.get(opts, :team_id)
     }
-    |> ConfigParser.strip_errors(:key, :keyfile)
   end
 
   def new(name) when is_atom(name), do: ConfigParser.parse(name)
 
-  defp key(bin) when is_binary(bin) do
+  defp decode_key(bin) when is_binary(bin) do
     case :public_key.pem_decode(bin) do
       [] -> {:error, {:invalid, bin}}
       [{_, _, _}] -> bin
     end
   end
 
-  defp key(other), do: {:error, {:invalid, other}}
+  defp decode_key(other), do: {:error, {:invalid, other}}
 end
 
 defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
@@ -201,7 +189,7 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
       config: ConfigParser.redact(config)
   end
 
-  def validate!(%JWTConfig{key: {:error, _}, keyfile: {:error, _}} = config) do
+  def validate!(%JWTConfig{key: {:error, _}} = config) do
     raise Pigeon.ConfigError,
       reason: "attempted to start without valid key",
       config: ConfigParser.redact(config)
@@ -239,7 +227,7 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
 
   @spec generate_apns_jwt(JWTConfig.t(), binary) :: binary
   defp generate_apns_jwt(config, token_storage_key) do
-    key = get_token_key(config)
+    key = %{"pem" => config.key}
     now = :os.system_time(:seconds)
 
     signer = Joken.Signer.create("ES256", key, %{"kid" => config.key_identifier})
@@ -251,14 +239,5 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
     :ok = Pigeon.APNS.Token.update(token_storage_key, {now, token})
 
     token
-  end
-
-  @spec get_token_key(JWTConfig.t()) :: %{binary => binary}
-  defp get_token_key(%JWTConfig{keyfile: nil} = config) do
-    %{"pem" => config.key}
-  end
-
-  defp get_token_key(%JWTConfig{keyfile: file}) do
-    %{"pem" => File.read!(file)}
   end
 end
