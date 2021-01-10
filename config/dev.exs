@@ -7,8 +7,8 @@ config :pigeon, :fcm,
 
 config :pigeon, :apns,
   apns_default: %{
-    cert: "cert.pem",
-    key: "key_unencrypted.pem",
+    cert: File.read!("cert.pem"),
+    key: File.read!("key_unencrypted.pem"),
     mode: :dev
   }
 

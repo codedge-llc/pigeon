@@ -14,7 +14,13 @@ defmodule Pigeon.Application do
   end
 
   defp workers do
+    config = [
+      client_id: System.get_env("ADM_OAUTH2_CLIENT_ID"),
+      client_secret: System.get_env("ADM_OAUTH2_CLIENT_SECRET")
+    ]
+
     [
+      {PigeonTest.ADM, config},
       adm_workers(),
       apns_workers(),
       fcm_workers(),
