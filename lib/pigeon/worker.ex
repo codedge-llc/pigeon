@@ -26,6 +26,15 @@ defmodule Pigeon.Worker do
     end
   end
 
+  def child_spec(opts) do
+    %{
+      id: opts[:id],
+      restart: :temporary,
+      start: {__MODULE__, :start_link, [opts[:config]]},
+      type: :worker
+    }
+  end
+
   @spec stop_connection(pid) :: :ok
   def stop_connection(pid) do
     GenStage.cast(pid, :stop)

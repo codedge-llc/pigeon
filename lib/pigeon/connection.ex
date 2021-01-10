@@ -35,6 +35,15 @@ defmodule Pigeon.Connection do
     GenStage.start_link(__MODULE__, {config, from})
   end
 
+  def child_spec(state) do
+    %{
+      id: :erlang.make_ref(),
+      restart: :temporary,
+      start: {__MODULE__, :start_link, [state]},
+      type: :worker
+    }
+  end
+
   def init({config, from}) do
     state = %Connection{config: config, from: from}
 

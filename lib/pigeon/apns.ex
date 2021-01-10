@@ -3,11 +3,9 @@ defmodule Pigeon.APNS do
   Apple Push Notification Service (APNS)
   """
 
-  require Logger
-  import Supervisor.Spec
-
   alias Pigeon.APNS.{Config, Notification}
   alias Pigeon.Worker
+  require Logger
 
   @typedoc ~S"""
   Can be either a single notification or a list.
@@ -125,7 +123,7 @@ defmodule Pigeon.APNS do
   @spec start_connection(atom | Config.t() | Keyword.t()) :: {:ok, pid}
   def start_connection(name) when is_atom(name) do
     config = Config.new(name)
-    Supervisor.start_child(:pigeon, worker(Pigeon.Worker, [config], id: name))
+    Supervisor.start_child(:pigeon, {Pigeon.Worker, config: config, id: name})
   end
 
   def start_connection(%_{} = config) do
