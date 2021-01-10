@@ -3,11 +3,9 @@ defmodule Pigeon.FCM do
   Firebase Cloud Messaging (FCM)
   """
 
-  require Logger
-  import Supervisor.Spec
-
   alias Pigeon.FCM.{Config, Notification}
   alias Pigeon.Worker
+  require Logger
 
   @typedoc ~S"""
   Can be either a single notification or a list.
@@ -164,8 +162,8 @@ defmodule Pigeon.FCM do
   def start_connection(opts \\ [])
 
   def start_connection(name) when is_atom(name) do
-    worker = worker(Pigeon.Worker, [Config.new(name)], id: name)
-    Supervisor.start_child(:pigeon, worker)
+    config = Config.new(name)
+    Supervisor.start_child(:pigeon, {Pigeon.Worker, config: config, id: name})
   end
 
   def start_connection(%Config{} = config) do

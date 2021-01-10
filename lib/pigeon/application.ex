@@ -2,7 +2,6 @@ defmodule Pigeon.Application do
   @moduledoc false
 
   use Application
-  import Supervisor.Spec
   alias Pigeon.{ADM, APNS, FCM}
   alias Pigeon.Http2.Client
 
@@ -19,18 +18,10 @@ defmodule Pigeon.Application do
       apns_workers(),
       fcm_workers(),
       env_workers(),
-      apns_token_agent(),
-      task_supervisors()
+      {APNS.Token, %{}},
+      {Task.Supervisor, name: Pigeon.Tasks}
     ]
     |> List.flatten()
-  end
-
-  defp apns_token_agent do
-    [worker(APNS.Token, [%{}], restart: :permanent, shutdown: 5_000)]
-  end
-
-  defp task_supervisors do
-    [supervisor(Task.Supervisor, [[name: Pigeon.Tasks]])]
   end
 
   defp env_workers do
@@ -50,11 +41,11 @@ defmodule Pigeon.Application do
   end
 
   defp worker(%ADM.Config{} = config) do
-    worker(ADM.Worker, [config], id: config.name, restart: :temporary)
+    {ADM.Worker, config: config, id: config.name}
   end
 
   defp worker(config) do
-    worker(Pigeon.Worker, [config], id: config.name, restart: :temporary)
+    {Pigeon.Worker, config: config, id: config.name}
   end
 
   defp adm_workers do
@@ -77,7 +68,7 @@ defmodule Pigeon.Application do
       workers ->
         Enum.map(workers, fn {worker_name, _config} ->
           config = config_fn.(worker_name)
-          worker(mod, [config], id: config.name, restart: :temporary)
+          {mod, config: config, id: config.name}
         end)
     end
   end

@@ -8,6 +8,16 @@ defmodule Pigeon.APNS.Token do
     Agent.start_link(fn -> %{} end, name: __MODULE__)
   end
 
+  def child_spec(opts) do
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, [opts]},
+      type: :worker,
+      restart: :permanent,
+      shutdown: 5_000
+    }
+  end
+
   @spec get(String.t()) :: t
   def get(name) do
     Agent.get(__MODULE__, &Map.get(&1, name, {0, nil}))

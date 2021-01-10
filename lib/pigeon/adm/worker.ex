@@ -18,6 +18,15 @@ defmodule Pigeon.ADM.Worker do
     end
   end
 
+  def child_spec(opts) do
+    %{
+      id: opts[:id],
+      restart: :temporary,
+      start: {__MODULE__, :start_link, [opts[:config]]},
+      type: :worker
+    }
+  end
+
   def stop_connection(pid) do
     GenServer.cast(pid, :stop)
   end
