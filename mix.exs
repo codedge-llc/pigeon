@@ -24,7 +24,6 @@ defmodule Pigeon.Mixfile do
         ]
       ],
       elixir: "~> 1.6",
-      elixirc_options: [warnings_as_errors: true],
       elixirc_paths: elixirc_paths(Mix.env()),
       name: "Pigeon",
       package: package(),
@@ -62,7 +61,7 @@ defmodule Pigeon.Mixfile do
       {:httpoison, "~> 0.7 or ~> 1.0"},
       {:jason, "~> 1.0", optional: true},
       {:joken, "~> 2.1"},
-      {:kadabra, "~> 0.4.3", optional: true}
+      {:kadabra, "~> 0.5.0"}
     ]
   end
 

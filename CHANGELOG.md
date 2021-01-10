@@ -6,8 +6,10 @@
 
 - Default JSON library set to Jason.
   ([#182](https://github.com/codedge-llc/pigeon/pull/182))
-- Pigeon application module moved from `Pigeon` to `Pigeon.Application`
+- Pigeon application module moved from `Pigeon` to `Pigeon.Application`.
   ([#183](https://github.com/codedge-llc/pigeon/pull/183))
+- Kadabra bumped to v0.5.0.
+- Kadabra now a required dependency.
 
 **Removed**
 
