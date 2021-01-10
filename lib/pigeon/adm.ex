@@ -3,8 +3,6 @@ defmodule Pigeon.ADM do
   Amazon Device Messaging (ADM)
   """
 
-  import Supervisor.Spec
-
   alias Pigeon.ADM.{Config, Notification, Worker}
 
   @typedoc ~S"""
@@ -156,7 +154,7 @@ defmodule Pigeon.ADM do
   @spec start_connection(atom | Config.t() | Keyword.t()) :: connection_response
   def start_connection(name) when is_atom(name) do
     config = Config.new(name)
-    Supervisor.start_child(:pigeon, worker(Worker, [config], id: name))
+    Supervisor.start_child(:pigeon, {Worker, config: config, id: name})
   end
 
   def start_connection(%Config{} = config) do
