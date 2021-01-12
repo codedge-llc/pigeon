@@ -1,9 +1,11 @@
 defmodule Pigeon.APNSNew do
   @behaviour Pigeon.Adapter
 
+  alias Pigeon.Configurable
+
   @impl true
   def initial_state(opts) do
-    config = APNS.ConfigParser.parse(opts)
+    config = Pigeon.APNS.ConfigParser.parse(opts)
     Configurable.validate!(config)
 
     %{
