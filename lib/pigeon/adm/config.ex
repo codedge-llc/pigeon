@@ -3,15 +3,12 @@ defmodule Pigeon.ADM.Config do
   Validates configuration settings that initialize ADM.Worker instances.
   """
 
-  defstruct name: nil, client_id: nil, client_secret: nil
+  defstruct client_id: nil, client_secret: nil
 
   @type t :: %__MODULE__{
           client_id: String.t() | nil,
-          client_secret: String.t() | nil,
-          name: atom | nil
+          client_secret: String.t() | nil
         }
-
-  def default_name, do: :adm_default
 
   @doc ~S"""
   Returns a new `ADM.Config` with given `opts`.
@@ -19,27 +16,20 @@ defmodule Pigeon.ADM.Config do
   ## Examples
 
       iex> Pigeon.ADM.Config.new(
-      ...>   name: :test,
       ...>   client_id: "amzn.client.id",
       ...>   client_secret: "1234secret"
       ...> )
-      %Pigeon.ADM.Config{name: :test, client_id: "amzn.client.id",
-      client_secret: "1234secret"}
+      %Pigeon.ADM.Config{
+        client_id: "amzn.client.id",
+        client_secret: "1234secret"
+      }
   """
   @spec new(Keyword.t() | atom) :: t
   def new(opts) when is_list(opts) do
     %__MODULE__{
-      name: opts[:name],
       client_id: opts[:client_id],
       client_secret: opts[:client_secret]
     }
-  end
-
-  def new(name) when is_atom(name) do
-    Application.get_env(:pigeon, :adm)[name]
-    |> Enum.to_list()
-    |> Keyword.put(:name, name)
-    |> new()
   end
 
   @doc ~S"""
@@ -47,8 +37,8 @@ defmodule Pigeon.ADM.Config do
 
   ## Examples
 
-      iex> :adm_default |> new() |> valid?()
-      true
+      iex> [] |> new() |> valid?()
+      false
   """
   def valid?(config) do
     valid_item?(config.client_id) and valid_item?(config.client_secret)

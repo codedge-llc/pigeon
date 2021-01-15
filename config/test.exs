@@ -13,8 +13,7 @@ config :pigeon,
   workers: [
     {Pigeon.TestConfig, :apns_dynamic},
     {Pigeon.TestConfig, :apns_jwt_dynamic},
-    {Pigeon.TestConfig, :fcm_dynamic},
-    {Pigeon.TestConfig, :adm_dynamic}
+    {Pigeon.TestConfig, :fcm_dynamic}
   ]
 
 config :pigeon, :fcm,
@@ -35,8 +34,6 @@ config :pigeon, :apns,
     mode: :dev
   }
 
-config :pigeon, :adm,
-  adm_default: %{
-    client_id: System.get_env("ADM_OAUTH2_CLIENT_ID"),
-    client_secret: System.get_env("ADM_OAUTH2_CLIENT_SECRET")
-  }
+config :pigeon, PigeonTest.ADM,
+  client_id: System.get_env("ADM_OAUTH2_CLIENT_ID"),
+  client_secret: System.get_env("ADM_OAUTH2_CLIENT_SECRET")

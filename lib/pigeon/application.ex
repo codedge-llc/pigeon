@@ -2,7 +2,7 @@ defmodule Pigeon.Application do
   @moduledoc false
 
   use Application
-  alias Pigeon.{ADM, APNS, FCM}
+  alias Pigeon.{APNS, FCM}
   alias Pigeon.Http2.Client
 
   @doc false
@@ -20,7 +20,6 @@ defmodule Pigeon.Application do
 
     [
       {PigeonTest.ADM, config},
-      adm_workers(),
       apns_workers(),
       fcm_workers(),
       env_workers(),
@@ -46,16 +45,8 @@ defmodule Pigeon.Application do
     end
   end
 
-  defp worker(%ADM.Config{} = config) do
-    {ADM.Worker, config: config, id: config.name}
-  end
-
   defp worker(config) do
     {Pigeon.Worker, config: config, id: config.name}
-  end
-
-  defp adm_workers do
-    workers_for(:adm, &ADM.Config.new/1, Pigeon.ADM.Worker)
   end
 
   defp apns_workers do
