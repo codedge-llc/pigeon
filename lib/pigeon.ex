@@ -103,12 +103,12 @@ defmodule Pigeon do
   defp push_sync(pid, notification, timeout) do
     myself = self()
     ref = :erlang.make_ref()
-    on_response = fn x -> send(myself, {ref, x}) end
+    on_response = fn x -> send(myself, {:"$push", ref, x}) end
 
     GenServer.cast(pid, {:push, notification, on_response})
 
     receive do
-      {^ref, x} -> x
+      {:"$push", ^ref, x} -> x
     after
       timeout -> %{notification | response: :timeout}
     end

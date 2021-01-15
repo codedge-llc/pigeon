@@ -6,5 +6,5 @@ defmodule Pigeon.Adapter do
   @callback handle_push(notification :: struct | [struct], on_response, state :: term) ::
               term
 
-  @callback initial_state(opts :: Keyword.t()) :: term
+  @callback init(opts :: Keyword.t()) :: {:ok, term} | {:error, atom}
 end

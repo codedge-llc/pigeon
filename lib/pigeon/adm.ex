@@ -9,7 +9,7 @@ defmodule Pigeon.ADM do
   @token_refresh_early_seconds 5
 
   @impl true
-  def initial_state(opts) do
+  def init(opts) do
     config = %Config{
       client_id: Keyword.get(opts, :client_id),
       client_secret: Keyword.get(opts, :client_secret)
@@ -17,13 +17,14 @@ defmodule Pigeon.ADM do
 
     Config.validate!(config)
 
-    %{
-      config: config,
-      access_token: nil,
-      access_token_refreshed_datetime_erl: {{0, 0, 0}, {0, 0, 0}},
-      access_token_expiration_seconds: 0,
-      access_token_type: nil
-    }
+    {:ok,
+     %{
+       config: config,
+       access_token: nil,
+       access_token_refreshed_datetime_erl: {{0, 0, 0}, {0, 0, 0}},
+       access_token_expiration_seconds: 0,
+       access_token_type: nil
+     }}
   end
 
   @impl true

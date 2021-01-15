@@ -1,4 +1,4 @@
-defmodule Pigeon.APNSNew do
+defmodule Pigeon.FCMNew do
   defstruct queue: Pigeon.Connection.NotificationQueue.new(),
             stream_id: 1,
             socket: nil,
@@ -12,7 +12,7 @@ defmodule Pigeon.APNSNew do
 
   @impl true
   def init(opts) do
-    config = Pigeon.APNS.ConfigParser.parse(opts)
+    config = Pigeon.FCM.Config.new(opts)
     Configurable.validate!(config)
 
     state = %__MODULE__{config: config}

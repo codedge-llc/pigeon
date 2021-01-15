@@ -1,3 +1,3 @@
-defmodule PigeonTest.ADM do
+defmodule PigeonTest.FCM do
   use Pigeon.Dispatcher, otp_app: :pigeon
 end
