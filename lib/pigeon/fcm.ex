@@ -1,6 +1,6 @@
 defmodule Pigeon.FCM do
   @moduledoc """
-  Firebase Cloud Messaging (FCM)
+  Firebase Cloud Messaging (FCM).
   """
 
   alias Pigeon.FCM.{Config, Notification}

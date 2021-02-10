@@ -1,6 +1,7 @@
 defmodule Pigeon.Mixfile do
   use Mix.Project
 
+  @source_url "https://github.com/codedge-llc/pigeon"
   @version "2.0.0-dev"
 
   def project do
@@ -13,16 +14,7 @@ defmodule Pigeon.Mixfile do
         plt_add_apps: [:kadabra],
         ignore_warnings: "config/dialyzer.ignore-warnings"
       ],
-      docs: [
-        main: "getting-started",
-        extras: [
-          {"README.md", [filename: "getting-started", title: "Getting Started"]},
-          "docs/APNS Apple iOS.md",
-          "docs/FCM Android.md",
-          "docs/ADM Amazon Android.md",
-          "CHANGELOG.md"
-        ]
-      ],
+      docs: docs(),
       elixir: "~> 1.6",
       elixirc_options: [warnings_as_errors: true],
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -34,7 +26,7 @@ defmodule Pigeon.Mixfile do
         "coveralls.post": :test,
         "coveralls.html": :test
       ],
-      source_url: "https://github.com/codedge-llc/pigeon",
+      source_url: @source_url,
       start_permanent: Mix.env() == :prod,
       test_coverage: [tool: ExCoveralls],
       version: @version
@@ -55,14 +47,28 @@ defmodule Pigeon.Mixfile do
     [
       {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
-      {:earmark, "~> 1.0", only: :dev},
-      {:excoveralls, "~> 0.5", only: :test},
-      {:ex_doc, "~> 0.18", only: :dev},
+      {:earmark, "~> 1.0", only: :dev, runtime: false},
+      {:excoveralls, "~> 0.5", only: :test, runtime: false},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:gen_stage, "~> 0.12 or ~> 1.0"},
       {:httpoison, "~> 0.7 or ~> 1.0"},
       {:jason, "~> 1.0", optional: true},
       {:joken, "~> 2.1"},
       {:kadabra, "~> 0.5.0"}
+    ]
+  end
+
+  defp docs do
+    [
+      main: "getting-started",
+      extras: [
+        "CHANGELOG.md",
+        {:"README.md", [filename: "getting-started", title: "Getting Started"]},
+        "docs/APNS Apple iOS.md",
+        "docs/FCM Android.md",
+        "docs/ADM Amazon Android.md"
+      ],
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md"]
     ]
   end
 
@@ -77,7 +83,10 @@ defmodule Pigeon.Mixfile do
     [
       files: ["lib", "mix.exs", "README*", "LICENSE*"],
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/codedge-llc/pigeon"},
+      links: %{
+        "Changelog" => "https://hexdocs.pm/pigeon/changelog.html",
+        "GitHub" => @source_url
+      },
       maintainers: ["Henry Popp", "Tyler Hurst"]
     ]
   end

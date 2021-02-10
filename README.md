@@ -9,7 +9,7 @@
 
 ## Installation
 
-Add pigeon and kadabra as `mix.exs` dependencies:
+Add `:pigeon` and `:kadabra` as `mix.exs` dependencies:
 
 ```elixir
 def deps do
@@ -207,7 +207,7 @@ If your startup configuration requires reading your configuration from a
 database or using another dependency that needs a database, startup is a little
 more complex.
 
-1. Modify your `mix.exs` to _not_ start `pigeon` by default:
+1. Modify your `mix.exs` to _not_ start `:pigeon` by default:
 
    ```elixir
    def deps do
@@ -225,7 +225,7 @@ more complex.
    config :pigeon, workers: [{YourApp.Pigeon, :config}]
    ```
 
-3. Modify your main application to start `pigeon` after your `Repo` has been
+3. Modify your main application to start `:pigeon` after your `Repo` has been
    started under your application’s supervision tree:
 
    ```elixir
@@ -290,3 +290,9 @@ run it after a save. Be sure it respects this project's `.formatter.exs`.
 ### Commits
 
 Git commit subjects use the [Karma style](http://karma-runner.github.io/5.0/dev/git-commit-msg.html).
+
+## License
+
+Copyright (c) 2015-2021 Codedge LLC (https://www.codedge.io/)
+
+This library is MIT licensed. See the [LICENSE](https://github.com/codedge-llc/pigeon/blob/master/LICENSE) for details.
