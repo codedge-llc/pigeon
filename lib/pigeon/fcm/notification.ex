@@ -10,7 +10,8 @@ defmodule Pigeon.FCM.Notification do
             message_id: nil,
             mutable_content: false,
             payload: %{},
-            priority: :normal,
+            priority: nil,
+            android: %{},
             registration_id: nil,
             response: [],
             restricted_package_name: nil,
@@ -27,7 +28,8 @@ defmodule Pigeon.FCM.Notification do
           message_id: nil | String.t(),
           mutable_content: boolean,
           payload: map,
-          priority: :normal | :high,
+          priority: non_neg_integer,
+          android: map,
           registration_id: String.t() | [String.t()],
           response: [] | [regid_response, ...],
           restricted_package_name: nil | String.t(),
@@ -203,34 +205,50 @@ defmodule Pigeon.FCM.Notification do
     do: update_payload(n, "notification", notification)
 
   @doc """
-  Updates `"priority"` key.
-
-  Sets the priority of the message. Valid values are "normal" and "high." On
-  iOS, these correspond to APNs priorities 5 and 10.
-
-  By default, notification messages are sent with high priority, and data
-  messages are sent with normal priority. Normal priority optimizes the client
-  app's battery consumption and should be used unless immediate delivery is
-  required. For messages with normal priority, the app may receive the message
-  with unspecified delay.
-
-  When a message is sent with high priority, it is sent immediately, and the app
-  can display a notification.
+  Updates `"priority"` key and puts priority into android map.
+  Sets the priority of the message. Valid values are 5 and 10.
 
   ## Examples
 
-      iex> put_priority(%Pigeon.FCM.Notification{}, :normal)
-      %Pigeon.FCM.Notification{priority: :normal}
+      iex> put_priority(%Pigeon.FCM.Notification{}, 5)
+      %Pigeon.FCM.Notification{priority: 5, android: %{priority: :normal}}
 
-      iex> put_priority(%Pigeon.FCM.Notification{}, :high)
-      %Pigeon.FCM.Notification{priority: :high}
+      iex> put_priority(%Pigeon.FCM.Notification{}, 10)
+      %Pigeon.FCM.Notification{priority: 10, android: %{priority: :high}}
 
-      iex> put_priority(%Pigeon.FCM.Notification{priority: :normal}, :bad)
-      %Pigeon.FCM.Notification{priority: :normal}
+      iex> put_priority(%Pigeon.FCM.Notification{priority: 5}, 7)
+      %Pigeon.FCM.Notification{priority: 5, android: %{priority: :normal}}
   """
-  def put_priority(n, :normal), do: %{n | priority: :normal}
-  def put_priority(n, :high), do: %{n | priority: :high}
+  def put_priority(n, 5 = priority) do
+    android = put_in(n.android, [:priority], :normal)
+    %{n | priority: priority, android: android}
+  end
+
+  def put_priority(n, 10 = priority) do
+    android = put_in(n.android, [:priority], :high)
+    %{n | priority: priority, android: android}
+  end
+
   def put_priority(n, _), do: n
+
+  @doc """
+  Updates `"android"` map.
+
+  Sets android push settings.
+
+  ## Examples
+
+      iex> put_android(%Pigeon.FCM.Notification{}, %{key: :value})
+      %Pigeon.FCM.Notification{android: %{key: :value}}
+
+      iex> put_android(%Pigeon.FCM.Notification{}, :bad)
+      %Pigeon.FCM.Notification{android: %{}}
+  """
+  def put_android(n, android) when is_map(android) do
+    update_in(n.android, &Map.merge(&1, android))
+  end
+
+  def put_android(n, _android), do: n
 
   @doc """
   Updates `"time_to_live"` key.
@@ -435,7 +453,8 @@ defimpl Pigeon.Encodable, for: Pigeon.FCM.Notification do
     regid
     |> recipient_attr()
     |> Map.merge(notif.payload)
-    |> encode_attr("priority", to_string(notif.priority))
+    |> encode_attr("priority", notif.priority)
+    |> encode_attr("android", notif.android)
     |> encode_attr("time_to_live", notif.time_to_live)
     |> encode_attr("collapse_key", notif.collapse_key)
     |> encode_attr("restricted_package_name", notif.restricted_package_name)
@@ -448,6 +467,12 @@ defimpl Pigeon.Encodable, for: Pigeon.FCM.Notification do
 
   defp encode_attr(map, _key, nil), do: map
 
+  defp encode_attr(map, "android" = key, val) do
+    value = stringify(val)
+
+    Map.put(map, key, value)
+  end
+
   defp encode_attr(map, key, val) do
     Map.put(map, key, val)
   end
@@ -456,4 +481,14 @@ defimpl Pigeon.Encodable, for: Pigeon.FCM.Notification do
 
   defp recipient_attr(regid) when is_list(regid),
     do: %{"registration_ids" => regid}
+
+  defp stringify(map) do
+    Map.new(map, fn {k, v} ->
+      if is_map(v) do
+        {to_string(k), stringify(v)}
+      else
+        {to_string(k), to_string(v)}
+      end
+    end)
+  end
 end
