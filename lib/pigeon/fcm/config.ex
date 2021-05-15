@@ -3,12 +3,10 @@ defmodule Pigeon.FCM.Config do
 
   defstruct key: nil,
             uri: 'fcm.googleapis.com',
-            port: 443,
-            name: nil
+            port: 443
 
   @type t :: %__MODULE__{
           key: binary,
-          name: term,
           port: pos_integer,
           uri: charlist
         }
@@ -19,28 +17,22 @@ defmodule Pigeon.FCM.Config do
   ## Examples
 
       iex> Pigeon.FCM.Config.new(
-      ...>   name: :test,
       ...>   key: "fcm_key",
       ...>   uri: 'test.server.example.com',
       ...>   port: 5228
       ...> )
-      %Pigeon.FCM.Config{key: "fcm_key", name: :test,
-      port: 5228, uri: 'test.server.example.com'}
+      %Pigeon.FCM.Config{
+        key: "fcm_key",
+        port: 5228, 
+        uri: 'test.server.example.com'
+      }
   """
   def new(opts) when is_list(opts) do
     %__MODULE__{
-      name: opts[:name],
-      key: opts[:key],
+      key: Keyword.get(opts, :key),
       uri: Keyword.get(opts, :uri, 'fcm.googleapis.com'),
       port: Keyword.get(opts, :port, 443)
     }
-  end
-
-  def new(name) when is_atom(name) do
-    Application.get_env(:pigeon, :fcm)[name]
-    |> Enum.to_list()
-    |> Keyword.put(:name, name)
-    |> new()
   end
 end
 
@@ -57,12 +49,6 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   @type sock :: {:sslsocket, any, pid | {any, any}}
 
   # Configurable Callbacks
-
-  @spec worker_name(any) :: atom | nil
-  def worker_name(%Config{name: name}), do: name
-
-  @spec max_demand(any) :: non_neg_integer
-  def max_demand(_config), do: 100
 
   @spec connect(any) :: {:ok, sock} | {:error, String.t()}
   def connect(%Config{uri: uri} = config) do

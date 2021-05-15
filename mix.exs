@@ -41,6 +41,7 @@ defmodule Pigeon.Mixfile do
     ]
   end
 
+  defp elixirc_paths(:dev), do: ["lib", "test/support"]
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
@@ -62,7 +63,7 @@ defmodule Pigeon.Mixfile do
       {:httpoison, "~> 0.7 or ~> 1.0"},
       {:jason, "~> 1.0", optional: true},
       {:joken, "~> 2.1"},
-      {:kadabra, "~> 0.5.0"}
+      {:kadabra, "~> 0.6.0"}
     ]
   end
 

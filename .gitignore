@@ -13,3 +13,5 @@ scratchpad.txt
 .DS_Store
 .iex.exs
 *.swp
+.idea
+pigeon.iml

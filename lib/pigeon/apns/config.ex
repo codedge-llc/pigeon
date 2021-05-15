@@ -5,7 +5,6 @@ defmodule Pigeon.APNS.Config do
 
   defstruct cert: nil,
             key: nil,
-            name: nil,
             port: 443,
             ping_period: 600_000,
             uri: nil
@@ -19,7 +18,6 @@ defmodule Pigeon.APNS.Config do
   ## Examples
 
       %Pigeon.APNS.Config{
-        name: :apns_default,
         cert: "certificate_content",
         key: "key_content",
         uri: "api.push.apple.com",
@@ -28,7 +26,6 @@ defmodule Pigeon.APNS.Config do
       }
   """
   @type t :: %__MODULE__{
-          name: atom | nil,
           cert: binary | nil,
           key: binary | nil,
           uri: binary | nil,
@@ -40,7 +37,6 @@ defmodule Pigeon.APNS.Config do
   Options for configuring certificate APNS connections.
 
   ## Configuration Options
-  - `:name` - Registered worker name.
   - `:mode` - If set to `:dev` or `:prod`, will set the appropriate `:uri`
   - `:cert` - Push certificate. Must be the full-text string of the file contents.
   - `:key` - Push private key. Must be the full-text string of the file contents.
@@ -52,7 +48,6 @@ defmodule Pigeon.APNS.Config do
     running APNS connections alive. Defaults to 10 minutes.
   """
   @type config_opts :: [
-          name: atom | nil,
           mode: :dev | :prod | nil,
           cert: binary,
           key: binary,
@@ -70,14 +65,11 @@ defmodule Pigeon.APNS.Config do
   def default_name, do: :apns_default
 
   @doc ~S"""
-  Returns a new `APNS.Config` with given `opts` or name.
-
-  If given an atom, returns the config specified in your `config.exs`.
+  Returns a new `APNS.Config` with given `opts`.
 
   ## Examples
 
       iex> Pigeon.APNS.Config.new(
-      ...>   name: :test,
       ...>   mode: :prod,
       ...>   cert: File.read!("test/support/FakeAPNSCert.pem"),
       ...>   key: File.read!("test/support/FakeAPNSKey.pem"),
@@ -87,21 +79,13 @@ defmodule Pigeon.APNS.Config do
       %Pigeon.APNS.Config{
         cert: "test/support/FakeAPNSCert.pem" |> File.read!() |> Pigeon.APNS.Config.decode_pem(),
         key: "test/support/FakeAPNSKey.pem" |> File.read!() |> Pigeon.APNS.Config.decode_pem(),
-        name: :test,
         ping_period: 300000, 
         port: 2197,
         uri: "api.push.apple.com"
       }
-
-      iex> config = Pigeon.APNS.Config.new(:apns_default)
-      iex> %{config | cert: nil, key: nil} # Hide for testing
-      iex> match? %_{uri: "api.development.push.apple.com",
-      ...> name: :apns_default, ping_period: 600_000, port: 443}, config
-      true
   """
   def new(opts) when is_list(opts) do
     %__MODULE__{
-      name: Keyword.get(opts, :name),
       cert: opts |> Keyword.get(:cert) |> decode_pem(),
       key: opts |> Keyword.get(:key) |> decode_pem(),
       ping_period: Keyword.get(opts, :ping_period, 600_000),
@@ -109,8 +93,6 @@ defmodule Pigeon.APNS.Config do
       uri: Keyword.get(opts, :uri, ConfigParser.uri_for_mode(opts[:mode]))
     }
   end
-
-  def new(name) when is_atom(name), do: ConfigParser.parse(name)
 
   @doc false
   def decode_pem(bin) when is_binary(bin) do

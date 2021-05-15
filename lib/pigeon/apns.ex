@@ -1,169 +1,103 @@
 defmodule Pigeon.APNS do
-  @moduledoc """
-  Apple Push Notification Service (APNS)
-  """
+  defstruct queue: Pigeon.NotificationQueue.new(),
+            stream_id: 1,
+            socket: nil,
+            config: nil
 
-  alias Pigeon.APNS.{Config, Notification}
-  alias Pigeon.Worker
-  require Logger
+  @behaviour Pigeon.Adapter
 
-  @typedoc ~S"""
-  Can be either a single notification or a list.
-  """
-  @type notification :: Notification.t() | [Notification.t(), ...]
+  alias Pigeon.{Configurable, NotificationQueue}
+  alias Pigeon.Http2.{Client, Stream}
 
-  @typedoc ~S"""
-  Async callback for push notification response.
+  @impl true
+  def init(opts) do
+    config = Pigeon.APNS.ConfigParser.parse(opts)
+    Configurable.validate!(config)
 
-  ## Examples
+    state = %__MODULE__{config: config}
 
-      handler = fn(%Pigeon.APNS.Notification{response: response}) ->
-        case response do
-          :success ->
-            Logger.debug "Push successful!"
-          :bad_device_token ->
-            Logger.error "Bad device token!"
-          _error ->
-            Logger.error "Some other error happened."
-        end
-      end
+    case connect_socket(config) do
+      {:ok, socket} ->
+        Configurable.schedule_ping(config)
+        {:ok, %{state | socket: socket}}
 
-      n = Pigeon.APNS.Notification.new("msg", "device token", "push topic")
-      Pigeon.APNS.push(n, on_response: handler)
-  """
-  @type on_response :: (Notification.t() -> no_return)
-
-  @typedoc ~S"""
-  Options for sending push notifications.
-
-  - `:to` - Defines worker to process push. Defaults to `:apns_default`
-  - `:on_response` - Optional async callback triggered on receipt of push.
-    See `t:on_response/0`
-  """
-  @type push_opts :: [
-          to: atom | pid | nil,
-          on_response: on_response | nil
-        ]
-
-  @default_timeout 5_000
-
-  @doc """
-  Sends a push over APNS.
-
-  ## Examples
-
-       iex> n = Pigeon.APNS.Notification.new("msg", "token", "topic")
-       iex> Pigeon.APNS.push(n)
-       %Pigeon.APNS.Notification{device_token: "token", expiration: nil,
-        response: :bad_device_token, id: nil,
-        payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"}
-
-       iex> n = Pigeon.APNS.Notification.new("msg", "token", "topic")
-       iex> Pigeon.APNS.push([n, n], on_response: nil)
-       :ok
-
-       iex> n = Pigeon.APNS.Notification.new("msg", "token", "topic")
-       iex> Pigeon.APNS.push([n, n])
-       [%Pigeon.APNS.Notification{device_token: "token", expiration: nil,
-         response: :bad_device_token, id: nil,
-         payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"},
-        %Pigeon.APNS.Notification{device_token: "token", expiration: nil,
-         response: :bad_device_token, id: nil,
-         payload: %{"aps" => %{"alert" => "msg"}}, topic: "topic"}]
-  """
-  @spec push(notification, push_opts) :: notification | :ok
-  def push(notification, opts \\ [])
-
-  def push(notification, opts) when is_list(notification) do
-    if Keyword.has_key?(opts, :on_response) do
-      push(notification, opts[:on_response], opts)
-      :ok
-    else
-      notification
-      |> Enum.map(&Task.async(fn -> sync_push(&1, opts) end))
-      |> Task.yield_many(@default_timeout + 500)
-      |> Enum.map(fn {task, response} ->
-        case response do
-          nil -> Task.shutdown(task, :brutal_kill)
-          {:ok, resp} -> resp
-          _error -> nil
-        end
-      end)
+      {:error, reason} ->
+        {:stop, reason}
     end
   end
 
-  def push(notification, opts) do
-    if Keyword.has_key?(opts, :on_response) do
-      push(notification, opts[:on_response], opts)
-    else
-      sync_push(notification, opts)
+  @impl true
+  def handle_push(notification, on_response, %{config: config, queue: queue} = state) do
+    headers = Configurable.push_headers(config, notification, [])
+    payload = Configurable.push_payload(config, notification, [])
+
+    Client.default().send_request(state.socket, headers, payload)
+
+    new_q =
+      NotificationQueue.add(
+        queue,
+        state.stream_id,
+        notification,
+        on_response
+      )
+
+    state
+    |> inc_stream_id()
+    |> Map.put(:queue, new_q)
+  end
+
+  def handle_info(:ping, state) do
+    Client.default().send_ping(state.socket)
+    Configurable.schedule_ping(state.config)
+
+    {:noreply, state}
+  end
+
+  def handle_info({:closed, _}, %{config: config} = state) do
+    case connect_socket(config) do
+      {:ok, socket} ->
+        Configurable.schedule_ping(config)
+        {:noreply, %{state | socket: socket}}
+
+      {:error, reason} ->
+        {:stop, reason}
     end
   end
 
-  @spec push(notification, on_response, push_opts) :: no_return
-  defp push(notification, on_response, opts) when is_list(notification) do
-    for n <- notification, do: push(n, on_response, opts)
-  end
-
-  defp push(notification, on_response, opts) do
-    worker_name = opts[:to] || Config.default_name()
-    Worker.send_push(worker_name, notification, on_response: on_response)
-  end
-
-  @doc ~S"""
-  Starts APNS worker connection with given config or name.
-
-  ## Examples
-
-      iex> config = Pigeon.APNS.Config.new(:apns_default)
-      iex> {:ok, pid} = Pigeon.APNS.start_connection(%{config | name: nil})
-      iex> Process.alive?(pid)
-      true
-  """
-  @spec start_connection(atom | Config.t() | Keyword.t()) :: {:ok, pid}
-  def start_connection(name) when is_atom(name) do
-    config = Config.new(name)
-    Supervisor.start_child(:pigeon, {Pigeon.Worker, config: config, id: name})
-  end
-
-  def start_connection(%_{} = config) do
-    Worker.start_link(config)
-  end
-
-  def start_connection(opts) when is_list(opts) do
-    opts
-    |> Config.new()
-    |> start_connection()
-  end
-
-  @doc ~S"""
-  Stops existing APNS worker connection.
-
-  ## Examples
-
-      iex> config = Pigeon.APNS.Config.new(:apns_default)
-      iex> {:ok, pid} = Pigeon.APNS.start_connection(%{config | name: nil})
-      iex> Pigeon.APNS.stop_connection(pid)
-      :ok
-      iex> :timer.sleep(500)
-      iex> Process.alive?(pid)
-      false
-  """
-  @spec stop_connection(atom | pid) :: :ok
-  def stop_connection(name), do: Worker.stop_connection(name)
-
-  defp sync_push(notification, opts) do
-    pid = self()
-    ref = :erlang.make_ref()
-    on_response = fn x -> send(pid, {ref, x}) end
-
-    worker_name = opts[:to] || Config.default_name()
-    Worker.send_push(worker_name, notification, on_response: on_response)
-
-    receive do
-      {^ref, x} -> x
-    after
-      @default_timeout -> %{notification | response: :timeout}
+  @impl true
+  def handle_info(msg, state) do
+    case Client.default().handle_end_stream(msg, state) do
+      {:ok, %Stream{} = stream} -> process_end_stream(stream, state)
+      _else -> {:noreply, state}
     end
+  end
+
+  defp connect_socket(config), do: connect_socket(config, 0)
+
+  defp connect_socket(_config, 3), do: {:error, :timeout}
+
+  defp connect_socket(config, tries) do
+    case Configurable.connect(config) do
+      {:ok, socket} -> {:ok, socket}
+      {:error, _reason} -> connect_socket(config, tries + 1)
+    end
+  end
+
+  def process_end_stream(%Stream{id: stream_id} = stream, state) do
+    %{queue: queue, config: config} = state
+
+    case NotificationQueue.pop(queue, stream_id) do
+      {nil, new_queue} ->
+        # Do nothing if no queued item for stream
+        {:noreply, %{state | queue: new_queue}}
+
+      {{notif, on_response}, new_queue} ->
+        Configurable.handle_end_stream(config, stream, notif, on_response)
+        {:noreply, %{state | queue: new_queue}}
+    end
+  end
+
+  def inc_stream_id(%{stream_id: stream_id} = state) do
+    %{state | stream_id: stream_id + 2}
   end
 end

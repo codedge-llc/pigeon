@@ -83,7 +83,7 @@ defmodule Pigeon.FCM.ResultParserTest do
   end
 
   test "parse_result with custom error" do
-    expected = [custom_error: "regid"]
+    expected = [unknown_error: "regid"]
 
     ResultParser.parse(
       ["regid"],
