@@ -49,11 +49,6 @@ defmodule Pigeon do
     Application.get_env(:pigeon, :json_library, Jason)
   end
 
-  @doc false
-  def start_connection(state) do
-    Supervisor.start_child(:pigeon, {Pigeon.Connection, state})
-  end
-
   def debug_log?, do: Application.get_env(:pigeon, :debug_log, false)
 
   @spec push(pid | atom, notification :: struct | [struct], push_opts) ::

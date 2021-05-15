@@ -1,4 +1,4 @@
-defmodule Pigeon.ADMNotificationTest do
+defmodule Pigeon.ADM.NotificationTest do
   use ExUnit.Case
   doctest Pigeon.ADM.Notification
 
