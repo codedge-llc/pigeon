@@ -29,36 +29,11 @@ defmodule Pigeon.APNS.ConfigParser do
     end
   end
 
-  def parse(name) when is_atom(name) do
-    Application.get_env(:pigeon, :apns)[name]
-    |> Enum.to_list()
-    |> Keyword.put(:name, name)
-    |> parse()
-  end
-
   @spec config_type(any) :: module | :error
   defp config_type(%{cert: _cert, key_identifier: _key_id}), do: :error
   defp config_type(%{cert: _cert}), do: Config
   defp config_type(%{key_identifier: _jwt_key}), do: JWTConfig
   defp config_type(_else), do: :error
-
-  @doc false
-  @spec file_path(binary) :: binary | {:error, {:nofile, binary}}
-  def file_path(path) when is_binary(path) do
-    if :filelib.is_file(path) do
-      Path.expand(path)
-    else
-      {:error, {:nofile, path}}
-    end
-  end
-
-  def file_path({app_name, path}) when is_atom(app_name) do
-    path
-    |> Path.expand(:code.priv_dir(app_name))
-    |> file_path()
-  end
-
-  def file_path(other), do: {:error, {:nofile, other}}
 
   @doc false
   def redact(config) when is_map(config) do

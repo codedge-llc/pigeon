@@ -5,7 +5,6 @@ defmodule Pigeon.APNS.JWTConfig do
 
   defstruct key: nil,
             key_identifier: nil,
-            name: nil,
             ping_period: 600_000,
             port: 443,
             team_id: nil,
@@ -24,7 +23,6 @@ defmodule Pigeon.APNS.JWTConfig do
   ## Examples
 
       %Pigeon.APNS.JWTConfig{
-        name: :apns_default,
         uri: "api.push.apple.com",
         port: 443,
         ping_period: 600_000,
@@ -34,7 +32,6 @@ defmodule Pigeon.APNS.JWTConfig do
       }
   """
   @type t :: %__MODULE__{
-          name: atom | nil,
           uri: binary | nil,
           port: pos_integer,
           ping_period: pos_integer,
@@ -47,7 +44,6 @@ defmodule Pigeon.APNS.JWTConfig do
   Options for configuring JWT APNS connections.
 
   ## Configuration Options
-  - `:name` - Registered worker name.
   - `:mode` - If set to `:dev` or `:prod`, will set the appropriate `:uri`
   - `:key` - JWT private key. Must be the full-text string of the file contents.
   - `:key_identifier` - A 10-character key identifier (kid) key, obtained from
@@ -61,7 +57,6 @@ defmodule Pigeon.APNS.JWTConfig do
     running APNS connections alive. Defaults to 10 minutes.
   """
   @type config_opts :: [
-          name: atom | nil,
           mode: :dev | :prod | nil,
           key: binary | {atom, binary},
           key_identifier: binary | nil,
@@ -72,14 +67,11 @@ defmodule Pigeon.APNS.JWTConfig do
         ]
 
   @doc ~S"""
-  Returns a new `APNS.JWTConfig` with given `opts` or name.
-
-  If given an atom, returns the config specified in your `config.exs`.
+  Returns a new `APNS.JWTConfig` with given `opts`.
 
   ## Examples
 
       iex> Pigeon.APNS.JWTConfig.new(
-      ...>   name: :test,
       ...>   mode: :prod,
       ...>   key: File.read!("test/support/FakeAPNSAuthKey.p8"),
       ...>   key_identifier: "ABC1234567",
@@ -89,23 +81,15 @@ defmodule Pigeon.APNS.JWTConfig do
       ...> )
       %Pigeon.APNS.JWTConfig{
         uri: "api.push.apple.com", 
-        name: :test,
         team_id: "DEF1234567", 
         key_identifier: "ABC1234567", 
         key: File.read!("test/support/FakeAPNSAuthKey.p8"),
         ping_period: 300000, 
         port: 2197
       }
-
-      iex> config = Pigeon.APNS.JWTConfig.new(:apns_jwt_static)
-      iex> %{config | key: nil, key_identifier: nil, team_id: nil} # Hide for testing
-      iex> match? %_{uri: "api.development.push.apple.com", name: :apns_jwt_static,
-      ...> ping_period: 600_000, port: 443}, config
-      true
   """
   def new(opts) when is_list(opts) do
     %__MODULE__{
-      name: opts[:name],
       uri: Keyword.get(opts, :uri, ConfigParser.uri_for_mode(opts[:mode])),
       port: Keyword.get(opts, :port, 443),
       ping_period: Keyword.get(opts, :ping_period, 600_000),
@@ -114,8 +98,6 @@ defmodule Pigeon.APNS.JWTConfig do
       team_id: Keyword.get(opts, :team_id)
     }
   end
-
-  def new(name) when is_atom(name), do: ConfigParser.parse(name)
 
   defp decode_key(bin) when is_binary(bin) do
     case :public_key.pem_decode(bin) do

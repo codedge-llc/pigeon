@@ -1,4 +1,4 @@
-defmodule Pigeon.NotificationTest do
+defmodule Pigeon.FCM.NotificationTest do
   use ExUnit.Case
 
   @reg_id "123456"

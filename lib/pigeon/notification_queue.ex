@@ -1,4 +1,4 @@
-defmodule Pigeon.Connection.NotificationQueue do
+defmodule Pigeon.NotificationQueue do
   @moduledoc false
 
   @type queue :: %{required(pos_integer) => {term, (... -> no_return)}}
