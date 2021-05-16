@@ -26,7 +26,7 @@
 
 **Added**
 
-- JSON library made configurable. For backwards compatability, Poison is still a required dependency.
+- JSON library made configurable. For backwards compatibility, Poison is still a required dependency.
   Override in your `config.exs`.
 
   ```

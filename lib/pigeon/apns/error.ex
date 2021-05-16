@@ -1,6 +1,6 @@
 defmodule Pigeon.APNS.Error do
   @moduledoc ~S"""
-  Defines APNS error responses
+  Defines APNS error responses.
   """
 
   require Logger

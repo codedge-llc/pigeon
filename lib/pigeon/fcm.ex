@@ -1,4 +1,8 @@
 defmodule Pigeon.FCM do
+  @moduledoc """
+  Firebase Cloud Messaging (FCM).
+  """
+
   defstruct queue: Pigeon.NotificationQueue.new(),
             stream_id: 1,
             socket: nil,
