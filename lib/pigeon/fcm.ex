@@ -20,14 +20,6 @@ defmodule Pigeon.FCM do
 
     state = %__MODULE__{config: config}
 
-    # {:ok, _pid} =
-    #   Goth.start_link(
-    #     name: String.to_atom(config.project),
-    #     source:
-    #       {:service_account, config.service_account_json,
-    #        [scopes: ["https://www.googleapis.com/auth/firebase.messaging"]]}
-    #   )
-
     case connect_socket(config) do
       {:ok, socket} ->
         Configurable.schedule_ping(config)
