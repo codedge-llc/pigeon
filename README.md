@@ -7,6 +7,9 @@
 [![Hex.pm](http://img.shields.io/hexpm/v/pigeon.svg)](https://hex.pm/packages/pigeon)
 [![Hex.pm](http://img.shields.io/hexpm/dt/pigeon.svg)](https://hex.pm/packages/pigeon)
 
+_Pigeon v2.0 is undergoing active development. See [the latest stable 1.6 on Hex](https://hex.pm/packages/pigeon)
+or [the 1.6 branch on GitHub](https://github.com/codedge-llc/pigeon/tree/v1.6) for installation._
+
 ## Installation
 
 Add `:pigeon` and `:kadabra` as `mix.exs` dependencies:

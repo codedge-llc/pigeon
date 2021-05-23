@@ -1,4 +1,4 @@
-defmodule Pigeon.FCM.ResultParser do
+defmodule Pigeon.LegacyFCM.ResultParser do
   @moduledoc false
 
   import Pigeon.Tasks, only: [process_on_response: 2]
