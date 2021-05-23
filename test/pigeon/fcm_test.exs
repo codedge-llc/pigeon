@@ -1,0 +1,65 @@
+defmodule Pigeon.FCMTest do
+  use ExUnit.Case
+  doctest Pigeon.FCM, import: true
+  doctest Pigeon.FCM.Config, import: true
+  doctest Pigeon.FCM.Notification, import: true
+
+  alias Pigeon.FCM.Notification
+  require Logger
+
+  @data %{"message" => "Test push"}
+  @invalid_project_msg ~r/^attempted to start without valid :project_id/
+  @invalid_service_account_json_msg ~r/^attempted to start without valid :service_account_json/
+
+  defp valid_fcm_reg_id do
+    Application.get_env(:pigeon, :test)[:valid_fcm_reg_id]
+  end
+
+  describe "init/1" do
+    test "raises if configured with invalid project" do
+      assert_raise(Pigeon.ConfigError, @invalid_project_msg, fn ->
+        [project_id: nil, service_account_json: "{}"]
+        |> Pigeon.FCM.init()
+      end)
+    end
+
+    test "raises if configured with invalid service account JSON" do
+      assert_raise(Pigeon.ConfigError, @invalid_service_account_json_msg, fn ->
+        [project_id: "example", service_account_json: nil]
+        |> Pigeon.FCM.init()
+      end)
+    end
+  end
+
+  describe "handle_push/3" do
+    test "successfully sends a valid push" do
+      notification =
+        {:token, valid_fcm_reg_id()}
+        |> Notification.new(%{}, @data)
+        |> PigeonTest.FCM.push()
+
+      assert notification.name
+    end
+
+    test "successfully sends a valid push with callback" do
+      target = {:token, valid_fcm_reg_id()}
+      n = Notification.new(target, %{}, @data)
+      pid = self()
+      PigeonTest.FCM.push(n, on_response: fn x -> send(pid, x) end)
+
+      assert_receive(n = %Notification{target: ^target}, 5000)
+      assert n.name
+    end
+
+    test "returns an error on pushing with a bad registration_id" do
+      target = {:token, "bad_reg_id"}
+      n = Notification.new(target, %{}, @data)
+      pid = self()
+      PigeonTest.FCM.push(n, on_response: fn x -> send(pid, x) end)
+
+      assert_receive(n = %Notification{target: ^target}, 5000)
+      assert n.error
+      refute n.name
+    end
+  end
+end

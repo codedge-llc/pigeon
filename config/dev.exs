@@ -17,4 +17,5 @@ config :pigeon, PigeonTest.APNS,
 
 config :pigeon, PigeonTest.FCM,
   adapter: Pigeon.FCM,
-  key: System.get_env("GCM_KEY")
+  project_id: System.get_env("FCM_PROJECT"),
+  service_account_json: File.read!("service-account.json")

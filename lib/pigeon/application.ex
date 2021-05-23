@@ -8,15 +8,13 @@ defmodule Pigeon.Application do
   @doc false
   def start(_type, _args) do
     Client.default().start
-    opts = [strategy: :one_for_one, name: :pigeon]
-    Supervisor.start_link(workers(), opts)
-  end
 
-  defp workers do
-    [
+    children = [
       {APNS.Token, %{}},
       {Task.Supervisor, name: Pigeon.Tasks}
     ]
-    |> List.flatten()
+
+    opts = [strategy: :one_for_one, name: :pigeon]
+    Supervisor.start_link(children, opts)
   end
 end

@@ -32,3 +32,8 @@ config :pigeon, PigeonTest.APNS.JWT,
 config :pigeon, PigeonTest.LegacyFCM,
   adapter: Pigeon.LegacyFCM,
   key: System.get_env("GCM_KEY")
+
+config :pigeon, PigeonTest.FCM,
+  adapter: Pigeon.FCM,
+  project_id: System.get_env("FCM_PROJECT"),
+  service_account_json: File.read!("service-account.json")

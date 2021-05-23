@@ -29,6 +29,7 @@ pigeon-*.tar
 cert.pem
 key_unencrypted.pem
 AuthKey.p8
+service-account.json
 *.p12
 secrets.tar
 scratchpad.txt
