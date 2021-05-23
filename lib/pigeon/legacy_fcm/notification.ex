@@ -1,6 +1,6 @@
-defmodule Pigeon.FCM.Notification do
+defmodule Pigeon.LegacyFCM.Notification do
   @moduledoc """
-  Defines FCM notification struct and convenience constructor functions.
+  Defines LegacyFCM notification struct and convenience constructor functions.
   """
 
   defstruct collapse_key: nil,
@@ -17,7 +17,7 @@ defmodule Pigeon.FCM.Notification do
             status: nil,
             time_to_live: 2_419_200
 
-  alias Pigeon.FCM.Notification
+  alias Pigeon.LegacyFCM.Notification
 
   @type t :: %__MODULE__{
           collapse_key: nil | String.t(),
@@ -36,16 +36,16 @@ defmodule Pigeon.FCM.Notification do
         }
 
   @typedoc ~S"""
-  Status of FCM request
+  Status of LegacyFCM request
 
   - `:success` - Notification was processed successfully
   - `:timeout` - Worker did not respond within timeout. This is likely an
      internal error
-  - `:unauthorized` - Bad FCM key
+  - `:unauthorized` - Bad LegacyFCM key
   - `:malformed_json` - Push payload was invalid JSON
-  - `:internal_server_error` - FCM server encountered an error while trying
+  - `:internal_server_error` - LegacyFCM server encountered an error while trying
      to process the request
-  - `:unavailable` - FCM server couldn't process the request in time
+  - `:unavailable` - LegacyFCM server couldn't process the request in time
   """
   @type status ::
           :success
@@ -56,7 +56,7 @@ defmodule Pigeon.FCM.Notification do
           | :unavailable
 
   @typedoc ~S"""
-  FCM push response for individual registration IDs
+  LegacyFCM push response for individual registration IDs
 
   - `{:success, "reg_id"}` - Push was successfully sent
   - `{:update, {"reg_id", "new_reg_id"}}` - Push successful but user should
@@ -89,28 +89,28 @@ defmodule Pigeon.FCM.Notification do
   @chunk_size 1_000
 
   @doc """
-  Creates `FCM.Notification` struct with device registration IDs and optional
+  Creates `LegacyFCM.Notification` struct with device registration IDs and optional
   notification and data payloads.
 
   ## Examples
 
-      iex> Pigeon.FCM.Notification.new("reg ID")
-      %Pigeon.FCM.Notification{
+      iex> Pigeon.LegacyFCM.Notification.new("reg ID")
+      %Pigeon.LegacyFCM.Notification{
         payload: %{},
         registration_id: "reg ID",
         priority: :normal
       }
 
-      iex> Pigeon.FCM.Notification.new("reg ID", %{"body" => "test message"})
-      %Pigeon.FCM.Notification{
+      iex> Pigeon.LegacyFCM.Notification.new("reg ID", %{"body" => "test message"})
+      %Pigeon.LegacyFCM.Notification{
         payload: %{"notification" => %{"body" => "test message"}},
         registration_id: "reg ID",
         priority: :normal
       }
 
-      iex> Pigeon.FCM.Notification.new("reg ID", %{"body" => "test message"},
+      iex> Pigeon.LegacyFCM.Notification.new("reg ID", %{"body" => "test message"},
       ...> %{"key" => "value"})
-      %Pigeon.FCM.Notification{
+      %Pigeon.LegacyFCM.Notification{
         payload: %{
           "data" => %{"key" => "value"},
           "notification" => %{"body" => "test message"}
@@ -120,7 +120,7 @@ defmodule Pigeon.FCM.Notification do
       }
 
       iex> regids = Enum.map(0..1_499, fn(_x) -> "reg ID" end)
-      iex> [n1 | [n2]] = Pigeon.FCM.Notification.new(regids,
+      iex> [n1 | [n2]] = Pigeon.LegacyFCM.Notification.new(regids,
       ...> %{"body" => "test message"}, %{"key" => "value"})
       iex> Enum.count(n1.registration_id)
       1000
@@ -130,13 +130,13 @@ defmodule Pigeon.FCM.Notification do
   def new(registration_ids, notification \\ %{}, data \\ %{})
 
   def new(reg_id, notification, data) when is_binary(reg_id) do
-    %Pigeon.FCM.Notification{registration_id: reg_id}
+    %Pigeon.LegacyFCM.Notification{registration_id: reg_id}
     |> put_notification(notification)
     |> put_data(data)
   end
 
   def new(reg_ids, notification, data) when length(reg_ids) < 1001 do
-    %Pigeon.FCM.Notification{registration_id: reg_ids}
+    %Pigeon.LegacyFCM.Notification{registration_id: reg_ids}
     |> put_notification(notification)
     |> put_data(data)
   end
@@ -171,8 +171,8 @@ defmodule Pigeon.FCM.Notification do
 
   ## Examples
 
-      iex> put_data(%Pigeon.FCM.Notification{}, %{"key" => 1234})
-      %Pigeon.FCM.Notification{
+      iex> put_data(%Pigeon.LegacyFCM.Notification{}, %{"key" => 1234})
+      %Pigeon.LegacyFCM.Notification{
         payload: %{"data" => %{"key" => 1234}},
         registration_id: nil
       }
@@ -192,9 +192,9 @@ defmodule Pigeon.FCM.Notification do
 
   ## Examples
 
-      iex> put_notification(%Pigeon.FCM.Notification{},
+      iex> put_notification(%Pigeon.LegacyFCM.Notification{},
       ...> %{"body" => "message"})
-      %Pigeon.FCM.Notification{
+      %Pigeon.LegacyFCM.Notification{
         payload: %{"notification" => %{"body" => "message"}},
         registration_id: nil
       }
@@ -219,14 +219,14 @@ defmodule Pigeon.FCM.Notification do
 
   ## Examples
 
-      iex> put_priority(%Pigeon.FCM.Notification{}, :normal)
-      %Pigeon.FCM.Notification{priority: :normal}
+      iex> put_priority(%Pigeon.LegacyFCM.Notification{}, :normal)
+      %Pigeon.LegacyFCM.Notification{priority: :normal}
 
-      iex> put_priority(%Pigeon.FCM.Notification{}, :high)
-      %Pigeon.FCM.Notification{priority: :high}
+      iex> put_priority(%Pigeon.LegacyFCM.Notification{}, :high)
+      %Pigeon.LegacyFCM.Notification{priority: :high}
 
-      iex> put_priority(%Pigeon.FCM.Notification{priority: :normal}, :bad)
-      %Pigeon.FCM.Notification{priority: :normal}
+      iex> put_priority(%Pigeon.LegacyFCM.Notification{priority: :normal}, :bad)
+      %Pigeon.LegacyFCM.Notification{priority: :normal}
   """
   def put_priority(n, :normal), do: %{n | priority: :normal}
   def put_priority(n, :high), do: %{n | priority: :high}
@@ -242,8 +242,8 @@ defmodule Pigeon.FCM.Notification do
 
   ## Examples
 
-      iex> put_time_to_live(%Pigeon.FCM.Notification{}, 60 * 60 * 24)
-      %Pigeon.FCM.Notification{time_to_live: 86_400}
+      iex> put_time_to_live(%Pigeon.LegacyFCM.Notification{}, 60 * 60 * 24)
+      %Pigeon.LegacyFCM.Notification{time_to_live: 86_400}
   """
   def put_time_to_live(n, ttl) when is_integer(ttl),
     do: %{n | time_to_live: ttl}
@@ -258,8 +258,8 @@ defmodule Pigeon.FCM.Notification do
 
   ## Examples
 
-      iex> put_dry_run(%Pigeon.FCM.Notification{})
-      %Pigeon.FCM.Notification{dry_run: true}
+      iex> put_dry_run(%Pigeon.LegacyFCM.Notification{})
+      %Pigeon.LegacyFCM.Notification{dry_run: true}
   """
   def put_dry_run(n), do: %{n | dry_run: true}
 
@@ -268,8 +268,8 @@ defmodule Pigeon.FCM.Notification do
 
   ## Examples
 
-      iex> put_collapse_key(%Pigeon.FCM.Notification{}, "Updates available")
-      %Pigeon.FCM.Notification{collapse_key: "Updates available"}
+      iex> put_collapse_key(%Pigeon.LegacyFCM.Notification{}, "Updates available")
+      %Pigeon.LegacyFCM.Notification{collapse_key: "Updates available"}
   """
   def put_collapse_key(n, key) when is_binary(key), do: %{n | collapse_key: key}
 
@@ -281,8 +281,8 @@ defmodule Pigeon.FCM.Notification do
 
   ## Examples
 
-      iex> put_restricted_package_name(%Pigeon.FCM.Notification{}, "com.example.app")
-      %Pigeon.FCM.Notification{restricted_package_name: "com.example.app"}
+      iex> put_restricted_package_name(%Pigeon.LegacyFCM.Notification{}, "com.example.app")
+      %Pigeon.LegacyFCM.Notification{restricted_package_name: "com.example.app"}
   """
   def put_restricted_package_name(n, name) when is_binary(name),
     do: %{n | restricted_package_name: name}
@@ -301,8 +301,8 @@ defmodule Pigeon.FCM.Notification do
 
   ## Examples
 
-      iex> put_content_available(%Pigeon.FCM.Notification{}, true)
-      %Pigeon.FCM.Notification{content_available: true}
+      iex> put_content_available(%Pigeon.LegacyFCM.Notification{}, true)
+      %Pigeon.LegacyFCM.Notification{content_available: true}
   """
   def put_content_available(n, enabled) when is_boolean(enabled),
     do: %{n | content_available: enabled}
@@ -318,8 +318,8 @@ defmodule Pigeon.FCM.Notification do
 
   ## Examples
 
-      iex> put_mutable_content(%Pigeon.FCM.Notification{}, true)
-      %Pigeon.FCM.Notification{mutable_content: true}
+      iex> put_mutable_content(%Pigeon.LegacyFCM.Notification{}, true)
+      %Pigeon.LegacyFCM.Notification{mutable_content: true}
   """
   def put_mutable_content(n, enabled) when is_boolean(enabled),
     do: %{n | mutable_content: enabled}
@@ -334,8 +334,8 @@ defmodule Pigeon.FCM.Notification do
 
   ## Examples
 
-      iex> put_condition(%Pigeon.FCM.Notification{}, "'test' in topics")
-      %Pigeon.FCM.Notification{condition: "'test' in topics"}
+      iex> put_condition(%Pigeon.LegacyFCM.Notification{}, "'test' in topics")
+      %Pigeon.LegacyFCM.Notification{condition: "'test' in topics"}
   """
   def put_condition(n, condition) when is_binary(condition),
     do: %{n | condition: condition}
@@ -356,7 +356,7 @@ defmodule Pigeon.FCM.Notification do
 
   ## Examples
 
-      iex> n = %Pigeon.FCM.Notification{response: [
+      iex> n = %Pigeon.LegacyFCM.Notification{response: [
       ...> {:success, "regid1"}, {:invalid_registration, "regid2"},
       ...> {:success, "regid3"}, {:update, {"regid4", "new_regid4"}},
       ...> {:not_registered, "regid5"}, {:unavailable, "regid6"}]}
@@ -372,7 +372,7 @@ defmodule Pigeon.FCM.Notification do
 
   ## Examples
 
-      iex> n = %Pigeon.FCM.Notification{response: [
+      iex> n = %Pigeon.LegacyFCM.Notification{response: [
       ...> {:success, "regid1"}, {:invalid_registration, "regid2"},
       ...> {:success, "regid3"}, {:update, {"regid4", "new_regid4"}},
       ...> {:not_registered, "regid5"}, {:unavailable, "regid6"}]}
@@ -388,7 +388,7 @@ defmodule Pigeon.FCM.Notification do
 
   ## Examples
 
-      iex> n = %Pigeon.FCM.Notification{response: [
+      iex> n = %Pigeon.LegacyFCM.Notification{response: [
       ...> {:success, "regid1"}, {:invalid_registration, "regid2"},
       ...> {:success, "regid3"}, {:update, {"regid4", "new_regid4"}},
       ...> {:not_registered, "regid5"}, {:unavailable, "regid6"}]}
@@ -404,7 +404,7 @@ defmodule Pigeon.FCM.Notification do
 
   ## Examples
 
-      iex> n = %Pigeon.FCM.Notification{response: [
+      iex> n = %Pigeon.LegacyFCM.Notification{response: [
       ...> {:success, "regid1"}, {:invalid_registration, "regid2"},
       ...> {:success, "regid3"}, {:update, {"regid4", "new_regid4"}},
       ...> {:not_registered, "regid5"}, {:unavailable, "regid6"}]}
@@ -420,7 +420,7 @@ defmodule Pigeon.FCM.Notification do
   end
 end
 
-defimpl Pigeon.Encodable, for: Pigeon.FCM.Notification do
+defimpl Pigeon.Encodable, for: Pigeon.LegacyFCM.Notification do
   def binary_payload(notif) do
     encode_requests(notif)
   end

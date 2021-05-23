@@ -1,6 +1,6 @@
-defmodule Pigeon.FCM.Config do
+defmodule Pigeon.LegacyFCM.Config do
   @moduledoc """
-  FCM Configuration for Pigeon.
+  LegacyFCM Configuration for Pigeon.
   """
 
   defstruct key: nil,
@@ -14,16 +14,16 @@ defmodule Pigeon.FCM.Config do
         }
 
   @doc ~S"""
-  Returns a new `FCM.Config` with given `opts`.
+  Returns a new `LegacyFCM.Config` with given `opts`.
 
   ## Examples
 
-      iex> Pigeon.FCM.Config.new(
+      iex> Pigeon.LegacyFCM.Config.new(
       ...>   key: "fcm_key",
       ...>   uri: 'test.server.example.com',
       ...>   port: 5228
       ...> )
-      %Pigeon.FCM.Config{
+      %Pigeon.LegacyFCM.Config{
         key: "fcm_key",
         port: 5228, 
         uri: 'test.server.example.com'
@@ -38,7 +38,7 @@ defmodule Pigeon.FCM.Config do
   end
 end
 
-defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
+defimpl Pigeon.Configurable, for: Pigeon.LegacyFCM.Config do
   @moduledoc false
 
   require Logger
@@ -46,7 +46,7 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   import Pigeon.Tasks, only: [process_on_response: 2]
 
   alias Pigeon.Encodable
-  alias Pigeon.FCM.{Config, ResultParser}
+  alias Pigeon.LegacyFCM.{Config, ResultParser}
 
   @type sock :: {:sslsocket, any, pid | {any, any}}
 

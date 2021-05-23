@@ -1,4 +1,4 @@
-defmodule Pigeon.FCM do
+defmodule Pigeon.LegacyFCM do
   @moduledoc """
   Firebase Cloud Messaging (FCM).
   """
@@ -15,7 +15,7 @@ defmodule Pigeon.FCM do
 
   @impl true
   def init(opts) do
-    config = Pigeon.FCM.Config.new(opts)
+    config = Pigeon.LegacyFCM.Config.new(opts)
     Configurable.validate!(config)
 
     state = %__MODULE__{config: config}
