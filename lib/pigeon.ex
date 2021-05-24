@@ -86,26 +86,44 @@ defmodule Pigeon do
     end
   end
 
-  defp push_async(pid, notifications, on_response)
-       when is_list(notifications) do
-    for n <- notifications, do: push_async(pid, n, on_response)
-  end
-
-  defp push_async(pid, notification, on_response) do
-    GenServer.cast(pid, {:push, notification, on_response})
-  end
-
   defp push_sync(pid, notification, timeout) do
     myself = self()
     ref = :erlang.make_ref()
     on_response = fn x -> send(myself, {:"$push", ref, x}) end
 
-    GenServer.cast(pid, {:push, notification, on_response})
+    push_async(pid, notification, on_response)
 
     receive do
       {:"$push", ^ref, x} -> x
     after
       timeout -> %{notification | response: :timeout}
+    end
+  end
+
+  defp push_async(pid, notifications, on_response)
+       when is_list(notifications) do
+    for n <- notifications, do: push_async(pid, n, on_response)
+  end
+
+  defp push_async(pid, notification, nil) do
+    GenServer.cast(pid, {:push, notification, nil})
+  end
+
+  defp push_async(pid, notification, on_response) when is_pid(pid) do
+    if Process.alive?(pid) do
+      GenServer.cast(pid, {:push, notification, on_response})
+    else
+      on_response.(%{notification | response: :not_started})
+    end
+  end
+
+  defp push_async(pid, notification, on_response) do
+    case Process.whereis(pid) do
+      nil ->
+        on_response.(%{notification | response: :not_started})
+
+      _pid ->
+        GenServer.cast(pid, {:push, notification, on_response})
     end
   end
 end

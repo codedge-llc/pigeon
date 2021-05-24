@@ -49,6 +49,22 @@ defmodule Pigeon.FCMTest do
 
       assert_receive(n = %Notification{target: ^target}, 5000)
       assert n.name
+      assert n.response == :success
+    end
+
+    test "successfully sends a valid push with a dynamic dispatcher" do
+      target = {:token, valid_fcm_reg_id()}
+      n = Notification.new(target, %{}, @data)
+      pid = self()
+
+      {:ok, dispatcher} =
+        Pigeon.Dispatcher.start_link(Application.get_env(:pigeon, PigeonTest.FCM))
+
+      Pigeon.push(dispatcher, n, on_response: fn x -> send(pid, x) end)
+
+      assert_receive(n = %Notification{target: ^target}, 5000)
+      assert n.name
+      assert n.response == :success
     end
 
     test "returns an error on pushing with a bad registration_id" do
@@ -60,6 +76,19 @@ defmodule Pigeon.FCMTest do
       assert_receive(n = %Notification{target: ^target}, 5000)
       assert n.error
       refute n.name
+      assert n.response == :invalid_argument
+    end
+
+    test "responds :not_started if dispatcher not started" do
+      target = {:token, valid_fcm_reg_id()}
+      n = Notification.new(target, %{}, @data)
+      pid = self()
+
+      Pigeon.push(PigeonTest.NotStarted, n, on_response: fn x -> send(pid, x) end)
+
+      assert_receive(n = %Notification{target: ^target}, 5000)
+      refute n.name
+      assert n.response == :not_started
     end
   end
 end

@@ -10,20 +10,23 @@ defmodule Pigeon.FCM.Notification do
             fcm_options: nil,
             name: nil,
             notification: %{},
+            response: nil,
             target: nil,
             validate_only: nil,
             webpush: nil
 
-  alias Pigeon.FCM.Notification.FCMOptions
-
   @type t :: %__MODULE__{
+          android: map | nil,
+          apns: map | nil,
           data: map | nil,
           error: map | nil,
-          fcm_options: FCMOptions.t(),
+          fcm_options: map | nil,
           name: binary | nil,
           notification: map | nil,
+          response: atom | nil,
           target: target,
-          validate_only: boolean | nil
+          validate_only: boolean | nil,
+          webpush: map | nil
         }
 
   @typedoc ~S"""

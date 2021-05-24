@@ -70,7 +70,7 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   import Pigeon.Tasks, only: [process_on_response: 2]
 
   alias Pigeon.Encodable
-  alias Pigeon.FCM.Config
+  alias Pigeon.FCM.{Config, Error}
 
   @type sock :: {:sslsocket, any, pid | {any, any}}
 
@@ -126,17 +126,21 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
     Encodable.binary_payload(notification)
   end
 
-  def handle_end_stream(_config, %{error: _error}, _notif, nil), do: :ok
+  def handle_end_stream(_config, _stream, _notif, nil), do: :ok
 
   def handle_end_stream(_config, %{error: nil} = stream, notif, on_response) do
     stream.body
     |> Pigeon.json_library().decode!()
     |> case do
       %{"name" => name} ->
-        process_on_response(on_response, %{notif | name: name})
+        process_on_response(on_response, %{notif | name: name, response: :success})
 
       %{"error" => error} ->
-        process_on_response(on_response, %{notif | error: error})
+        process_on_response(on_response, %{
+          notif
+          | error: error,
+            response: Error.parse(error)
+        })
     end
   end
 
