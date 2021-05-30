@@ -102,21 +102,14 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   def add_port(opts, %Config{port: port}), do: [{:port, port} | opts]
 
   def push_headers(
-        %Config{project_id: project_id, service_account_json: json},
+        %Config{project_id: project_id},
         _notification,
-        _opts
+        opts
       ) do
-    scopes = [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/firebase.messaging"
-    ]
-
-    {:ok, token} = Goth.Token.fetch(%{source: {:service_account, json, [scopes: scopes]}})
-
     [
       {":method", "POST"},
       {":path", "/v1/projects/#{project_id}/messages:send"},
-      {"authorization", "Bearer #{token.token}"},
+      {"authorization", "Bearer #{opts[:token].token}"},
       {"content-type", "application/json"},
       {"accept", "application/json"}
     ]
