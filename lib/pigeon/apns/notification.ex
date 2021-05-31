@@ -122,14 +122,7 @@ defmodule Pigeon.APNS.Notification do
 
       iex> Pigeon.APNS.Notification.put_alert(%Pigeon.APNS.Notification{}, "push message")
       %Pigeon.APNS.Notification{
-        collapse_id: nil,
-        device_token: nil,
-        expiration: nil,
-        priority: nil,
-        push_type: "alert",
-        id: nil,
-        payload: %{"aps" => %{"alert" => "push message"}},
-        topic: nil
+        payload: %{"aps" => %{"alert" => "push message"}}
       }
   """
   @spec put_alert(t, String.t() | map) :: t
@@ -145,14 +138,7 @@ defmodule Pigeon.APNS.Notification do
 
       iex> Pigeon.APNS.Notification.put_badge(%Pigeon.APNS.Notification{}, 5)
       %Pigeon.APNS.Notification{
-        collapse_id: nil,
-        device_token: nil,
-        expiration: nil,
-        priority: nil,
-        push_type: "alert",
-        id: nil,
-        payload: %{"aps" => %{"badge" => 5}},
-        topic: nil
+        payload: %{"aps" => %{"badge" => 5}}
       }
   """
   @spec put_badge(t, integer) :: t
@@ -160,28 +146,18 @@ defmodule Pigeon.APNS.Notification do
     do: update_payload(notification, "badge", badge)
 
   @doc """
-  Updates `"sound"` key in push payload.
-
-  Used for custom notification sounds. Value should
-  be the name of the custom sound file in the application's binary.
+  Updates `"category"` key in push payload.
 
   ## Examples
 
-      iex> Pigeon.APNS.Notification.put_sound(%Pigeon.APNS.Notification{}, "custom.aiff")
+      iex> Pigeon.APNS.Notification.put_category(%Pigeon.APNS.Notification{}, "category")
       %Pigeon.APNS.Notification{
-        collapse_id: nil,
-        device_token: nil,
-        expiration: nil,
-        priority: nil,
-        push_type: "alert",
-        id: nil,
-        payload: %{"aps" => %{"sound" => "custom.aiff"}},
-        topic: nil
+        payload: %{"aps" => %{"category" => "category"}}
       }
   """
-  @spec put_sound(t, String.t()) :: t
-  def put_sound(notification, sound),
-    do: update_payload(notification, "sound", sound)
+  @spec put_category(t, String.t()) :: t
+  def put_category(notification, category),
+    do: update_payload(notification, "category", category)
 
   @doc """
   Sets `"content-available"` flag in push payload.
@@ -193,14 +169,7 @@ defmodule Pigeon.APNS.Notification do
 
       iex> Pigeon.APNS.Notification.put_content_available(%Pigeon.APNS.Notification{})
       %Pigeon.APNS.Notification{
-        collapse_id: nil,
-        device_token: nil,
-        expiration: nil,
-        priority: nil,
-        push_type: "alert",
-        id: nil,
-        payload: %{"aps" => %{"content-available" => 1}},
-        topic: nil
+        payload: %{"aps" => %{"content-available" => 1}}
       }
   """
   @spec put_content_available(t) :: t
@@ -208,25 +177,22 @@ defmodule Pigeon.APNS.Notification do
     do: update_payload(notification, "content-available", 1)
 
   @doc """
-  Updates `"category"` key in push payload.
+  Puts custom data in push payload.
 
   ## Examples
 
-      iex> Pigeon.APNS.Notification.put_category(%Pigeon.APNS.Notification{}, "category")
+      iex> n = Pigeon.APNS.Notification.new("test message", "device token")
+      iex> Pigeon.APNS.Notification.put_custom(n, %{"custom-key" => 1234})
       %Pigeon.APNS.Notification{
-        collapse_id: nil,
-        device_token: nil,
-        expiration: nil,
-        priority: nil,
-        push_type: "alert",
-        id: nil,
-        payload: %{"aps" => %{"category" => "category"}},
-        topic: nil
+        device_token: "device token",
+        payload: %{"aps" => %{"alert" => "test message"}, "custom-key" => 1234}
       }
   """
-  @spec put_category(t, String.t()) :: t
-  def put_category(notification, category),
-    do: update_payload(notification, "category", category)
+  @spec put_custom(t, %{String.t() => term}) :: t
+  def put_custom(notification, data) do
+    new_payload = Map.merge(notification.payload, data)
+    %{notification | payload: new_payload}
+  end
 
   @doc """
   Sets `"mutable-content"` flag in push payload.
@@ -237,19 +203,78 @@ defmodule Pigeon.APNS.Notification do
 
       iex> Pigeon.APNS.Notification.put_mutable_content(%Pigeon.APNS.Notification{})
       %Pigeon.APNS.Notification{
-        collapse_id: nil,
-        device_token: nil,
-        expiration: nil,
-        priority: nil,
-        push_type: "alert",
-        id: nil,
-        payload: %{"aps" => %{"mutable-content" => 1}},
-        topic: nil
+        payload: %{"aps" => %{"mutable-content" => 1}}
       }
   """
   @spec put_mutable_content(t) :: t
   def put_mutable_content(notification),
     do: update_payload(notification, "mutable-content", 1)
+
+  @doc """
+  Updates `"sound"` key in push payload.
+
+  Used for custom notification sounds. Value should
+  be the name of the custom sound file in the application's binary.
+
+  ## Examples
+
+      iex> Pigeon.APNS.Notification.put_sound(%Pigeon.APNS.Notification{}, "custom.aiff")
+      %Pigeon.APNS.Notification{
+        payload: %{"aps" => %{"sound" => "custom.aiff"}}
+      }
+
+      iex> Pigeon.APNS.Notification.put_sound(%Pigeon.APNS.Notification{}, %{
+      ...>   "critical" => 1,
+      ...>   "sound" => "default",
+      ...>   "volume" => 1.0
+      ...> })
+      %Pigeon.APNS.Notification{
+        payload: %{
+          "aps" => %{
+            "sound" => %{
+              "critical" => 1, 
+              "sound" => "default",
+              "volume" => 1.0
+            }
+          }
+        }
+      }
+  """
+  @spec put_sound(t, String.t() | %{String.t() => term}) :: t
+  def put_sound(notification, sound),
+    do: update_payload(notification, "sound", sound)
+
+  @doc """
+  Updates `"target-content-id"` key in push payload.
+
+  Used for bringing a specific window forward.
+
+  ## Examples
+
+      iex> Pigeon.APNS.Notification.put_target_content_id(%Pigeon.APNS.Notification{}, "example")
+      %Pigeon.APNS.Notification{
+        payload: %{"aps" => %{"target-content-id" => "example"}}
+      }
+  """
+  @spec put_target_content_id(t, String.t()) :: t
+  def put_target_content_id(notification, id),
+    do: update_payload(notification, "target-content-id", id)
+
+  @doc """
+  Updates `"thread-id"` key in push payload.
+
+  Used for grouping related notifications.
+
+  ## Examples
+
+      iex> Pigeon.APNS.Notification.put_thread_id(%Pigeon.APNS.Notification{}, "example")
+      %Pigeon.APNS.Notification{
+        payload: %{"aps" => %{"thread-id" => "example"}}
+      }
+  """
+  @spec put_thread_id(t, String.t()) :: t
+  def put_thread_id(notification, id),
+    do: update_payload(notification, "thread-id", id)
 
   defp update_payload(notification, key, value) do
     new_aps =
@@ -257,31 +282,7 @@ defmodule Pigeon.APNS.Notification do
       |> Map.get("aps")
       |> Map.put(key, value)
 
-    new_payload = notification.payload |> Map.put("aps", new_aps)
-    %{notification | payload: new_payload}
-  end
-
-  @doc """
-  Puts custom data in push payload.
-
-  ## Examples
-
-      iex> n = Pigeon.APNS.Notification.new("test message", "device token")
-      iex> Pigeon.APNS.Notification.put_custom(n, %{"custom-key" => 1234})
-      %Pigeon.APNS.Notification{
-        collapse_id: nil,
-        device_token: "device token",
-        expiration: nil,
-        priority: nil,
-        push_type: "alert",
-        id: nil,
-        payload: %{"aps" => %{"alert" => "test message"}, "custom-key" => 1234},
-        topic: nil
-      }
-  """
-  @spec put_custom(t, %{String.t() => term}) :: t
-  def put_custom(notification, data) do
-    new_payload = Map.merge(notification.payload, data)
+    new_payload = Map.put(notification.payload, "aps", new_aps)
     %{notification | payload: new_payload}
   end
 end
