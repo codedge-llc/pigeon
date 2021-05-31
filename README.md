@@ -12,13 +12,12 @@ or [the 1.6 branch on GitHub](https://github.com/codedge-llc/pigeon/tree/v1.6) f
 
 ## Installation
 
-Add `:pigeon` and `:kadabra` as `mix.exs` dependencies:
+Add `:pigeon` and as a `mix.exs` dependency:
 
 ```elixir
 def deps do
   [
-    {:pigeon, "~> 1.6.0"},
-    {:kadabra, "~> 0.4.4"}
+    {:pigeon, "~> 2.0"}
   ]
 end
 ```
