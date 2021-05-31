@@ -5,7 +5,8 @@ workers = [
   PigeonTest.APNS,
   PigeonTest.APNS.JWT,
   PigeonTest.FCM,
-  PigeonTest.LegacyFCM
+  PigeonTest.LegacyFCM,
+  PigeonTest.Sandbox
 ]
 
 Supervisor.start_link(workers, strategy: :one_for_one)
