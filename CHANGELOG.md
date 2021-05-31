@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.6.1
+
+**Security**
+
+- Bump minimum Kadabra to 0.6.0. This is a critical security update for CA certificate validation.
+
 ## v1.6.0
 
 **Added**
