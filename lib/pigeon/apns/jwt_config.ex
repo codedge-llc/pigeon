@@ -1,7 +1,5 @@
 defmodule Pigeon.APNS.JWTConfig do
-  @moduledoc """
-  Configuration for APNS Workers using JWT.
-  """
+  @moduledoc false
 
   defstruct key: nil,
             key_identifier: nil,

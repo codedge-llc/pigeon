@@ -62,15 +62,18 @@ defmodule Pigeon.Mixfile do
 
   defp docs do
     [
-      main: "getting-started",
-      extras: [
-        "CHANGELOG.md",
-        {:"README.md", [filename: "getting-started", title: "Getting Started"]},
-        "docs/APNS Apple iOS.md",
-        "docs/FCM Android.md",
-        "docs/ADM Amazon Android.md"
+      groups_for_modules: [
+        "ADM - Amazon Android": [Pigeon.ADM, Pigeon.ADM.Notification],
+        "APNS - Apple iOS": [Pigeon.APNS, Pigeon.APNS.Notification],
+        "FCM - Firebase Cloud Messaging": [
+          Pigeon.FCM,
+          Pigeon.FCM.Notification,
+          Pigeon.LegacyFCM,
+          Pigeon.LegacyFCM.Notification
+        ],
+        "Advanced Configuration": [Pigeon.Adapter, Pigeon.Dispatcher]
       ],
-      skip_undefined_reference_warnings_on: ["CHANGELOG.md"]
+      main: "Pigeon"
     ]
   end
 

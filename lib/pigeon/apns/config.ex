@@ -1,7 +1,5 @@
 defmodule Pigeon.APNS.Config do
-  @moduledoc ~S"""
-  Configuration for APNS Workers using certificates.
-  """
+  @moduledoc false
 
   defstruct cert: nil,
             key: nil,

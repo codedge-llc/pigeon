@@ -29,6 +29,16 @@ defmodule Pigeon.FCM.Notification do
           webpush: map | nil
         }
 
+  @type error_response ::
+          :unspecified_error
+          | :invalid_argument
+          | :unregistered
+          | :sender_id_mismatch
+          | :quota_exceeded
+          | :unavailable
+          | :internal
+          | :third_party_auth_error
+
   @typedoc ~S"""
   FCM notification target. Must be one of the following:
 

@@ -1,6 +1,28 @@
 defmodule Pigeon do
   @moduledoc """
   HTTP2-compliant wrapper for sending iOS and Android push notifications.
+
+  ## Getting Started
+
+  Check the module documentation for your push notification service.
+
+    - `Pigeon.ADM` - Amazon Android.
+    - `Pigeon.APNS` - Apple iOS.
+    - `Pigeon.FCM` - Firebase Cloud Messaging v1 API.
+    - `Pigeon.LegacyFCM` - Firebase Cloud Messaging Legacy API.
+
+  ## Creating Dynamic Runtime Dispatchers
+
+  Pigeon can spin up dynamic dispatchers for a variety of advanced use-cases, such as
+  supporting dozens of dispatcher configurations or custom connection pools.
+
+  See `Pigeon.Dispatcher` for instructions.
+
+  ## Writing a Custom Dispatcher Adapter
+
+  Want to write a Pigeon adapter for an unsupported push notification service?
+
+  See `Pigeon.Adapter` for instructions.
   """
 
   @default_timeout 5_000

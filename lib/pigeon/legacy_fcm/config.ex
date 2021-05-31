@@ -1,7 +1,5 @@
 defmodule Pigeon.LegacyFCM.Config do
-  @moduledoc """
-  LegacyFCM Configuration for Pigeon.
-  """
+  @moduledoc false
 
   defstruct key: nil,
             uri: 'fcm.googleapis.com',

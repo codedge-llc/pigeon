@@ -1,6 +1,6 @@
 defmodule Pigeon.LegacyFCM.Notification do
   @moduledoc """
-  Defines LegacyFCM notification struct and convenience constructor functions.
+  Defines `Pigeon.LegacyFCM.Notification` struct and convenience constructor functions.
   """
 
   defstruct collapse_key: nil,

@@ -1,7 +1,5 @@
 defmodule Pigeon.FCM.Config do
-  @moduledoc """
-  FCM Configuration for Pigeon.
-  """
+  @moduledoc false
 
   defstruct port: 443,
             project_id: nil,
