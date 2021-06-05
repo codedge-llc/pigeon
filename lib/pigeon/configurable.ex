@@ -1,4 +1,6 @@
 defprotocol Pigeon.Configurable do
+  @moduledoc false
+
   @type sock :: {:sslsocket, any, pid | {any, any}}
 
   @spec connect(any) :: {:ok, sock} | {:error, String.t()}

@@ -1,4 +1,143 @@
 defmodule Pigeon.ADM do
+  @moduledoc """
+  `Pigeon.Adapter` for ADM (Amazon Android) push notifications.
+
+  ## Getting Started
+
+  1. Create an ADM dispatcher.
+
+  ```
+  # lib/adm.ex
+  defmodule YourApp.ADM do
+    use Pigeon.Dispatcher, otp_app: :your_app
+  end
+  ```
+
+  2. (Optional) Add configuration to your `config.exs`.
+
+  ```
+  # config.exs
+
+  config :your_app, YourApp.ADM,
+    adapter: Pigeon.ADM,
+    client_id: "your_oauth2_client_id_here",
+    client_secret: "your_oauth2_client_secret_here"
+  ```
+
+  3. Start your dispatcher on application boot.
+
+  ```
+  defmodule YourApp.Application do
+    @moduledoc false
+
+    use Application
+
+    @doc false
+    def start(_type, _args) do
+      children = [
+        YourApp.ADM
+      ]
+      opts = [strategy: :one_for_one, name: YourApp.Supervisor]
+      Supervisor.start_link(children, opts)
+    end
+  end
+  ```
+
+  If you skipped step two, include your configuration.
+
+  ```
+  defmodule YourApp.Application do
+    @moduledoc false
+
+    use Application
+
+    @doc false
+    def start(_type, _args) do
+      children = [
+        {YourApp.ADM, adm_opts()}
+      ]
+      opts = [strategy: :one_for_one, name: YourApp.Supervisor]
+      Supervisor.start_link(children, opts)
+    end
+
+    defp adm_opts do
+      [
+        adapter: Pigeon.ADM, 
+        client_id: "client_id", 
+        client_secret: "secret"
+      ]
+    end
+  end
+  ```
+
+  4. Create a notification.
+
+  ```
+  msg = %{ "body" => "your message" }
+  n = Pigeon.ADM.Notification.new("your device registration ID", msg)
+  ```
+
+  5. Send the notification.
+
+  ```
+  YourApp.ADM.push(n)
+  ```
+
+  ## Handling Push Responses
+
+  1. Pass an optional anonymous function as your second parameter.
+
+  ```
+  data = %{ message: "your message" }
+  n = Pigeon.ADM.Notification.new("device registration ID", data)
+  YourApp.ADM.push(n, on_response: fn(x) -> IO.inspect(x) end)
+  ```
+
+  2. Responses return a notification with an updated `:response` key.
+     You could handle responses like so:
+
+  ```
+  on_response_handler = fn(x) ->
+    case x.response do
+      :success ->
+        # Push successful
+        :ok
+      :update ->
+        new_reg_id = x.updated_registration_id
+        # Update the registration ID in the database
+      :invalid_registration_id ->
+        # Remove the bad ID from the database
+      :unregistered ->
+        # Remove the bad ID from the database
+      error ->
+        # Handle other errors
+    end
+  end
+
+  data = %{ message: "your message" }
+  n = Pigeon.ADM.Notification.new("your registration id", data)
+  Pigeon.ADM.push(n, on_response: on_response_handler)
+  ```
+
+  ## Error Responses
+
+  *Taken from [Amazon Device Messaging docs](https://developer.amazon.com/public/apis/engage/device-messaging/tech-docs/06-sending-a-message)*
+
+  | Reason                           | Description                      |
+  |----------------------------------|----------------------------------|
+  | `:invalid_registration_id`       | Invalid Registration Token       |
+  | `:invalid_data`                  | Bad format JSON data             |
+  | `:invalid_consolidation_key`     | Invalid Consolidation Key        |
+  | `:invalid_expiration`            | Invalid expiresAfter value       |
+  | `:invalid_checksum`              | Invalid md5 value                |
+  | `:invalid_type`                  | Invalid Type header              |
+  | `:unregistered`                  | App instance no longer available |
+  | `:access_token_expired`          | Expired OAuth access token       |
+  | `:message_too_large`             | Data size exceeds 6 KB           |
+  | `:max_rate_exceeded`             | See Retry-After response header  |
+  | `:unknown_error`                 | Unknown Error                    |
+  """
+
   @behaviour Pigeon.Adapter
 
   import Pigeon.Tasks, only: [process_on_response: 2]
@@ -32,12 +171,12 @@ defmodule Pigeon.ADM do
     case refresh_access_token_if_needed(state) do
       {:ok, state} ->
         :ok = do_push(notification, state, on_response)
-        state
+        {:noreply, state}
 
       {:error, reason} ->
         notification = %{notification | response: reason}
         process_on_response(on_response, notification)
-        state
+        {:noreply, state}
     end
   end
 
@@ -238,6 +377,7 @@ defmodule Pigeon.ADM do
   defp generic_error_reason(_), do: :unknown_error
 
   # no on_response callback, ignore
+  @doc false
   def parse_result(_, _, nil), do: :ok
 
   def parse_result(notification, response, on_response) do

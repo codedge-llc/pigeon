@@ -1,6 +1,91 @@
 defmodule Pigeon.FCM do
   @moduledoc """
-  Firebase Cloud Messaging (FCM).
+  `Pigeon.Adapter` for Firebase Cloud Messaging (FCM) push notifications.
+
+  ## Getting Started
+
+  1. Create a `FCM` dispatcher.
+
+  ```
+  # lib/fcm.ex
+  defmodule YourApp.FCM do
+    use Pigeon.Dispatcher, otp_app: :your_app
+  end
+  ```
+
+  2. (Optional) Add configuration to your `config.exs`.
+
+  ```
+  # config.exs
+
+  config :your_app, YourApp.FCM,
+    adapter: Pigeon.FCM,
+    project_id: "example-project-123",
+    service_account_json: File.read!("service-account.json")
+  ```
+
+  3. Start your dispatcher on application boot.
+
+  ```
+  defmodule YourApp.Application do
+    @moduledoc false
+
+    use Application
+
+    @doc false
+    def start(_type, _args) do
+      children = [
+        YourApp.FCM
+      ]
+      opts = [strategy: :one_for_one, name: YourApp.Supervisor]
+      Supervisor.start_link(children, opts)
+    end
+  end
+  ```
+
+  If you skipped step two, include your configuration.
+
+  ```
+  defmodule YourApp.Application do
+    @moduledoc false
+
+    use Application
+
+    @doc false
+    def start(_type, _args) do
+      children = [
+        {YourApp.FCM, fcm_opts()}
+      ]
+      opts = [strategy: :one_for_one, name: YourApp.Supervisor]
+      Supervisor.start_link(children, opts)
+    end
+
+    defp fcm_opts do
+      [
+        adapter: Pigeon.FCM,
+        project_id: "example-project-123",
+        service_account_json: File.read!("service-account.json")
+      ]
+    end
+  end
+  ```
+
+  4. Create a notification.
+
+  ```
+  n = Pigeon.FCM.Notification.new({:token, "reg ID"}, %{"body" => "test message"})
+  ```
+   
+  5. Send the notification. 
+
+  On successful response, `:name` will be set to the name returned from the FCM 
+  API and `:response` will be `:success`. If there was an error, `:error` will 
+  contain a JSON map of the response and `:response` will be an atomized version
+  of the error type.
+
+  ```
+  YourApp.FCM.push(n)
+  ```
   """
 
   @max_retries 3
@@ -62,9 +147,12 @@ defmodule Pigeon.FCM do
         on_response
       )
 
-    state
-    |> inc_stream_id()
-    |> Map.put(:queue, new_q)
+    state =
+      state
+      |> inc_stream_id()
+      |> Map.put(:queue, new_q)
+
+    {:noreply, state}
   end
 
   @impl true
@@ -137,6 +225,7 @@ defmodule Pigeon.FCM do
     Process.send_after(self(), @refresh, time_in_seconds * 1000)
   end
 
+  @doc false
   def process_end_stream(%Stream{id: stream_id} = stream, state) do
     %{queue: queue, config: config} = state
 
@@ -151,6 +240,7 @@ defmodule Pigeon.FCM do
     end
   end
 
+  @doc false
   def inc_stream_id(%{stream_id: stream_id} = state) do
     %{state | stream_id: stream_id + 2}
   end

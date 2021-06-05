@@ -1,20 +1,10 @@
 defmodule Pigeon.FCM.Error do
-  @moduledoc ~S"""
-  Defines FCM error codes.
-  """
+  @moduledoc false
 
-  @type error_response ::
-          :unspecified_error
-          | :invalid_argument
-          | :unregistered
-          | :sender_id_mismatch
-          | :quota_exceeded
-          | :unavailable
-          | :internal
-          | :third_party_auth_error
+  alias Pigeon.FCM.Notification
 
   @doc false
-  @spec parse(map) :: error_response
+  @spec parse(map) :: Notification.error_response()
   def parse(error) do
     error
     |> Map.get("status")

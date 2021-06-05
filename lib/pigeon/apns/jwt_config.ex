@@ -1,7 +1,5 @@
 defmodule Pigeon.APNS.JWTConfig do
-  @moduledoc """
-  Configuration for APNS Workers using JWT.
-  """
+  @moduledoc false
 
   defstruct key: nil,
             key_identifier: nil,
@@ -129,10 +127,6 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
   @token_max_age 3_590
 
   # Configurable Callbacks
-
-  defdelegate worker_name(any), to: Shared
-
-  defdelegate max_demand(any), to: Shared
 
   @spec connect(any) :: {:ok, sock} | {:error, binary}
   def connect(%{uri: uri} = config) do

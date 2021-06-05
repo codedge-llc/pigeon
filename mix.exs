@@ -51,7 +51,6 @@ defmodule Pigeon.Mixfile do
       {:earmark, "~> 1.0", only: :dev, runtime: false},
       {:excoveralls, "~> 0.5", only: :test, runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
-      {:gen_stage, "~> 0.12 or ~> 1.0"},
       {:goth, "~> 1.3.0-rc.2"},
       {:httpoison, "~> 0.7 or ~> 1.0"},
       {:jason, "~> 1.0", optional: true},
@@ -62,15 +61,17 @@ defmodule Pigeon.Mixfile do
 
   defp docs do
     [
-      main: "getting-started",
-      extras: [
-        "CHANGELOG.md",
-        {:"README.md", [filename: "getting-started", title: "Getting Started"]},
-        "docs/APNS Apple iOS.md",
-        "docs/FCM Android.md",
-        "docs/ADM Amazon Android.md"
+      groups_for_modules: [
+        "ADM - Amazon Android": [Pigeon.ADM, Pigeon.ADM.Notification],
+        "APNS - Apple iOS": [Pigeon.APNS, Pigeon.APNS.Notification],
+        "FCM - Firebase Cloud Messaging": [
+          Pigeon.FCM,
+          Pigeon.FCM.Notification,
+          Pigeon.LegacyFCM,
+          Pigeon.LegacyFCM.Notification
+        ]
       ],
-      skip_undefined_reference_warnings_on: ["CHANGELOG.md"]
+      main: "Pigeon"
     ]
   end
 

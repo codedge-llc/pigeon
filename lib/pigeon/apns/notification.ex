@@ -13,8 +13,6 @@ defmodule Pigeon.APNS.Notification do
             topic: nil,
             response: nil
 
-  alias Pigeon.APNS.{Error, Notification}
-
   @typedoc ~S"""
   APNS notification
 
@@ -53,7 +51,39 @@ defmodule Pigeon.APNS.Notification do
      server responded with error.
   - `:timeout` - Internal error. Push did not reach APNS servers.
   """
-  @type response :: nil | :success | Error.error_response() | :timeout
+  @type response :: nil | :success | error_response | :timeout
+
+  @type error_response ::
+          :bad_collapse_id
+          | :bad_device_token
+          | :bad_expiration_date
+          | :bad_message_id
+          | :bad_priority
+          | :bad_topic
+          | :device_token_not_for_topic
+          | :duplicate_headers
+          | :idle_timeout
+          | :invalid_push_type
+          | :missing_device_token
+          | :missing_topic
+          | :payload_empty
+          | :topic_disallowed
+          | :bad_certificate
+          | :bad_certificate_environment
+          | :expired_provider_token
+          | :forbidden
+          | :invalid_provider_token
+          | :missing_provider_token
+          | :bad_path
+          | :method_not_allowed
+          | :unregistered
+          | :payload_too_large
+          | :too_many_provider_token_updates
+          | :too_many_requests
+          | :internal_server_error
+          | :service_unavailable
+          | :shutdown
+          | :unknown_error
 
   @doc """
   Returns an `APNS.Notification` struct with given message, device token, and
@@ -76,7 +106,7 @@ defmodule Pigeon.APNS.Notification do
   """
   @spec new(String.t() | map, String.t(), String.t() | nil) :: t
   def new(msg, token, topic \\ nil) do
-    %Notification{
+    %__MODULE__{
       device_token: token,
       payload: %{"aps" => %{"alert" => msg}},
       topic: topic
@@ -105,7 +135,7 @@ defmodule Pigeon.APNS.Notification do
   """
   @spec new(String.t() | map, String.t(), String.t(), String.t()) :: t
   def new(msg, token, topic, id) do
-    %Notification{
+    %__MODULE__{
       device_token: token,
       id: id,
       payload: %{"aps" => %{"alert" => msg}},

@@ -1,7 +1,5 @@
 defmodule Pigeon.ADM.Config do
-  @moduledoc """
-  Validates configuration settings that initialize ADM.Worker instances.
-  """
+  @moduledoc false
 
   defstruct client_id: nil, client_secret: nil
 
