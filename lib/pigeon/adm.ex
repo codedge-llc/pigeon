@@ -171,12 +171,12 @@ defmodule Pigeon.ADM do
     case refresh_access_token_if_needed(state) do
       {:ok, state} ->
         :ok = do_push(notification, state, on_response)
-        state
+        {:noreply, state}
 
       {:error, reason} ->
         notification = %{notification | response: reason}
         process_on_response(on_response, notification)
-        state
+        {:noreply, state}
     end
   end
 

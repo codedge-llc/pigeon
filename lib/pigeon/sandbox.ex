@@ -22,11 +22,13 @@ defmodule Pigeon.Sandbox do
   end
 
   @impl true
-  def handle_push(%{response: nil} = notification, on_response, _state) do
+  def handle_push(%{response: nil} = notification, on_response, state) do
     process_on_response(on_response, %{notification | response: :success})
+    {:noreply, state}
   end
 
-  def handle_push(notification, on_response, _state) do
+  def handle_push(notification, on_response, state) do
     process_on_response(on_response, notification)
+    {:noreply, state}
   end
 end

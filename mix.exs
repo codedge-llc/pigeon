@@ -51,7 +51,6 @@ defmodule Pigeon.Mixfile do
       {:earmark, "~> 1.0", only: :dev, runtime: false},
       {:excoveralls, "~> 0.5", only: :test, runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
-      {:gen_stage, "~> 0.12 or ~> 1.0"},
       {:goth, "~> 1.3.0-rc.2"},
       {:httpoison, "~> 0.7 or ~> 1.0"},
       {:jason, "~> 1.0", optional: true},
@@ -70,8 +69,7 @@ defmodule Pigeon.Mixfile do
           Pigeon.FCM.Notification,
           Pigeon.LegacyFCM,
           Pigeon.LegacyFCM.Notification
-        ],
-        "Advanced Configuration": [Pigeon.Adapter, Pigeon.Dispatcher]
+        ]
       ],
       main: "Pigeon"
     ]

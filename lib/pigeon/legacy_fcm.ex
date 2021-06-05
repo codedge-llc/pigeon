@@ -4,7 +4,7 @@ defmodule Pigeon.LegacyFCM do
 
   ## Getting Started
 
-  Create a `LegacyFCM` dispatcher.
+  1. Create a `LegacyFCM` dispatcher.
 
   ```
   # lib/legacy_fcm.ex
@@ -13,7 +13,7 @@ defmodule Pigeon.LegacyFCM do
   end
   ```
 
-  (Optional) Add configuration to your `config.exs`.
+  2. (Optional) Add configuration to your `config.exs`.
 
   ```
   # config.exs
@@ -23,7 +23,7 @@ defmodule Pigeon.LegacyFCM do
     key: "your_fcm_key_here"
   ```
 
-  Start your dispatcher on application boot.
+  3. Start your dispatcher on application boot.
 
   ```
   defmodule YourApp.Application do
@@ -68,14 +68,16 @@ defmodule Pigeon.LegacyFCM do
   end
   ```
 
-  Create a notification.
+  4. Create a notification.
 
   ```
   msg = %{"body" => "your message"}
   n = Pigeon.LegacyFCM.Notification.new("your device registration ID", msg)
   ```
    
-  Send the notification. Pushes are synchronous and return the notification with
+  5. Send the notification. 
+
+  Pushes are synchronous and return the notification with
   updated `:status` and `:response` keys. If `:status` is success, `:response`
   will contain a keyword list of individual registration ID responses.
 
@@ -224,9 +226,12 @@ defmodule Pigeon.LegacyFCM do
         on_response
       )
 
-    state
-    |> inc_stream_id()
-    |> Map.put(:queue, new_q)
+    state =
+      state
+      |> inc_stream_id()
+      |> Map.put(:queue, new_q)
+
+    {:noreply, state}
   end
 
   def handle_info(:ping, state) do
