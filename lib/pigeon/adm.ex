@@ -286,27 +286,18 @@ defmodule Pigeon.ADM do
   defp do_push(notification, state) do
     request = {notification.registration_id, encode_payload(notification)}
 
-    response =
-      case notification.__meta__.on_response do
-        nil ->
-          fn {reg_id, payload} ->
-            HTTPoison.post(adm_uri(reg_id), payload, adm_headers(state))
-          end
+    response = fn {reg_id, payload} ->
+      case HTTPoison.post(adm_uri(reg_id), payload, adm_headers(state)) do
+        {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
+          notification = %{notification | registration_id: reg_id}
+          process_response(status, body, notification)
 
-        _ ->
-          fn {reg_id, payload} ->
-            case HTTPoison.post(adm_uri(reg_id), payload, adm_headers(state)) do
-              {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
-                notification = %{notification | registration_id: reg_id}
-                process_response(status, body, notification)
-
-              {:error, %HTTPoison.Error{reason: :connect_timeout}} ->
-                notification
-                |> Map.put(:response, :timeout)
-                |> process_on_response()
-            end
-          end
+        {:error, %HTTPoison.Error{reason: :connect_timeout}} ->
+          notification
+          |> Map.put(:response, :timeout)
+          |> process_on_response()
       end
+    end
 
     Task.Supervisor.start_child(Pigeon.Tasks, fn -> response.(request) end)
     :ok
