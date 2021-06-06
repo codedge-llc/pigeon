@@ -56,11 +56,8 @@ defmodule Pigeon.APNS.Shared do
         |> process_on_response()
 
       _error ->
-        reason = Error.parse(body)
-        Error.log(reason, notification)
-
         notification
-        |> Map.put(:response, reason)
+        |> Map.put(:response, Error.parse(body))
         |> process_on_response()
     end
   end

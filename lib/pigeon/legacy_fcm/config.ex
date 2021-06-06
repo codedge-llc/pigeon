@@ -109,32 +109,25 @@ defimpl Pigeon.Configurable, for: Pigeon.LegacyFCM.Config do
   end
 
   defp do_handle_end_stream(400, _body, notif) do
-    log_error("400", "Malformed JSON")
-
     notif
     |> Map.put(:status, :malformed_json)
     |> process_on_response()
   end
 
   defp do_handle_end_stream(401, _body, notif) do
-    log_error("401", "Unauthorized")
-
     notif
     |> Map.put(:status, :unauthorized)
     |> process_on_response()
   end
 
   defp do_handle_end_stream(500, _body, notif) do
-    log_error("500", "Internal server error")
-
     notif
     |> Map.put(:status, :internal_server_error)
     |> process_on_response()
   end
 
-  defp do_handle_end_stream(code, body, notif) do
+  defp do_handle_end_stream(_code, body, notif) do
     reason = parse_error(body)
-    log_error(code, reason)
 
     notif
     |> Map.put(:response, reason)
@@ -180,9 +173,5 @@ defimpl Pigeon.Configurable, for: Pigeon.LegacyFCM.Config do
         "JSON parse failed: #{inspect(error)}, body: #{inspect(data)}"
         |> Logger.error()
     end
-  end
-
-  defp log_error(code, reason) do
-    if Pigeon.debug_log?(), do: Logger.error("#{reason}: #{code}")
   end
 end

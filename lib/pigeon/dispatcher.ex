@@ -111,7 +111,6 @@ defmodule Pigeon.Dispatcher do
     GenServer.start_link(__MODULE__, opts, name: opts[:name])
   end
 
-  @impl true
   def init(opts) do
     case opts[:adapter].init(opts) do
       {:ok, state} ->
@@ -122,15 +121,13 @@ defmodule Pigeon.Dispatcher do
     end
   end
 
-  @impl true
-  def handle_cast({:push, notification}, %{adapter: adapter, state: state}) do
+  def handle_info({:"$push", notification}, %{adapter: adapter, state: state}) do
     case adapter.handle_push(notification, state) do
       {:noreply, new_state} -> {:noreply, %{adapter: adapter, state: new_state}}
       {:stop, reason, new_state} -> {:stop, reason, %{adapter: adapter, state: new_state}}
     end
   end
 
-  @impl true
   def handle_info(msg, %{adapter: adapter, state: state}) do
     case adapter.handle_info(msg, state) do
       {:noreply, new_state} -> {:noreply, %{adapter: adapter, state: new_state}}

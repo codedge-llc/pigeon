@@ -158,11 +158,12 @@ defmodule Pigeon.APNS do
   @behaviour Pigeon.Adapter
 
   alias Pigeon.{Configurable, NotificationQueue}
+  alias Pigeon.APNS.ConfigParser
   alias Pigeon.Http2.{Client, Stream}
 
   @impl true
   def init(opts) do
-    config = Pigeon.APNS.ConfigParser.parse(opts)
+    config = ConfigParser.parse(opts)
     Configurable.validate!(config)
 
     state = %__MODULE__{config: config}

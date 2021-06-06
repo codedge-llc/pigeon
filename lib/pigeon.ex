@@ -73,33 +73,20 @@ defmodule Pigeon do
     Application.get_env(:pigeon, :json_library, Jason)
   end
 
-  def debug_log?, do: Application.get_env(:pigeon, :debug_log, false)
-
-  @spec push(pid | atom, notification :: struct | [struct], push_opts) ::
-          {:ok, notification :: struct}
-          | {:error, notification :: struct}
-          | :ok
+  @spec push(pid | atom, notification :: struct, push_opts) ::
+          notification :: struct | no_return
+  @spec push(pid | atom, notifications :: [struct, ...], push_opts) ::
+          notifications :: [struct, ...] | no_return
   def push(pid, notifications, opts \\ [])
 
   def push(pid, notifications, opts) when is_list(notifications) do
     if Keyword.has_key?(opts, :on_response) do
       on_response = Keyword.get(opts, :on_response)
       notifications = Enum.map(notifications, fn n -> put_on_response(n, on_response) end)
-
       push_async(pid, notifications)
     else
       timeout = Keyword.get(opts, :timeout, @default_timeout)
-
-      notifications
-      |> Enum.map(&Task.async(fn -> push_sync(pid, &1, timeout) end))
-      |> Task.yield_many(timeout + 500)
-      |> Enum.map(fn {task, response} ->
-        case response do
-          nil -> Task.shutdown(task, :brutal_kill)
-          {:ok, resp} -> resp
-          _error -> nil
-        end
-      end)
+      for n <- notifications, do: push_sync(pid, n, timeout), into: []
     end
   end
 
@@ -131,11 +118,12 @@ defmodule Pigeon do
 
   defp push_async(pid, notifications) when is_list(notifications) do
     for n <- notifications, do: push_async(pid, n)
+    :ok
   end
 
   defp push_async(pid, notification) when is_pid(pid) do
     if Process.alive?(pid) do
-      GenServer.cast(pid, {:push, notification})
+      send_push(pid, notification)
     else
       Tasks.process_on_response(%{notification | response: :not_started})
     end
@@ -147,8 +135,13 @@ defmodule Pigeon do
         Tasks.process_on_response(%{notification | response: :not_started})
 
       _pid ->
-        GenServer.cast(pid, {:push, notification})
+        send_push(pid, notification)
     end
+  end
+
+  defp send_push(pid, notification) do
+    send(pid, {:"$push", notification})
+    :ok
   end
 
   defp put_on_response(notification, on_response) do
