@@ -123,8 +123,8 @@ defmodule Pigeon.Dispatcher do
   end
 
   @impl true
-  def handle_cast({:push, notification, on_response}, %{adapter: adapter, state: state}) do
-    case adapter.handle_push(notification, on_response, state) do
+  def handle_cast({:push, notification}, %{adapter: adapter, state: state}) do
+    case adapter.handle_push(notification, state) do
       {:noreply, new_state} -> {:noreply, %{adapter: adapter, state: new_state}}
       {:stop, reason, new_state} -> {:stop, reason, %{adapter: adapter, state: new_state}}
     end

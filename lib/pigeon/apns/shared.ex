@@ -1,7 +1,7 @@
 defmodule Pigeon.APNS.Shared do
   @moduledoc false
 
-  import Pigeon.Tasks, only: [process_on_response: 2]
+  import Pigeon.Tasks, only: [process_on_response: 1]
 
   alias Pigeon.APNS.{Config, Error, JWTConfig, Notification}
 
@@ -45,23 +45,23 @@ defmodule Pigeon.APNS.Shared do
     Pigeon.json_library().encode!(notification.payload)
   end
 
-  def handle_end_stream(_config, stream, notification, on_response) do
+  def handle_end_stream(_config, stream, notification) do
     %{headers: headers, body: body, status: status} = stream
 
     case status do
       200 ->
-        n =
-          notification
-          |> Map.put(:id, get_header(headers, @apns_id))
-          |> Map.put(:response, :success)
-
-        process_on_response(on_response, n)
+        notification
+        |> Map.put(:id, get_header(headers, @apns_id))
+        |> Map.put(:response, :success)
+        |> process_on_response()
 
       _error ->
         reason = Error.parse(body)
         Error.log(reason, notification)
-        notification = %{notification | response: reason}
-        process_on_response(on_response, notification)
+
+        notification
+        |> Map.put(:response, reason)
+        |> process_on_response()
     end
   end
 

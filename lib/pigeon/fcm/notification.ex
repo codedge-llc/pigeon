@@ -3,7 +3,8 @@ defmodule Pigeon.FCM.Notification do
   Defines FCM notification struct and convenience constructor functions.
   """
 
-  defstruct android: nil,
+  defstruct __meta__: %Pigeon.Metadata{},
+            android: nil,
             apns: nil,
             data: nil,
             error: nil,

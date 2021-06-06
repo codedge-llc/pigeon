@@ -6,8 +6,6 @@ defmodule Pigeon.FCM.Config do
             service_account_json: nil,
             uri: 'fcm.googleapis.com'
 
-  import Pigeon.Tasks, only: [process_on_response: 2]
-
   @type t :: %__MODULE__{
           port: pos_integer,
           project_id: binary,
@@ -65,9 +63,9 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
 
   require Logger
 
-  import Pigeon.Tasks, only: [process_on_response: 2]
+  import Pigeon.Tasks, only: [process_on_response: 1]
 
-  alias Pigeon.Encodable
+  alias Pigeon.{Encodable, Metadata}
   alias Pigeon.FCM.{Config, Error}
 
   @type sock :: {:sslsocket, any, pid | {any, any}}
@@ -117,21 +115,25 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
     Encodable.binary_payload(notification)
   end
 
-  def handle_end_stream(_config, _stream, _notif, nil), do: :ok
-
-  def handle_end_stream(_config, %{error: nil} = stream, notif, on_response) do
-    stream.body
-    |> Pigeon.json_library().decode!()
-    |> case do
-      %{"name" => name} ->
-        process_on_response(on_response, %{notif | name: name, response: :success})
-
-      %{"error" => error} ->
-        process_on_response(on_response, %{
+  def handle_end_stream(_config, %{error: nil} = stream, notif) do
+    if Metadata.on_response?(notif) do
+      stream.body
+      |> Pigeon.json_library().decode!()
+      |> case do
+        %{"name" => name} ->
           notif
-          | error: error,
-            response: Error.parse(error)
-        })
+          |> Map.put(:name, name)
+          |> Map.put(:response, :success)
+          |> process_on_response()
+
+        %{"error" => error} ->
+          notif
+          |> Map.put(:error, error)
+          |> Map.put(:response, Error.parse(error))
+          |> process_on_response()
+      end
+    else
+      :ok
     end
   end
 

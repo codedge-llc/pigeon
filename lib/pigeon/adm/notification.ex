@@ -3,7 +3,8 @@ defmodule Pigeon.ADM.Notification do
   Defines Amazon ADM notification struct and convenience constructor functions.
   """
 
-  defstruct consolidation_key: nil,
+  defstruct __meta__: %Pigeon.Metadata{},
+            consolidation_key: nil,
             expires_after: 604_800,
             md5: nil,
             payload: %{},

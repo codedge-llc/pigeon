@@ -134,8 +134,7 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
 
   defdelegate push_payload(config, notification, opts), to: Shared
 
-  defdelegate handle_end_stream(config, stream, notification, on_response),
-    to: Shared
+  defdelegate handle_end_stream(config, stream, notification), to: Shared
 
   defdelegate schedule_ping(any), to: Shared
 

@@ -1,7 +1,7 @@
 defmodule Pigeon.NotificationQueue do
   @moduledoc false
 
-  @type queue :: %{required(pos_integer) => {term, (... -> no_return)}}
+  @type queue :: %{required(pos_integer) => term}
 
   @doc ~S"""
   Returns a new empty queue.
@@ -19,12 +19,12 @@ defmodule Pigeon.NotificationQueue do
 
   ## Examples
 
-      iex> add(%{}, 1, %Pigeon.APNS.Notification{}, nil)
-      %{1 => {%Pigeon.APNS.Notification{}, nil}}
+      iex> add(%{}, 1, %Pigeon.APNS.Notification{})
+      %{1 => %Pigeon.APNS.Notification{}}
   """
-  @spec add(queue, pos_integer, term, term) :: queue
-  def add(queue, stream_id, notification, on_response) do
-    Map.put(queue, stream_id, {notification, on_response})
+  @spec add(queue, pos_integer, term) :: queue
+  def add(queue, stream_id, notification) do
+    Map.put(queue, stream_id, notification)
   end
 
   @doc ~S"""
@@ -32,13 +32,13 @@ defmodule Pigeon.NotificationQueue do
 
   ## Examples
 
-      iex> queue = %{1 => {%Pigeon.APNS.Notification{}, nil}}
+      iex> queue = %{1 => %Pigeon.APNS.Notification{}}
       iex> pop(queue, 1)
-      {{%Pigeon.APNS.Notification{}, nil}, %{}}
+      {%Pigeon.APNS.Notification{}, %{}}
 
-      iex> queue = %{1 => {%Pigeon.APNS.Notification{}, nil}}
+      iex> queue = %{1 => %Pigeon.APNS.Notification{}}
       iex> pop(queue, 3)
-      {nil, %{1 => {%Pigeon.APNS.Notification{}, nil}}}
+      {nil, %{1 => %Pigeon.APNS.Notification{}}}
   """
   @spec pop(queue, pos_integer) :: {nil | {term, term}, queue}
   def pop(queue, stream_id) do

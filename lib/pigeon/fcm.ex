@@ -129,23 +129,13 @@ defmodule Pigeon.FCM do
   end
 
   @impl true
-  def handle_push(
-        notification,
-        on_response,
-        %{config: config, queue: queue, token: token} = state
-      ) do
+  def handle_push(notification, %{config: config, queue: queue, token: token} = state) do
     headers = Configurable.push_headers(config, notification, token: token)
     payload = Configurable.push_payload(config, notification, [])
 
     Client.default().send_request(state.socket, headers, payload)
 
-    new_q =
-      NotificationQueue.add(
-        queue,
-        state.stream_id,
-        notification,
-        on_response
-      )
+    new_q = NotificationQueue.add(queue, state.stream_id, notification)
 
     state =
       state
@@ -234,8 +224,8 @@ defmodule Pigeon.FCM do
         # Do nothing if no queued item for stream
         {:noreply, %{state | queue: new_queue}}
 
-      {{notif, on_response}, new_queue} ->
-        Configurable.handle_end_stream(config, stream, notif, on_response)
+      {notif, new_queue} ->
+        Configurable.handle_end_stream(config, stream, notif)
         {:noreply, %{state | queue: new_queue}}
     end
   end

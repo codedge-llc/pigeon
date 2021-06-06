@@ -9,7 +9,7 @@ defmodule Pigeon.Adapter do
 
   ```
   defmodule Pigeon.Sandbox do
-    import Pigeon.Tasks, only: [process_on_response: 2]
+    import Pigeon.Tasks, only: [process_on_response: 1]
 
     @behaviour Pigeon.Adapter
 
@@ -53,11 +53,7 @@ defmodule Pigeon.Adapter do
   @doc """
   Invoked to handle push notifications.
   """
-  @callback handle_push(
-              notification :: struct | [struct],
-              on_response :: Pigeon.on_response(),
-              state :: term
-            ) ::
+  @callback handle_push(notification :: struct | [struct], state :: term) ::
               {:noreply, new_state :: term}
               | {:stop, reason :: term, new_state :: term}
 end

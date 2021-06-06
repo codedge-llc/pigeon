@@ -1,17 +1,15 @@
 defmodule Pigeon.LegacyFCM.ResultParser do
   @moduledoc false
 
-  import Pigeon.Tasks, only: [process_on_response: 2]
-
-  def parse([], [], on_response, notif) do
-    process_on_response(on_response, notif)
+  def parse([], [], notif) do
+    notif
   end
 
-  def parse(regid, results, on_response, notif) when is_binary(regid) do
-    parse([regid], results, on_response, notif)
+  def parse(regid, results, notif) when is_binary(regid) do
+    parse([regid], results, notif)
   end
 
-  def parse([regid | reg_res], [result | rest_results], on_response, notif) do
+  def parse([regid | reg_res], [result | rest_results], notif) do
     updated_notif =
       case result do
         %{"message_id" => id, "registration_id" => new_regid} ->
@@ -29,7 +27,7 @@ defmodule Pigeon.LegacyFCM.ResultParser do
           |> put_error(regid, error)
       end
 
-    parse(reg_res, rest_results, on_response, updated_notif)
+    parse(reg_res, rest_results, updated_notif)
   end
 
   defp put_update(%{response: resp} = notif, regid, new_regid) do

@@ -41,7 +41,7 @@ defimpl Pigeon.Configurable, for: Pigeon.LegacyFCM.Config do
 
   require Logger
 
-  import Pigeon.Tasks, only: [process_on_response: 2]
+  import Pigeon.Tasks, only: [process_on_response: 1]
 
   alias Pigeon.Encodable
   alias Pigeon.LegacyFCM.{Config, ResultParser}
@@ -89,46 +89,56 @@ defimpl Pigeon.Configurable, for: Pigeon.LegacyFCM.Config do
     Encodable.binary_payload(notification)
   end
 
-  def handle_end_stream(_config, %{error: nil} = stream, notif, on_response) do
-    do_handle_end_stream(stream.status, stream.body, notif, on_response)
+  def handle_end_stream(_config, %{error: nil} = stream, notif) do
+    do_handle_end_stream(stream.status, stream.body, notif)
   end
 
-  def handle_end_stream(_config, %{error: _error}, _notif, nil), do: :ok
-
-  def handle_end_stream(_config, _stream, {_regids, notif}, on_response) do
-    notif = %{notif | status: :unavailable}
-    process_on_response(on_response, notif)
+  def handle_end_stream(_config, _stream, {_regids, notif}) do
+    notif
+    |> Map.put(:status, :unavailable)
+    |> process_on_response()
   end
 
-  defp do_handle_end_stream(200, body, notif, on_response) do
+  defp do_handle_end_stream(200, body, notif) do
     result = Pigeon.json_library().decode!(body)
     notif = %{notif | status: :success}
-    parse_result(notif.registration_id, result, on_response, notif)
+
+    notif.registration_id
+    |> parse_result(result, notif)
+    |> process_on_response()
   end
 
-  defp do_handle_end_stream(400, _body, notif, on_response) do
+  defp do_handle_end_stream(400, _body, notif) do
     log_error("400", "Malformed JSON")
-    notif = %{notif | status: :malformed_json}
-    process_on_response(on_response, notif)
+
+    notif
+    |> Map.put(:status, :malformed_json)
+    |> process_on_response()
   end
 
-  defp do_handle_end_stream(401, _body, notif, on_response) do
+  defp do_handle_end_stream(401, _body, notif) do
     log_error("401", "Unauthorized")
-    notif = %{notif | status: :unauthorized}
-    process_on_response(on_response, notif)
+
+    notif
+    |> Map.put(:status, :unauthorized)
+    |> process_on_response()
   end
 
-  defp do_handle_end_stream(500, _body, notif, on_response) do
+  defp do_handle_end_stream(500, _body, notif) do
     log_error("500", "Internal server error")
-    notif = %{notif | status: :internal_server_error}
-    process_on_response(on_response, notif)
+
+    notif
+    |> Map.put(:status, :internal_server_error)
+    |> process_on_response()
   end
 
-  defp do_handle_end_stream(code, body, notif, on_response) do
+  defp do_handle_end_stream(code, body, notif) do
     reason = parse_error(body)
     log_error(code, reason)
-    notif = %{notif | response: reason}
-    process_on_response(on_response, notif)
+
+    notif
+    |> Map.put(:response, reason)
+    |> process_on_response()
   end
 
   def schedule_ping(_config), do: :ok
@@ -152,16 +162,13 @@ defimpl Pigeon.Configurable, for: Pigeon.LegacyFCM.Config do
 
   defp redact(config), do: config
 
-  # no on_response callback, ignore
-  def parse_result(_, _, nil, _notif), do: :ok
-
-  def parse_result(ids, %{"results" => results}, on_response, notification) do
-    ResultParser.parse(ids, results, on_response, notification)
+  def parse_result(ids, %{"results" => results}, notification) do
+    ResultParser.parse(ids, results, notification)
   end
 
-  def parse_result(id, %{"message_id" => _} = result, on_response, notification)
+  def parse_result(id, %{"message_id" => _} = result, notification)
       when is_binary(id) do
-    parse_result([id], %{"results" => [result]}, on_response, notification)
+    parse_result([id], %{"results" => [result]}, notification)
   end
 
   def parse_error(data) do
