@@ -54,7 +54,7 @@ defmodule PigeonTest do
       on_response = fn x -> send(pid, x) end
 
       assert Pigeon.push(PigeonTest.Sandbox, [@n, @n], on_response: on_response) ==
-               :ok
+               [:ok, :ok]
 
       assert_receive(%Pigeon.FCM.Notification{response: :success}, 5_000)
       assert_receive(%Pigeon.FCM.Notification{response: :success}, 5_000)

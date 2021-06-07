@@ -96,30 +96,16 @@ defmodule Pigeon do
   def push(pid, notifications, opts \\ [])
 
   def push(pid, notifications, opts) when is_list(notifications) do
-    if Keyword.has_key?(opts, :on_response) do
-      on_response = Keyword.get(opts, :on_response)
-
-      notifications =
-        Enum.map(notifications, fn n ->
-          put_on_response(n, on_response)
-        end)
-
-      push_async(pid, notifications)
-    else
-      timeout = Keyword.get(opts, :timeout, @default_timeout)
-      for n <- notifications, do: push_sync(pid, n, timeout), into: []
-    end
+    for n <- notifications, do: push(pid, n, opts)
   end
 
   def push(pid, notification, opts) do
-    timeout = Keyword.get(opts, :timeout, @default_timeout)
-
     if Keyword.has_key?(opts, :on_response) do
-      notification =
-        put_on_response(notification, Keyword.get(opts, :on_response))
-
+      on_response = Keyword.get(opts, :on_response)
+      notification = put_on_response(notification, on_response)
       push_async(pid, notification)
     else
+      timeout = Keyword.get(opts, :timeout, @default_timeout)
       push_sync(pid, notification, timeout)
     end
   end
@@ -139,24 +125,15 @@ defmodule Pigeon do
     end
   end
 
-  defp push_async(pid, notifications) when is_list(notifications) do
-    for n <- notifications, do: push_async(pid, n)
-    :ok
-  end
-
   defp push_async(pid, notification) do
     case Pigeon.Registry.next(pid) do
       nil ->
         Tasks.process_on_response(%{notification | response: :not_started})
 
       pid ->
-        send_push(pid, notification)
+        send(pid, {:"$push", notification})
+        :ok
     end
-  end
-
-  defp send_push(pid, notification) do
-    send(pid, {:"$push", notification})
-    :ok
   end
 
   defp put_on_response(notification, on_response) do
