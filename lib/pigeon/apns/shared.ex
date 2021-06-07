@@ -17,12 +17,6 @@ defmodule Pigeon.APNS.Shared do
   @apns_expiration "apns-expiration"
   @apns_collapse_id "apns-collapse-id"
 
-  @spec worker_name(any) :: atom | nil
-  def worker_name(%{name: name}), do: name
-
-  @spec max_demand(any) :: non_neg_integer
-  def max_demand(_config), do: 1_000
-
   @spec push_headers(config, Notification.t(), opts) :: headers()
   def push_headers(_config, notification, _opts) do
     json = Pigeon.json_library().encode!(notification.payload)

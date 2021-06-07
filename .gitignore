@@ -25,6 +25,10 @@ pigeon-*.tar
 # Temporary files for e.g. tests.
 /tmp
 
+# Ignore dialyzer files
+/priv/plts/*.plt
+/priv/plts/*.plt.hash
+
 # Misc.
 cert.pem
 key_unencrypted.pem

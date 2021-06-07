@@ -48,7 +48,12 @@ defmodule Pigeon do
       n = Pigeon.ADM.Notification.new("token", %{"message" => "test"})
       Pigeon.ADM.push(n, on_response: handler)
   """
-  @type on_response :: (Notification.t() -> no_return)
+  @type on_response ::
+          (notification -> no_return)
+          | {module, atom}
+          | {module, atom, [any]}
+
+  @type notification :: %{__meta__: Pigeon.Metadata.t()}
 
   @typedoc ~S"""
   Options for sending push notifications.
@@ -61,6 +66,17 @@ defmodule Pigeon do
           on_response: on_response | nil,
           timeout: non_neg_integer
         ]
+
+  @doc """
+  Returns the configured default pool size for Pigeon dispatchers.
+  To customize this value, include the following in your config/config.exs:
+
+      config :pigeon, :default_pool_size, 5
+  """
+  @spec default_pool_size :: pos_integer
+  def default_pool_size() do
+    Application.get_env(:pigeon, :default_pool_size, 5)
+  end
 
   @doc """
   Returns the configured JSON encoding library for Pigeon.
@@ -82,7 +98,12 @@ defmodule Pigeon do
   def push(pid, notifications, opts) when is_list(notifications) do
     if Keyword.has_key?(opts, :on_response) do
       on_response = Keyword.get(opts, :on_response)
-      notifications = Enum.map(notifications, fn n -> put_on_response(n, on_response) end)
+
+      notifications =
+        Enum.map(notifications, fn n ->
+          put_on_response(n, on_response)
+        end)
+
       push_async(pid, notifications)
     else
       timeout = Keyword.get(opts, :timeout, @default_timeout)
@@ -94,7 +115,9 @@ defmodule Pigeon do
     timeout = Keyword.get(opts, :timeout, @default_timeout)
 
     if Keyword.has_key?(opts, :on_response) do
-      notification = put_on_response(notification, Keyword.get(opts, :on_response))
+      notification =
+        put_on_response(notification, Keyword.get(opts, :on_response))
+
       push_async(pid, notification)
     else
       push_sync(pid, notification, timeout)
@@ -121,20 +144,12 @@ defmodule Pigeon do
     :ok
   end
 
-  defp push_async(pid, notification) when is_pid(pid) do
-    if Process.alive?(pid) do
-      send_push(pid, notification)
-    else
-      Tasks.process_on_response(%{notification | response: :not_started})
-    end
-  end
-
   defp push_async(pid, notification) do
-    case Process.whereis(pid) do
+    case Pigeon.Registry.next(pid) do
       nil ->
         Tasks.process_on_response(%{notification | response: :not_started})
 
-      _pid ->
+      pid ->
         send_push(pid, notification)
     end
   end

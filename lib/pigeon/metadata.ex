@@ -1,7 +1,9 @@
 defmodule Pigeon.Metadata do
-  defstruct on_response: nil
+  @moduledoc false
 
-  def on_response?(notification) do
-    notification.__meta__.on_response != nil
-  end
+  @type t :: %__MODULE__{
+          on_response: Pigeon.on_response()
+        }
+
+  defstruct on_response: nil
 end

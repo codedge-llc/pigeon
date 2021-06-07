@@ -118,10 +118,6 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
 
   # Configurable Callbacks
 
-  defdelegate worker_name(any), to: Shared
-
-  defdelegate max_demand(any), to: Shared
-
   @spec connect(any) :: {:ok, sock} | {:error, String.t()}
   def connect(%{uri: uri} = config) do
     uri = to_charlist(uri)

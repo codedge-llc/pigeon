@@ -129,7 +129,8 @@ defmodule Pigeon.FCM do
   end
 
   @impl true
-  def handle_push(notification, %{config: config, queue: queue, token: token} = state) do
+  def handle_push(notification, state) do
+    %{config: config, queue: queue, token: token} = state
     headers = Configurable.push_headers(config, notification, token: token)
     payload = Configurable.push_payload(config, notification, [])
 
@@ -175,7 +176,9 @@ defmodule Pigeon.FCM do
           Process.send_after(self(), @refresh, @retry_after)
           {:noreply, %{state | retries: state.retries - 1}}
         else
-          raise "too many failed attempts to refresh, last error: #{inspect(exception)}"
+          raise "too many failed attempts to refresh, last error: #{
+                  inspect(exception)
+                }"
         end
     end
   end

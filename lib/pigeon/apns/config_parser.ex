@@ -24,8 +24,13 @@ defmodule Pigeon.APNS.ConfigParser do
   @spec parse(atom | config_opts) :: config | {:error, :invalid_config}
   def parse(opts) when is_list(opts) do
     case config_type(Enum.into(opts, %{})) do
-      :error -> raise Pigeon.ConfigError, reason: "configuration is invalid", config: opts
-      type -> type.new(opts)
+      :error ->
+        raise Pigeon.ConfigError,
+          reason: "configuration is invalid",
+          config: opts
+
+      type ->
+        type.new(opts)
     end
   end
 

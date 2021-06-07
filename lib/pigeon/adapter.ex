@@ -41,9 +41,9 @@ defmodule Pigeon.Adapter do
   Invoked when the server is started.
 
   Return value should be `{:ok, state}` for the `Pigeon.Dispatcher` state,
-  or `{:error, atom}` if started with invalid configuration options.
+  or `{:stop, atom}` if started with invalid configuration options.
   """
-  @callback init(opts :: Keyword.t()) :: {:ok, term} | {:error, atom}
+  @callback init(opts :: Keyword.t()) :: {:ok, any} | {:stop, any}
 
   @doc """
   Invoked to handle all other messages.

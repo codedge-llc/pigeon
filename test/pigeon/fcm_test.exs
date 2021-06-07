@@ -58,7 +58,9 @@ defmodule Pigeon.FCMTest do
       pid = self()
 
       {:ok, dispatcher} =
-        Pigeon.Dispatcher.start_link(Application.get_env(:pigeon, PigeonTest.FCM))
+        Pigeon.Dispatcher.start_link(
+          Application.get_env(:pigeon, PigeonTest.FCM)
+        )
 
       Pigeon.push(dispatcher, n, on_response: fn x -> send(pid, x) end)
 
@@ -84,7 +86,9 @@ defmodule Pigeon.FCMTest do
       n = Notification.new(target, %{}, @data)
       pid = self()
 
-      Pigeon.push(PigeonTest.NotStarted, n, on_response: fn x -> send(pid, x) end)
+      Pigeon.push(PigeonTest.NotStarted, n,
+        on_response: fn x -> send(pid, x) end
+      )
 
       assert_receive(n = %Notification{target: ^target}, 5000)
       refute n.name

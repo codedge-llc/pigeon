@@ -30,10 +30,20 @@ defmodule Pigeon.FCM.Config do
       }
   """
   def new(opts) when is_list(opts) do
+    project_id =
+      opts
+      |> Keyword.get(:project_id)
+      |> decode_bin()
+
+    service_account_json =
+      opts
+      |> Keyword.get(:service_account_json)
+      |> decode_json()
+
     %__MODULE__{
       port: Keyword.get(opts, :port, 443),
-      project_id: opts |> Keyword.get(:project_id) |> decode_bin(),
-      service_account_json: opts |> Keyword.get(:service_account_json) |> decode_json(),
+      project_id: project_id,
+      service_account_json: service_account_json,
       uri: Keyword.get(opts, :uri, 'fcm.googleapis.com')
     }
   end
@@ -65,7 +75,7 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
 
   import Pigeon.Tasks, only: [process_on_response: 1]
 
-  alias Pigeon.{Encodable, Metadata}
+  alias Pigeon.Encodable
   alias Pigeon.FCM.{Config, Error}
 
   @type sock :: {:sslsocket, any, pid | {any, any}}
@@ -116,24 +126,20 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   end
 
   def handle_end_stream(_config, %{error: nil} = stream, notif) do
-    if Metadata.on_response?(notif) do
-      stream.body
-      |> Pigeon.json_library().decode!()
-      |> case do
-        %{"name" => name} ->
-          notif
-          |> Map.put(:name, name)
-          |> Map.put(:response, :success)
-          |> process_on_response()
+    stream.body
+    |> Pigeon.json_library().decode!()
+    |> case do
+      %{"name" => name} ->
+        notif
+        |> Map.put(:name, name)
+        |> Map.put(:response, :success)
+        |> process_on_response()
 
-        %{"error" => error} ->
-          notif
-          |> Map.put(:error, error)
-          |> Map.put(:response, Error.parse(error))
-          |> process_on_response()
-      end
-    else
-      :ok
+      %{"error" => error} ->
+        notif
+        |> Map.put(:error, error)
+        |> Map.put(:response, Error.parse(error))
+        |> process_on_response()
     end
   end
 

@@ -10,10 +10,7 @@ defmodule Pigeon.Mixfile do
       build_embedded: Mix.env() == :prod,
       deps: deps(),
       description: description(),
-      dialyzer: [
-        plt_add_apps: [:kadabra],
-        ignore_warnings: "config/dialyzer.ignore-warnings"
-      ],
+      dialyzer: dialyzer(),
       docs: docs(),
       elixir: "~> 1.6",
       elixirc_options: [warnings_as_errors: true],
@@ -91,6 +88,12 @@ defmodule Pigeon.Mixfile do
         "GitHub" => @source_url
       },
       maintainers: ["Henry Popp", "Tyler Hurst"]
+    ]
+  end
+
+  defp dialyzer do
+    [
+      plt_file: {:no_warn, "priv/plts/dialyzer.plt"}
     ]
   end
 end
