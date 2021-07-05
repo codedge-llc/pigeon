@@ -7,10 +7,10 @@ defmodule Pigeon.APNS.Notification do
             collapse_id: nil,
             device_token: nil,
             expiration: nil,
-            priority: nil,
-            push_type: "alert",
             id: nil,
             payload: %{"aps" => %{}},
+            priority: nil,
+            push_type: "alert",
             topic: nil,
             response: nil
 
@@ -20,25 +20,27 @@ defmodule Pigeon.APNS.Notification do
   ## Examples
 
       %Pigeon.APNS.Notification{
+          __meta__: %Pigeon.Metadata{on_response: nil},
           collapse_id: nil,
           device_token: "device token",
           expiration: nil,
-          priority: nil,
-          push_type: "alert",
           id: nil, # Set on push response if nil
           payload: %{"aps" => %{"alert" => "push message"}},
+          priority: nil,
+          push_type: "alert",
           response: nil, # Set on push response
           topic: "com.example.YourApp"
       }
   """
   @type t :: %__MODULE__{
+          __meta__: Pigeon.Metadata.t(),
           collapse_id: String.t() | nil,
           device_token: String.t() | nil,
           expiration: non_neg_integer | nil,
-          priority: non_neg_integer | nil,
-          push_type: String.t() | nil,
           id: String.t() | nil,
           payload: %{String.t() => term},
+          priority: non_neg_integer | nil,
+          push_type: String.t() | nil,
           response: response,
           topic: String.t() | nil
         }
@@ -96,6 +98,7 @@ defmodule Pigeon.APNS.Notification do
 
       iex> Pigeon.APNS.Notification.new("push message", "device token")
       %Pigeon.APNS.Notification{
+        __meta__: %Pigeon.Metadata{},
         device_token: "device token",
         expiration: nil,
         priority: nil,

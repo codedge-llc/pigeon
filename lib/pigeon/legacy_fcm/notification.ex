@@ -21,6 +21,7 @@ defmodule Pigeon.LegacyFCM.Notification do
   alias Pigeon.LegacyFCM.Notification
 
   @type t :: %__MODULE__{
+          __meta__: Pigeon.Metadata.t(),
           collapse_key: nil | String.t(),
           condition: nil | String.t(),
           content_available: boolean,

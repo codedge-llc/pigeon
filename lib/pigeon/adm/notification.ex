@@ -30,6 +30,7 @@ defmodule Pigeon.ADM.Notification do
       }
   """
   @type t :: %__MODULE__{
+          __meta__: Pigeon.Metadata.t(),
           consolidation_key: String.t(),
           expires_after: integer,
           md5: binary,

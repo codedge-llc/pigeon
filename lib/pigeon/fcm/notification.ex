@@ -17,6 +17,7 @@ defmodule Pigeon.FCM.Notification do
             webpush: nil
 
   @type t :: %__MODULE__{
+          __meta__: Pigeon.Metadata.t(),
           android: map | nil,
           apns: map | nil,
           data: map | nil,

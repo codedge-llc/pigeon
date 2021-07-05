@@ -89,9 +89,9 @@ defmodule Pigeon do
     Application.get_env(:pigeon, :json_library, Jason)
   end
 
-  @spec push(pid | atom, notification :: struct, push_opts) ::
+  @spec push(pid | atom, notification :: notification, push_opts) ::
           notification :: struct | no_return
-  @spec push(pid | atom, notifications :: [struct, ...], push_opts) ::
+  @spec push(pid | atom, notifications :: [notification, ...], push_opts) ::
           notifications :: [struct, ...] | no_return
   def push(pid, notifications, opts \\ [])
 
