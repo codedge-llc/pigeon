@@ -26,23 +26,23 @@ end
 
 Check the module documentation for your push notification service.
 
-- [Pigeon.ADM](https://hexdocs.pm/pigeon/Pigeon.ADM.html) - Amazon Android.
-- [Pigeon.APNS](https://hexdocs.pm/pigeon/Pigeon.APNS.html) - Apple iOS.
-- [Pigeon.FCM](https://hexdocs.pm/pigeon/Pigeon.FCM.html) - Firebase Cloud Messaging v1 API.
-- [Pigeon.LegacyFCM](https://hexdocs.pm/pigeon/Pigeon.LegacyFCM.html) - Firebase Cloud Messaging Legacy API.
+- [Pigeon.ADM](https://hexdocs.pm/pigeon/2.0.0-rc.0/Pigeon.ADM.html) - Amazon Android.
+- [Pigeon.APNS](https://hexdocs.pm/pigeon/2.0.0-rc.0/Pigeon.APNS.html) - Apple iOS.
+- [Pigeon.FCM](https://hexdocs.pm/pigeon/2.0.0-rc.0/Pigeon.FCM.html) - Firebase Cloud Messaging v1 API.
+- [Pigeon.LegacyFCM](https://hexdocs.pm/pigeon/2.0.0-rc.0/Pigeon.LegacyFCM.html) - Firebase Cloud Messaging Legacy API.
 
 ### Creating Dynamic Runtime Dispatchers
 
 Pigeon can spin up dynamic dispatchers for a variety of advanced use-cases, such as
 supporting dozens of dispatcher configurations or custom connection pools.
 
-See [Pigeon.Dispatcher](https://hexdocs.pm/pigeon/Pigeon.Dispatcher.html) for instructions.
+See [Pigeon.Dispatcher](https://hexdocs.pm/pigeon/2.0.0-rc.0/Pigeon.Dispatcher.html) for instructions.
 
 ### Writing a Custom Dispatcher Adapter
 
 Want to write a Pigeon adapter for an unsupported push notification service?
 
-See [Pigeon.Adapter](https://hexdocs.pm/pigeon/Pigeon.Adapter.html) for instructions.
+See [Pigeon.Adapter](https://hexdocs.pm/pigeon/2.0.0-rc.0/Pigeon.Adapter.html) for instructions.
 
 ## Contributing
 
