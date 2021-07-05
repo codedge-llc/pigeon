@@ -6,8 +6,6 @@ defmodule Pigeon.FCM.Config do
             service_account_json: nil,
             uri: 'fcm.googleapis.com'
 
-  import Pigeon.Tasks, only: [process_on_response: 2]
-
   @type t :: %__MODULE__{
           port: pos_integer,
           project_id: binary,
@@ -32,10 +30,20 @@ defmodule Pigeon.FCM.Config do
       }
   """
   def new(opts) when is_list(opts) do
+    project_id =
+      opts
+      |> Keyword.get(:project_id)
+      |> decode_bin()
+
+    service_account_json =
+      opts
+      |> Keyword.get(:service_account_json)
+      |> decode_json()
+
     %__MODULE__{
       port: Keyword.get(opts, :port, 443),
-      project_id: opts |> Keyword.get(:project_id) |> decode_bin(),
-      service_account_json: opts |> Keyword.get(:service_account_json) |> decode_json(),
+      project_id: project_id,
+      service_account_json: service_account_json,
       uri: Keyword.get(opts, :uri, 'fcm.googleapis.com')
     }
   end
@@ -65,7 +73,7 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
 
   require Logger
 
-  import Pigeon.Tasks, only: [process_on_response: 2]
+  import Pigeon.Tasks, only: [process_on_response: 1]
 
   alias Pigeon.Encodable
   alias Pigeon.FCM.{Config, Error}
@@ -117,21 +125,21 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
     Encodable.binary_payload(notification)
   end
 
-  def handle_end_stream(_config, _stream, _notif, nil), do: :ok
-
-  def handle_end_stream(_config, %{error: nil} = stream, notif, on_response) do
+  def handle_end_stream(_config, %{error: nil} = stream, notif) do
     stream.body
     |> Pigeon.json_library().decode!()
     |> case do
       %{"name" => name} ->
-        process_on_response(on_response, %{notif | name: name, response: :success})
+        notif
+        |> Map.put(:name, name)
+        |> Map.put(:response, :success)
+        |> process_on_response()
 
       %{"error" => error} ->
-        process_on_response(on_response, %{
-          notif
-          | error: error,
-            response: Error.parse(error)
-        })
+        notif
+        |> Map.put(:error, error)
+        |> Map.put(:response, Error.parse(error))
+        |> process_on_response()
     end
   end
 

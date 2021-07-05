@@ -1,17 +1,15 @@
 defmodule Pigeon.LegacyFCM.ResultParser do
   @moduledoc false
 
-  import Pigeon.Tasks, only: [process_on_response: 2]
-
-  def parse([], [], on_response, notif) do
-    process_on_response(on_response, notif)
+  def parse([], [], notif) do
+    notif
   end
 
-  def parse(regid, results, on_response, notif) when is_binary(regid) do
-    parse([regid], results, on_response, notif)
+  def parse(regid, results, notif) when is_binary(regid) do
+    parse([regid], results, notif)
   end
 
-  def parse([regid | reg_res], [result | rest_results], on_response, notif) do
+  def parse([regid | reg_res], [result | rest_results], notif) do
     updated_notif =
       case result do
         %{"message_id" => id, "registration_id" => new_regid} ->
@@ -29,7 +27,7 @@ defmodule Pigeon.LegacyFCM.ResultParser do
           |> put_error(regid, error)
       end
 
-    parse(reg_res, rest_results, on_response, updated_notif)
+    parse(reg_res, rest_results, updated_notif)
   end
 
   defp put_update(%{response: resp} = notif, regid, new_regid) do
@@ -47,19 +45,35 @@ defmodule Pigeon.LegacyFCM.ResultParser do
     %{notif | response: [{error, regid} | resp]}
   end
 
-  def parse_error("DeviceMessageRateExceeded"), do: :device_message_rate_exceeded
+  def parse_error("DeviceMessageRateExceeded"),
+    do: :device_message_rate_exceeded
+
   def parse_error("InternalServerError"), do: :internal_server_error
+
   def parse_error("InvalidApnsCredential"), do: :invalid_apns_credential
+
   def parse_error("InvalidDataKey"), do: :invalid_data_key
+
   def parse_error("InvalidPackageName"), do: :invalid_package_name
+
   def parse_error("InvalidParameters"), do: :invalid_parameters
+
   def parse_error("InvalidRegistration"), do: :invalid_registration
+
   def parse_error("InvalidTtl"), do: :invalid_ttl
+
   def parse_error("MessageTooBig"), do: :message_too_big
+
   def parse_error("MissingRegistration"), do: :missing_registration
+
   def parse_error("MismatchSenderId"), do: :mismatch_sender_id
+
   def parse_error("NotRegistered"), do: :not_registered
-  def parse_error("TopicsMessageRateExceeded"), do: :topics_message_rate_exceeded
+
+  def parse_error("TopicsMessageRateExceeded"),
+    do: :topics_message_rate_exceeded
+
   def parse_error("Unavailable"), do: :unavailable
+
   def parse_error(_), do: :unknown_error
 end

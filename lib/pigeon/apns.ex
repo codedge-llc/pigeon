@@ -158,11 +158,12 @@ defmodule Pigeon.APNS do
   @behaviour Pigeon.Adapter
 
   alias Pigeon.{Configurable, NotificationQueue}
+  alias Pigeon.APNS.ConfigParser
   alias Pigeon.Http2.{Client, Stream}
 
   @impl true
   def init(opts) do
-    config = Pigeon.APNS.ConfigParser.parse(opts)
+    config = ConfigParser.parse(opts)
     Configurable.validate!(config)
 
     state = %__MODULE__{config: config}
@@ -178,19 +179,13 @@ defmodule Pigeon.APNS do
   end
 
   @impl true
-  def handle_push(notification, on_response, %{config: config, queue: queue} = state) do
+  def handle_push(notification, %{config: config, queue: queue} = state) do
     headers = Configurable.push_headers(config, notification, [])
     payload = Configurable.push_payload(config, notification, [])
 
     Client.default().send_request(state.socket, headers, payload)
 
-    new_q =
-      NotificationQueue.add(
-        queue,
-        state.stream_id,
-        notification,
-        on_response
-      )
+    new_q = NotificationQueue.add(queue, state.stream_id, notification)
 
     state =
       state
@@ -246,8 +241,8 @@ defmodule Pigeon.APNS do
         # Do nothing if no queued item for stream
         {:noreply, %{state | queue: new_queue}}
 
-      {{notif, on_response}, new_queue} ->
-        Configurable.handle_end_stream(config, stream, notif, on_response)
+      {notif, new_queue} ->
+        Configurable.handle_end_stream(config, stream, notif)
         {:noreply, %{state | queue: new_queue}}
     end
   end

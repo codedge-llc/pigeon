@@ -10,6 +10,7 @@ defmodule Pigeon.Application do
     Client.default().start
 
     children = [
+      Pigeon.Registry,
       {APNS.Token, %{}},
       {Task.Supervisor, name: Pigeon.Tasks}
     ]

@@ -25,6 +25,8 @@ defmodule Pigeon do
   See `Pigeon.Adapter` for instructions.
   """
 
+  alias Pigeon.Tasks
+
   @default_timeout 5_000
 
   @typedoc ~S"""
@@ -46,7 +48,12 @@ defmodule Pigeon do
       n = Pigeon.ADM.Notification.new("token", %{"message" => "test"})
       Pigeon.ADM.push(n, on_response: handler)
   """
-  @type on_response :: (Notification.t() -> no_return)
+  @type on_response ::
+          (notification -> no_return)
+          | {module, atom}
+          | {module, atom, [any]}
+
+  @type notification :: %{__meta__: Pigeon.Metadata.t()}
 
   @typedoc ~S"""
   Options for sending push notifications.
@@ -61,6 +68,17 @@ defmodule Pigeon do
         ]
 
   @doc """
+  Returns the configured default pool size for Pigeon dispatchers.
+  To customize this value, include the following in your config/config.exs:
+
+      config :pigeon, :default_pool_size, 5
+  """
+  @spec default_pool_size :: pos_integer
+  def default_pool_size() do
+    Application.get_env(:pigeon, :default_pool_size, 5)
+  end
+
+  @doc """
   Returns the configured JSON encoding library for Pigeon.
   To customize the JSON library, include the following in your config/config.exs:
 
@@ -71,39 +89,23 @@ defmodule Pigeon do
     Application.get_env(:pigeon, :json_library, Jason)
   end
 
-  def debug_log?, do: Application.get_env(:pigeon, :debug_log, false)
-
-  @spec push(pid | atom, notification :: struct | [struct], push_opts) ::
-          {:ok, notification :: struct}
-          | {:error, notification :: struct}
-          | :ok
+  @spec push(pid | atom, notification :: struct, push_opts) ::
+          notification :: struct | no_return
+  @spec push(pid | atom, notifications :: [struct, ...], push_opts) ::
+          notifications :: [struct, ...] | no_return
   def push(pid, notifications, opts \\ [])
 
   def push(pid, notifications, opts) when is_list(notifications) do
-    if Keyword.has_key?(opts, :on_response) do
-      push_async(pid, notifications, opts[:on_response])
-    else
-      timeout = Keyword.get(opts, :timeout, @default_timeout)
-
-      notifications
-      |> Enum.map(&Task.async(fn -> push_sync(pid, &1, timeout) end))
-      |> Task.yield_many(timeout + 500)
-      |> Enum.map(fn {task, response} ->
-        case response do
-          nil -> Task.shutdown(task, :brutal_kill)
-          {:ok, resp} -> resp
-          _error -> nil
-        end
-      end)
-    end
+    for n <- notifications, do: push(pid, n, opts)
   end
 
   def push(pid, notification, opts) do
-    timeout = Keyword.get(opts, :timeout, @default_timeout)
-
     if Keyword.has_key?(opts, :on_response) do
-      push_async(pid, notification, opts[:on_response])
+      on_response = Keyword.get(opts, :on_response)
+      notification = put_on_response(notification, on_response)
+      push_async(pid, notification)
     else
+      timeout = Keyword.get(opts, :timeout, @default_timeout)
       push_sync(pid, notification, timeout)
     end
   end
@@ -112,8 +114,9 @@ defmodule Pigeon do
     myself = self()
     ref = :erlang.make_ref()
     on_response = fn x -> send(myself, {:"$push", ref, x}) end
+    notification = put_on_response(notification, on_response)
 
-    push_async(pid, notification, on_response)
+    push_async(pid, notification)
 
     receive do
       {:"$push", ^ref, x} -> x
@@ -122,30 +125,19 @@ defmodule Pigeon do
     end
   end
 
-  defp push_async(pid, notifications, on_response)
-       when is_list(notifications) do
-    for n <- notifications, do: push_async(pid, n, on_response)
-  end
-
-  defp push_async(pid, notification, nil) do
-    GenServer.cast(pid, {:push, notification, nil})
-  end
-
-  defp push_async(pid, notification, on_response) when is_pid(pid) do
-    if Process.alive?(pid) do
-      GenServer.cast(pid, {:push, notification, on_response})
-    else
-      on_response.(%{notification | response: :not_started})
-    end
-  end
-
-  defp push_async(pid, notification, on_response) do
-    case Process.whereis(pid) do
+  defp push_async(pid, notification) do
+    case Pigeon.Registry.next(pid) do
       nil ->
-        on_response.(%{notification | response: :not_started})
+        Tasks.process_on_response(%{notification | response: :not_started})
 
-      _pid ->
-        GenServer.cast(pid, {:push, notification, on_response})
+      pid ->
+        send(pid, {:"$push", notification})
+        :ok
     end
+  end
+
+  defp put_on_response(notification, on_response) do
+    meta = %{notification.__meta__ | on_response: on_response}
+    %{notification | __meta__: meta}
   end
 end

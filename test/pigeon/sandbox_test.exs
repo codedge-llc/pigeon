@@ -20,8 +20,9 @@ defmodule Pigeon.SandboxTest do
     assert n.response == :timeout
   end
 
-  test "handles any kind of term" do
-    n = PigeonTest.Sandbox.push("unexpected")
-    assert n == "unexpected"
+  test "handles any kind of map with __meta__" do
+    n = %{__meta__: %Pigeon.Metadata{}, expect_the: "unexpected"}
+    PigeonTest.Sandbox.push([n, n], on_response: nil)
+    # Didn't crash, nothing to test.
   end
 end

@@ -9,7 +9,7 @@ defmodule Pigeon.Adapter do
 
   ```
   defmodule Pigeon.Sandbox do
-    import Pigeon.Tasks, only: [process_on_response: 2]
+    import Pigeon.Tasks, only: [process_on_response: 1]
 
     @behaviour Pigeon.Adapter
 
@@ -41,9 +41,9 @@ defmodule Pigeon.Adapter do
   Invoked when the server is started.
 
   Return value should be `{:ok, state}` for the `Pigeon.Dispatcher` state,
-  or `{:error, atom}` if started with invalid configuration options.
+  or `{:stop, atom}` if started with invalid configuration options.
   """
-  @callback init(opts :: Keyword.t()) :: {:ok, term} | {:error, atom}
+  @callback init(opts :: Keyword.t()) :: {:ok, any} | {:stop, any}
 
   @doc """
   Invoked to handle all other messages.
@@ -53,11 +53,7 @@ defmodule Pigeon.Adapter do
   @doc """
   Invoked to handle push notifications.
   """
-  @callback handle_push(
-              notification :: struct | [struct],
-              on_response :: Pigeon.on_response(),
-              state :: term
-            ) ::
+  @callback handle_push(notification :: struct | [struct], state :: term) ::
               {:noreply, new_state :: term}
               | {:stop, reason :: term, new_state :: term}
 end

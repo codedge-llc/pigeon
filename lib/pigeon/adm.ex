@@ -140,7 +140,7 @@ defmodule Pigeon.ADM do
 
   @behaviour Pigeon.Adapter
 
-  import Pigeon.Tasks, only: [process_on_response: 2]
+  import Pigeon.Tasks, only: [process_on_response: 1]
   alias Pigeon.ADM.{Config, ResultParser}
   require Logger
 
@@ -167,15 +167,17 @@ defmodule Pigeon.ADM do
   end
 
   @impl true
-  def handle_push(notification, on_response, state) do
+  def handle_push(notification, state) do
     case refresh_access_token_if_needed(state) do
       {:ok, state} ->
-        :ok = do_push(notification, state, on_response)
+        :ok = do_push(notification, state)
         {:noreply, state}
 
       {:error, reason} ->
-        notification = %{notification | response: reason}
-        process_on_response(on_response, notification)
+        notification
+        |> Map.put(:response, reason)
+        |> process_on_response()
+
         {:noreply, state}
     end
   end
@@ -281,29 +283,21 @@ defmodule Pigeon.ADM do
     [{"Content-Type", "application/x-www-form-urlencoded;charset=UTF-8"}]
   end
 
-  defp do_push(notification, state, on_response) do
+  defp do_push(notification, state) do
     request = {notification.registration_id, encode_payload(notification)}
 
-    response =
-      case on_response do
-        nil ->
-          fn {reg_id, payload} ->
-            HTTPoison.post(adm_uri(reg_id), payload, adm_headers(state))
-          end
+    response = fn {reg_id, payload} ->
+      case HTTPoison.post(adm_uri(reg_id), payload, adm_headers(state)) do
+        {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
+          notification = %{notification | registration_id: reg_id}
+          process_response(status, body, notification)
 
-        _ ->
-          fn {reg_id, payload} ->
-            case HTTPoison.post(adm_uri(reg_id), payload, adm_headers(state)) do
-              {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
-                notification = %{notification | registration_id: reg_id}
-                process_response(status, body, notification, on_response)
-
-              {:error, %HTTPoison.Error{reason: :connect_timeout}} ->
-                notification = %{notification | response: :timeout}
-                process_on_response(on_response, notification)
-            end
-          end
+        {:error, %HTTPoison.Error{reason: :connect_timeout}} ->
+          notification
+          |> Map.put(:response, :timeout)
+          |> process_on_response()
       end
+    end
 
     Task.Supervisor.start_child(Pigeon.Tasks, fn -> response.(request) end)
     :ok
@@ -349,25 +343,31 @@ defmodule Pigeon.ADM do
     payload |> Map.put("md5", md5)
   end
 
-  defp process_response(200, body, notification, on_response),
-    do: handle_200_status(body, notification, on_response)
+  defp process_response(200, body, notification),
+    do: handle_200_status(body, notification)
 
-  defp process_response(status, body, notification, on_response),
-    do: handle_error_status_code(status, body, notification, on_response)
+  defp process_response(status, body, notification),
+    do: handle_error_status_code(status, body, notification)
 
-  defp handle_200_status(body, notification, on_response) do
+  defp handle_200_status(body, notification) do
     {:ok, json} = Pigeon.json_library().decode(body)
-    parse_result(notification, json, on_response)
+
+    notification
+    |> ResultParser.parse(json)
+    |> process_on_response()
   end
 
-  defp handle_error_status_code(status, body, notification, on_response) do
+  defp handle_error_status_code(status, body, notification) do
     case Pigeon.json_library().decode(body) do
       {:ok, %{"reason" => _reason} = result_json} ->
-        parse_result(notification, result_json, on_response)
+        notification
+        |> ResultParser.parse(result_json)
+        |> process_on_response()
 
       {:error, _} ->
-        n = %{notification | response: generic_error_reason(status)}
-        process_on_response(on_response, n)
+        notification
+        |> Map.put(:response, generic_error_reason(status))
+        |> process_on_response()
     end
   end
 
@@ -375,12 +375,4 @@ defmodule Pigeon.ADM do
   defp generic_error_reason(401), do: :authentication_error
   defp generic_error_reason(500), do: :internal_server_error
   defp generic_error_reason(_), do: :unknown_error
-
-  # no on_response callback, ignore
-  @doc false
-  def parse_result(_, _, nil), do: :ok
-
-  def parse_result(notification, response, on_response) do
-    ResultParser.parse(notification, response, on_response)
-  end
 end

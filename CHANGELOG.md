@@ -10,6 +10,8 @@
   ([#183](https://github.com/codedge-llc/pigeon/pull/183))
 - Kadabra bumped to v0.5.0, and now a required dependency.
   ([#184](https://github.com/codedge-llc/pigeon/pull/184))
+- Sending a list of pushes synchronously now actually sends them one at a time. For production
+  workloads, using the async `:on_response` callback is strongly suggested.
 
 **Fixed**
 
@@ -21,6 +23,7 @@
 - `:certfile` and `:keyfile` are no longer valid options for APNS configurations.
   Instead, read the file before loading (e.g. `cert: File.read!("cert.pem")`)
   ([#183](https://github.com/codedge-llc/pigeon/pull/183))
+- `:debug_log` removed.
 
 ## v1.6.0
 

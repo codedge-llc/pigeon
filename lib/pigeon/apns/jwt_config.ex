@@ -136,7 +136,8 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
     Pigeon.Http2.Client.default().connect(uri, :https, options)
   end
 
-  @spec push_headers(JWTConfig.t(), Notification.t(), Keyword.t()) :: headers | no_return
+  @spec push_headers(JWTConfig.t(), Notification.t(), Keyword.t()) ::
+          headers | no_return
   def push_headers(%JWTConfig{} = config, notification, opts) do
     config
     |> Shared.push_headers(notification, opts)
@@ -145,8 +146,7 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
 
   defdelegate push_payload(config, notification, opts), to: Shared
 
-  defdelegate handle_end_stream(config, stream, notification, on_response),
-    to: Shared
+  defdelegate handle_end_stream(config, stream, notification), to: Shared
 
   defdelegate schedule_ping(any), to: Shared
 
@@ -206,7 +206,8 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
     key = %{"pem" => config.key}
     now = :os.system_time(:seconds)
 
-    signer = Joken.Signer.create("ES256", key, %{"kid" => config.key_identifier})
+    signer =
+      Joken.Signer.create("ES256", key, %{"kid" => config.key_identifier})
 
     {:ok, token, _claims} =
       default_claims(iss: config.team_id, iat: now)

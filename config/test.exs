@@ -8,9 +8,6 @@ config :pigeon, :test,
   apns_key: File.read!("key_unencrypted.pem"),
   apns_topic: System.get_env("APNS_TOPIC")
 
-config :pigeon,
-  debug_log: true
-
 config :pigeon, PigeonTest.ADM,
   adapter: Pigeon.ADM,
   client_id: System.get_env("ADM_OAUTH2_CLIENT_ID"),

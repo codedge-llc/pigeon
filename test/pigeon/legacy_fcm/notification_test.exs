@@ -48,7 +48,8 @@ defmodule Pigeon.LegacyFCM.NotificationTest do
       payload: %{"data" => data}
     }
 
-    assert Pigeon.LegacyFCM.Notification.new(@reg_id, %{}, data) == expected_result
+    assert Pigeon.LegacyFCM.Notification.new(@reg_id, %{}, data) ==
+             expected_result
   end
 
   test "LegacyFCM new with notification and data maps" do
@@ -67,6 +68,7 @@ defmodule Pigeon.LegacyFCM.NotificationTest do
       payload: %{"notification" => n, "data" => data}
     }
 
-    assert Pigeon.LegacyFCM.Notification.new(@reg_id, n, data) == expected_result
+    assert Pigeon.LegacyFCM.Notification.new(@reg_id, n, data) ==
+             expected_result
   end
 end

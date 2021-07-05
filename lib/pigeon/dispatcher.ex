@@ -75,7 +75,7 @@ defmodule Pigeon.Dispatcher do
   ```
   """
 
-  use GenServer
+  use Supervisor
 
   @doc false
   defmacro __using__(opts) do
@@ -86,7 +86,7 @@ defmodule Pigeon.Dispatcher do
         config_opts = Application.get_env(@otp_app, __MODULE__, [])
 
         opts =
-          [name: __MODULE__]
+          [name: __MODULE__, pool_size: Pigeon.default_pool_size()]
           |> Keyword.merge(config_opts)
           |> Keyword.merge(opts)
 
@@ -108,33 +108,20 @@ defmodule Pigeon.Dispatcher do
 
   def start_link(opts) do
     opts[:adapter] || raise "adapter is not specified"
-    GenServer.start_link(__MODULE__, opts, name: opts[:name])
+    Supervisor.start_link(__MODULE__, opts, name: opts[:name])
   end
 
-  @impl true
   def init(opts) do
-    case opts[:adapter].init(opts) do
-      {:ok, state} ->
-        {:ok, %{adapter: opts[:adapter], state: state}}
+    opts =
+      opts
+      |> Keyword.put(:supervisor, opts[:name] || self())
+      |> Keyword.delete(:name)
 
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
+    children =
+      for index <- 1..(opts[:pool_size] || Pigeon.default_pool_size()) do
+        Supervisor.child_spec({Pigeon.DispatcherWorker, opts}, id: index)
+      end
 
-  @impl true
-  def handle_cast({:push, notification, on_response}, %{adapter: adapter, state: state}) do
-    case adapter.handle_push(notification, on_response, state) do
-      {:noreply, new_state} -> {:noreply, %{adapter: adapter, state: new_state}}
-      {:stop, reason, new_state} -> {:stop, reason, %{adapter: adapter, state: new_state}}
-    end
-  end
-
-  @impl true
-  def handle_info(msg, %{adapter: adapter, state: state}) do
-    case adapter.handle_info(msg, state) do
-      {:noreply, new_state} -> {:noreply, %{adapter: adapter, state: new_state}}
-      {:stop, reason, new_state} -> {:stop, reason, %{adapter: adapter, state: new_state}}
-    end
+    Supervisor.init(children, strategy: :one_for_one)
   end
 end

@@ -3,7 +3,8 @@ defmodule Pigeon.LegacyFCM.Notification do
   Defines `Pigeon.LegacyFCM.Notification` struct and convenience constructor functions.
   """
 
-  defstruct collapse_key: nil,
+  defstruct __meta__: %Pigeon.Metadata{},
+            collapse_key: nil,
             condition: nil,
             content_available: false,
             dry_run: false,

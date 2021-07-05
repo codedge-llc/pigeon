@@ -3,7 +3,8 @@ defmodule Pigeon.APNS.Notification do
   Defines APNS notification struct and constructor functions.
   """
 
-  defstruct collapse_id: nil,
+  defstruct __meta__: %Pigeon.Metadata{},
+            collapse_id: nil,
             device_token: nil,
             expiration: nil,
             priority: nil,

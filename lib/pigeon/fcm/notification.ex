@@ -3,7 +3,8 @@ defmodule Pigeon.FCM.Notification do
   Defines FCM notification struct and convenience constructor functions.
   """
 
-  defstruct android: nil,
+  defstruct __meta__: %Pigeon.Metadata{},
+            android: nil,
             apns: nil,
             data: nil,
             error: nil,
@@ -43,8 +44,10 @@ defmodule Pigeon.FCM.Notification do
   FCM notification target. Must be one of the following:
 
   - `{:token, "string"}` - Registration token to send a message to.
-  - `{:topic, "string"}` - Topic name to send a message to, e.g. "weather". Note: "/topics/" prefix should not be provided.
-  - `{:condition, "string"}` - Condition to send a message to, e.g. "'foo' in topics && 'bar' in topics".
+  - `{:topic, "string"}` - Topic name to send a message to, e.g. "weather". 
+    Note: "/topics/" prefix should not be provided.
+  - `{:condition, "string"}` - Condition to send a message to, e.g. "'foo' 
+    in topics && 'bar' in topics".
   """
   @type target :: {:token, binary} | {:topic, binary} | {:condition, binary}
 
@@ -87,7 +90,11 @@ defmodule Pigeon.FCM.Notification do
 
   def new({type, _} = target, notification, data)
       when type in [:token, :topic, :condition] do
-    %Pigeon.FCM.Notification{target: target, notification: notification, data: data}
+    %Pigeon.FCM.Notification{
+      target: target,
+      notification: notification,
+      data: data
+    }
   end
 end
 

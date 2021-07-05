@@ -10,7 +10,7 @@ defprotocol Pigeon.Configurable do
 
   def push_payload(config, notification, opts)
 
-  def handle_end_stream(config, stream, notification, on_response)
+  def handle_end_stream(config, stream, notification)
 
   @doc ~S"""
   Schedules connection ping if necessary.
