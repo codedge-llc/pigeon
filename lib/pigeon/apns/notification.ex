@@ -324,7 +324,7 @@ defmodule Pigeon.APNS.Notification do
   """
   @spec put_interruption_level(t, String.t()) :: t
   def put_interruption_level(notification, level),
-    do: update_payload(notification, "interruption-level", id)
+    do: update_payload(notification, "interruption-level", level)
 
   defp update_payload(notification, key, value) do
     new_aps =
