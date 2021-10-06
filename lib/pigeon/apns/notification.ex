@@ -266,7 +266,7 @@ defmodule Pigeon.APNS.Notification do
         payload: %{
           "aps" => %{
             "sound" => %{
-              "critical" => 1, 
+              "critical" => 1,
               "sound" => "default",
               "volume" => 1.0
             }
@@ -309,6 +309,22 @@ defmodule Pigeon.APNS.Notification do
   @spec put_thread_id(t, String.t()) :: t
   def put_thread_id(notification, id),
     do: update_payload(notification, "thread-id", id)
+
+  @doc """
+  Updates `"interruption-level"` key in push payload.
+
+  Used for managing time sensitive notifications
+
+  ## Examples
+
+      iex> Pigeon.APNS.Notification.put_interruption_level(%Pigeon.APNS.Notification{}, "time-sensitive")
+      %Pigeon.APNS.Notification{
+        payload: %{"aps" => %{"interruption-level" => "time-sensitive"}}
+      }
+  """
+  @spec put_interruption_level(t, String.t()) :: t
+  def put_interruption_level(notification, level),
+    do: update_payload(notification, "interruption-level", id)
 
   defp update_payload(notification, key, value) do
     new_aps =
