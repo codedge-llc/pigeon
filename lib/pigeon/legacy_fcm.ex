@@ -140,7 +140,7 @@ defmodule Pigeon.LegacyFCM do
   {:ok, %Pigeon.FCM.Notification{...}}
   ```
 
-  2. Reponses return the notification with an updated response.
+  2. Responses return the notification with an updated response.
 
   ```
   on_response = fn(n) ->

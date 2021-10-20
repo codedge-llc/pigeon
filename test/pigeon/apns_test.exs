@@ -200,7 +200,7 @@ defmodule Pigeon.APNSTest do
       )
     end
 
-    test "returns :missing_topic reponse on missing topic for certs supporting mult topics" do
+    test "returns :missing_topic response on missing topic for certs supporting mult topics" do
       pid = self()
       on_response = fn x -> send(pid, x) end
 
