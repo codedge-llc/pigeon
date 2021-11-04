@@ -53,7 +53,11 @@ defmodule Pigeon do
           | {module, atom}
           | {module, atom, [any]}
 
-  @type notification :: %{__meta__: Pigeon.Metadata.t()}
+  @type notification :: %{
+          :__struct__ => atom(),
+          :__meta__ => Pigeon.Metadata.t(),
+          optional(atom()) => any()
+        }
 
   @typedoc ~S"""
   Options for sending push notifications.
