@@ -24,13 +24,13 @@ defmodule Pigeon.Adapter do
     end
 
     @impl true
-    def handle_push(%{response: nil} = notification, on_response, _state) do
-      process_on_response(on_response, %{notification | response: :success})
+    def handle_push(%{response: nil} = notification, state) do
+      process_on_response(%{notification | response: :success})
       {:noreply, state}
     end
 
-    def handle_push(notification, on_response, state) do
-      process_on_response(on_response, notification)
+    def handle_push(notification, state) do
+      process_on_response(notification)
       {:noreply, state}
     end
   end
