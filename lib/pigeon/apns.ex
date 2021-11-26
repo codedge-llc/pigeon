@@ -7,7 +7,7 @@ defmodule Pigeon.APNS do
   1. Create an `APNS` dispatcher.
 
   ```
-  # lib/fcm.ex
+  # lib/apns.ex
   defmodule YourApp.APNS do
     use Pigeon.Dispatcher, otp_app: :your_app
   end
