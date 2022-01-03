@@ -239,7 +239,13 @@ defmodule Pigeon.LegacyFCM do
     case connect_socket(config) do
       {:ok, socket} ->
         Configurable.schedule_ping(config)
-        {:noreply, %{state | socket: socket}}
+
+        state =
+          state
+          |> reset_stream_id()
+          |> Map.put(:socket, socket)
+
+        {:noreply, state}
 
       {:error, reason} ->
         {:stop, reason}
@@ -283,5 +289,10 @@ defmodule Pigeon.LegacyFCM do
   @doc false
   def inc_stream_id(%{stream_id: stream_id} = state) do
     %{state | stream_id: stream_id + 2}
+  end
+
+  @doc false
+  def reset_stream_id(state) do
+    %{state | stream_id: 1}
   end
 end
