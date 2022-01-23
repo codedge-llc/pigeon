@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Elixir
+        uses: erlef/setup-beam@988e02bfe678367a02564f65ca2e37726dc0268f
+        with:
+          elixir-version: "1.12.3" # Define the elixir version [required]
+          otp-version: "24.1" # Define the OTP version [required]
+      - name: Restore dependencies cache
+        uses: actions/cache@v2
+        with:
+          path: deps
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: ${{ runner.os }}-mix-
+      - name: Install dependencies
+        run: mix deps.get
+      - name: Run tests
+        env:
+          ADM_OAUTH2_CLIENT_ID: ${{ secrets.ADM_OAUTH2_CLIENT_ID }}
+          ADM_OAUTH2_CLIENT_SECRET: ${{ secrets.ADM_OAUTH2_CLIENT_SECRET }}
+          APNS_AUTH_KEY_P8: ${{ secrets.APNS_AUTH_KEY_P8 }}
+          APNS_CERT: ${{ secrets.APNS_CERT }}
+          APNS_JWT_KEY_IDENTIFIER: ${{ secrets.APNS_JWT_KEY_IDENTIFIER }}
+          APNS_JWT_TEAM_ID: ${{ secrets.APNS_JWT_TEAM_ID }}
+          APNS_KEY_UNENCRYPTED: ${{ secrets.APNS_KEY_UNENCRYPTED }}
+          APNS_TOPIC: ${{ secrets.APNS_TOPIC }}
+          FCM_PROJECT: ${{ secrets.FCM_PROJECT }}
+          FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
+          GCM_KEY: ${{ secrets.GCM_KEY }}
+          VALID_APNS_TOKEN: ${{ secrets.VALID_APNS_TOKEN }}
+          VALID_GCM_REG_ID: ${{ secrets.VALID_GCM_REG_ID }}
+        run: mix test
