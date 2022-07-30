@@ -8,7 +8,7 @@
 
 **Changed**
 
-- Bump `goth` dependency to `~> 1.3.0`.
+- Bump `goth` dependency to `~> 1.3.0`. ([#224](https://github.com/codedge-llc/pigeon/pull/224))
 
 ## v2.0.0-rc.0
 
