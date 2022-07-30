@@ -12,7 +12,7 @@ defmodule Pigeon.Mixfile do
       description: description(),
       dialyzer: dialyzer(),
       docs: docs(),
-      elixir: "~> 1.6",
+      elixir: "~> 1.7",
       elixirc_options: [warnings_as_errors: true],
       elixirc_paths: elixirc_paths(Mix.env()),
       name: "Pigeon",

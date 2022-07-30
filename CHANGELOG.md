@@ -4,11 +4,12 @@
 
 **Fixed**
 
-- Reset stream ID when connection is clsoed. ([#216](https://github.com/codedge-llc/pigeon/pull/217))
+- Reset stream ID when connection is closed. ([#216](https://github.com/codedge-llc/pigeon/pull/217))
 
 **Changed**
 
 - Bump `goth` dependency to `~> 1.3.0`. ([#224](https://github.com/codedge-llc/pigeon/pull/224))
+- Bump minimum supported Elixir version to `1.7`.
 
 ## v2.0.0-rc.0
 
