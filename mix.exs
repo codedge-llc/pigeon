@@ -2,7 +2,7 @@ defmodule Pigeon.Mixfile do
   use Mix.Project
 
   @source_url "https://github.com/codedge-llc/pigeon"
-  @version "2.0.0-rc.0"
+  @version "2.0.0-rc.1"
 
   def project do
     [
@@ -48,7 +48,7 @@ defmodule Pigeon.Mixfile do
       {:earmark, "~> 1.0", only: :dev, runtime: false},
       {:excoveralls, "~> 0.5", only: :test, runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
-      {:goth, "~> 1.3.0-rc.2"},
+      {:goth, "~> 1.3.0"},
       {:httpoison, "~> 0.7 or ~> 1.0"},
       {:jason, "~> 1.0", optional: true},
       {:joken, "~> 2.1"},

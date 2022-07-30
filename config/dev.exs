@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 config :pigeon, PigeonTest.ADM,
   adapter: Pigeon.ADM,

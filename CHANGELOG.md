@@ -1,6 +1,16 @@
 # Changelog
 
-## v2.0.0 (dev)
+## v2.0.0-rc.1
+
+**Fixed**
+
+- Reset stream ID when connection is clsoed. ([#216](https://github.com/codedge-llc/pigeon/pull/217))
+
+**Changed**
+
+- Bump `goth` dependency to `~> 1.3.0`. ([#224](https://github.com/codedge-llc/pigeon/pull/224))
+
+## v2.0.0-rc.0
 
 **Changed**
 
