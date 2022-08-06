@@ -154,8 +154,7 @@ defmodule Pigeon.ADM.Notification do
       data
       |> Map.keys()
       |> Enum.sort()
-      |> Enum.map(fn key -> "#{key}:#{data[key]}" end)
-      |> Enum.join(",")
+      |> Enum.map_join(",", fn key -> "#{key}:#{data[key]}" end)
 
     md5 = :md5 |> :crypto.hash(concat) |> Base.encode64()
 
