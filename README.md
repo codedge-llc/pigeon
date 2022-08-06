@@ -41,18 +41,21 @@ See [Pigeon.Dispatcher](https://hexdocs.pm/pigeon/2.0.0-rc.0/Pigeon.Dispatcher.h
 
 Want to write a Pigeon adapter for an unsupported push notification service?
 
-See [Pigeon.Adapter](https://hexdocs.pm/pigeon/2.0.0-rc.0/Pigeon.Adapter.html) for instructions.
+See [Pigeon.Adapter](https://hexdocs.pm/pigeon/2.0.0-rc.1/Pigeon.Adapter.html) for instructions.
 
 ## Contributing
 
 ### Testing
 
-Unit tests can be run with `mix test` or `mix coveralls.html`.
+Unit tests can be run with `mix test` or `mix coveralls.html`. Environment variables will need to be set for
+various credentials. See [config/test.exs](https://github.com/codedge-llc/pigeon/blob/master/config/test.exs)
+for the full list.
 
 ### Formatting
 
-This project uses Elixir's `mix format` for formatting. Add a hook in your editor of choice to
-run it after a save. Be sure it respects this project's `.formatter.exs`.
+This project uses Elixir's `mix format` and [Prettier](https://prettier.io) for formatting.
+Add hooks in your editor of choice to run it after a save. Be sure it respects this project's
+`.formatter.exs`.
 
 ### Commits
 
