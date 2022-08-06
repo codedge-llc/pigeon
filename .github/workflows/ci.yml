@@ -7,17 +7,28 @@ on:
     branches: [master]
 
 jobs:
-  build:
-    name: Build and test
+  prettier:
+    name: Prettier
     runs-on: ubuntu-latest
-
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Run Prettier
+        uses: creyD/prettier_action@v4.2
+        with:
+          prettier_options: --check --no-error-on-unmatched-pattern **/*.{json,md,yml,yaml}
+  build:
+    name: Test
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Set up Elixir
         uses: erlef/setup-beam@988e02bfe678367a02564f65ca2e37726dc0268f
         with:
-          elixir-version: "1.13.4" # Define the elixir version [required]
-          otp-version: "24.1" # Define the OTP version [required]
+          elixir-version: "1.13.4"
+          otp-version: "24.1"
       - name: Restore dependencies cache
         uses: actions/cache@v2
         with:

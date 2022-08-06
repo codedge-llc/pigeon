@@ -42,3 +42,4 @@ scratchpad.txt
 *.swp
 .idea
 pigeon.iml
+.envrc
