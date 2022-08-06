@@ -182,9 +182,7 @@ defmodule Pigeon.FCM do
           Process.send_after(self(), @refresh, @retry_after)
           {:noreply, %{state | retries: state.retries - 1}}
         else
-          raise "too many failed attempts to refresh, last error: #{
-                  inspect(exception)
-                }"
+          raise "too many failed attempts to refresh, last error: #{inspect(exception)}"
         end
     end
   end

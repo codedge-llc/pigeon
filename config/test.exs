@@ -1,12 +1,12 @@
 import Config
 
 config :pigeon, :test,
-  fcm_key: System.get_env("GCM_KEY"),
-  valid_fcm_reg_id: System.get_env("VALID_GCM_REG_ID"),
-  valid_apns_token: System.get_env("VALID_APNS_TOKEN"),
   apns_cert: System.get_env("APNS_CERT"),
   apns_key: System.get_env("APNS_KEY_UNENCRYPTED"),
-  apns_topic: System.get_env("APNS_TOPIC")
+  apns_topic: System.get_env("APNS_TOPIC"),
+  fcm_key: System.get_env("GCM_KEY"),
+  valid_apns_token: System.get_env("VALID_APNS_TOKEN"),
+  valid_fcm_reg_id: System.get_env("VALID_GCM_REG_ID")
 
 config :pigeon, PigeonTest.ADM,
   adapter: Pigeon.ADM,
