@@ -2,9 +2,6 @@
 
 ## Usage
 
-
-
-
 1. Set your environment variables.
 
    ```elixir
