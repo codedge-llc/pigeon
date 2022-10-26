@@ -31,6 +31,18 @@ defmodule Pigeon.FCM.Notification do
           webpush: map | nil
         }
 
+  @type success :: %__MODULE__{
+          __meta__: Pigeon.Metadata.t(),
+          name: binary,
+          response: :success
+        }
+
+  @type errored :: %__MODULE__{
+          __meta__: Pigeon.Metadata.t(),
+          error: map,
+          response: error_response
+        }
+
   @type error_response ::
           :unspecified_error
           | :invalid_argument
