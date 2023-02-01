@@ -78,11 +78,11 @@ defmodule Pigeon.APNS.JWTConfig do
       ...>   ping_period: 300_000
       ...> )
       %Pigeon.APNS.JWTConfig{
-        uri: "api.push.apple.com", 
-        team_id: "DEF1234567", 
-        key_identifier: "ABC1234567", 
+        uri: "api.push.apple.com",
+        team_id: "DEF1234567",
+        key_identifier: "ABC1234567",
         key: File.read!("test/support/FakeAPNSAuthKey.p8"),
-        ping_period: 300000, 
+        ping_period: 300000,
         port: 2197
       }
   """
@@ -110,8 +110,6 @@ end
 defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
   @moduledoc false
 
-  import Joken.Config
-
   alias Pigeon.APNS.{
     ConfigParser,
     JWTConfig,
@@ -122,9 +120,6 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
   @type headers :: [{binary, binary}]
   @type sock :: {:sslsocket, any, pid | {any, any}}
   @type socket_opts :: maybe_improper_list(atom, integer | boolean)
-
-  # Seconds
-  @token_max_age 3_590
 
   # Configurable Callbacks
 
@@ -188,33 +183,8 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
 
   @spec put_bearer_token(headers, JWTConfig.t()) :: headers
   defp put_bearer_token(headers, %JWTConfig{} = config) when is_list(headers) do
-    token_storage_key = config.key_identifier <> ":" <> config.team_id
-    {timestamp, saved_token} = Pigeon.APNS.Token.get(token_storage_key)
-    now = :os.system_time(:seconds)
-
-    token =
-      case now - timestamp do
-        age when age < @token_max_age -> saved_token
-        _ -> generate_apns_jwt(config, token_storage_key)
-      end
+    token = Pigeon.APNS.Token.get(config)
 
     [{"authorization", "bearer " <> token} | headers]
-  end
-
-  @spec generate_apns_jwt(JWTConfig.t(), binary) :: binary
-  defp generate_apns_jwt(config, token_storage_key) do
-    key = %{"pem" => config.key}
-    now = :os.system_time(:seconds)
-
-    signer =
-      Joken.Signer.create("ES256", key, %{"kid" => config.key_identifier})
-
-    {:ok, token, _claims} =
-      default_claims(iss: config.team_id, iat: now)
-      |> Joken.generate_and_sign(%{}, signer)
-
-    :ok = Pigeon.APNS.Token.update(token_storage_key, {now, token})
-
-    token
   end
 end
