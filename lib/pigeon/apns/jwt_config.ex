@@ -78,11 +78,11 @@ defmodule Pigeon.APNS.JWTConfig do
       ...>   ping_period: 300_000
       ...> )
       %Pigeon.APNS.JWTConfig{
-        uri: "api.push.apple.com", 
-        team_id: "DEF1234567", 
-        key_identifier: "ABC1234567", 
+        uri: "api.push.apple.com",
+        team_id: "DEF1234567",
+        key_identifier: "ABC1234567",
         key: File.read!("test/support/FakeAPNSAuthKey.p8"),
-        ping_period: 300000, 
+        ping_period: 300000,
         port: 2197
       }
   """
