@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: ["master"]
   pull_request:
-    branches: [master]
+    branches: ["master"]
 
 jobs:
   prettier:
@@ -12,25 +12,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: ${{ github.head_ref }}
-      - name: Run Prettier
-        uses: creyD/prettier_action@v4.2
+      - name: Use Node.js 18.x
+        uses: actions/setup-node@v3
         with:
-          prettier_options: --check --no-error-on-unmatched-pattern **/*.{json,md,yml,yaml}
+          node-version: 18.x
+      - name: Install Prettier
+        run: npm install --global prettier
+      - name: Run Prettier
+        run: prettier --check --no-error-on-unmatched-pattern "**/*.{json,md,yml,yaml}"
   check:
     name: Format/Credo
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up Elixir
-        uses: erlef/setup-beam@988e02bfe678367a02564f65ca2e37726dc0268f
+        uses: erlef/setup-beam@v1
         with:
-          elixir-version: "1.13.4"
-          otp-version: "24.1"
+          elixir-version: "1.14.3"
+          otp-version: "24.3"
       - name: Restore dependencies cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: deps
           key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
@@ -45,14 +49,14 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up Elixir
-        uses: erlef/setup-beam@988e02bfe678367a02564f65ca2e37726dc0268f
+        uses: erlef/setup-beam@v1
         with:
-          elixir-version: "1.13.4"
-          otp-version: "24.1"
+          elixir-version: "1.14.3"
+          otp-version: "24.3"
       - name: Restore dependencies cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: deps
           key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
