@@ -25,17 +25,17 @@ end
 
 Check the module documentation for your push notification service.
 
-- [Pigeon.ADM](https://hexdocs.pm/pigeon/2.0.0-rc.0/Pigeon.ADM.html) - Amazon Android.
-- [Pigeon.APNS](https://hexdocs.pm/pigeon/2.0.0-rc.0/Pigeon.APNS.html) - Apple iOS.
-- [Pigeon.FCM](https://hexdocs.pm/pigeon/2.0.0-rc.0/Pigeon.FCM.html) - Firebase Cloud Messaging v1 API.
-- [Pigeon.LegacyFCM](https://hexdocs.pm/pigeon/2.0.0-rc.0/Pigeon.LegacyFCM.html) - Firebase Cloud Messaging Legacy API.
+- [Pigeon.ADM](https://hexdocs.pm/pigeon/2.0.0-rc.1/Pigeon.ADM.html) - Amazon Android.
+- [Pigeon.APNS](https://hexdocs.pm/pigeon/2.0.0-rc.1/Pigeon.APNS.html) - Apple iOS.
+- [Pigeon.FCM](https://hexdocs.pm/pigeon/2.0.0-rc.1/Pigeon.FCM.html) - Firebase Cloud Messaging v1 API.
+- [Pigeon.LegacyFCM](https://hexdocs.pm/pigeon/2.0.0-rc.1/Pigeon.LegacyFCM.html) - Firebase Cloud Messaging Legacy API.
 
 ### Creating Dynamic Runtime Dispatchers
 
 Pigeon can spin up dynamic dispatchers for a variety of advanced use-cases, such as
 supporting dozens of dispatcher configurations or custom connection pools.
 
-See [Pigeon.Dispatcher](https://hexdocs.pm/pigeon/2.0.0-rc.0/Pigeon.Dispatcher.html) for instructions.
+See [Pigeon.Dispatcher](https://hexdocs.pm/pigeon/2.0.0-rc.1/Pigeon.Dispatcher.html) for instructions.
 
 ### Writing a Custom Dispatcher Adapter
 
@@ -63,6 +63,6 @@ Git commit subjects use the [Karma style](http://karma-runner.github.io/5.0/dev/
 
 ## License
 
-Copyright (c) 2015-2022 Codedge LLC (https://www.codedge.io/)
+Copyright (c) 2015-2023 Codedge LLC (https://www.codedge.io/)
 
 This library is MIT licensed. See the [LICENSE](https://github.com/codedge-llc/pigeon/blob/master/LICENSE) for details.
