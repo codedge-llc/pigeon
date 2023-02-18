@@ -33,6 +33,7 @@ defmodule Pigeon.APNS.Token do
       now = :os.system_time(:seconds)
 
       age = now - timestamp
+
       if age < @token_max_age do
         {saved_token, map}
       else
