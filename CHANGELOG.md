@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+**Fixed**
+
+- Support HTTPoison 2.0. ([#236](https://github.com/codedge-llc/pigeon/pull/236))
+
 ## v2.0.0-rc.1
 
 **Fixed**
