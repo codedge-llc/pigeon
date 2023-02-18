@@ -9,7 +9,7 @@ on:
 jobs:
   prettier:
     name: Prettier
-    runs-on: ubuntu20
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -25,16 +25,16 @@ jobs:
         run: prettier --check --no-error-on-unmatched-pattern "**/*.{json,md,yml,yaml}"
   check:
     name: Format/Credo
-    runs-on: ubuntu20
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up Elixir
         uses: erlef/setup-beam@988e02bfe678367a02564f65ca2e37726dc0268f
         with:
           elixir-version: "1.14.3"
           otp-version: "24.3"
       - name: Restore dependencies cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: deps
           key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
@@ -47,16 +47,16 @@ jobs:
         run: mix credo
   test:
     name: Test
-    runs-on: ubuntu20
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up Elixir
         uses: erlef/setup-beam@988e02bfe678367a02564f65ca2e37726dc0268f
         with:
           elixir-version: "1.14.3"
           otp-version: "24.3"
       - name: Restore dependencies cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: deps
           key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
