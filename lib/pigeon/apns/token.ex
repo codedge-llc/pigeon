@@ -26,13 +26,15 @@ defmodule Pigeon.APNS.Token do
 
   @spec get(JWTConfig.t()) :: t
   def get(%JWTConfig{} = config) do
-    token_storage_key = config.key_identifier <> ":" <> config.team_id <> ":" <> config.uri
+    token_storage_key =
+      config.key_identifier <> ":" <> config.team_id <> ":" <> config.uri
 
     Agent.get_and_update(__MODULE__, fn map ->
       {timestamp, saved_token} = Map.get(map, token_storage_key, {0, nil})
       now = :os.system_time(:seconds)
 
       age = now - timestamp
+
       if age < @token_max_age do
         {saved_token, map}
       else
