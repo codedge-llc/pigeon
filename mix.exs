@@ -67,7 +67,7 @@ defmodule Pigeon.Mixfile do
           Pigeon.LegacyFCM,
           Pigeon.LegacyFCM.Notification
         ],
-        "Pushy": [Pigeon.Pushy, Pigeon.Pushy.Notification]
+        Pushy: [Pigeon.Pushy, Pigeon.Pushy.Notification]
       ],
       main: "Pigeon"
     ]
