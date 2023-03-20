@@ -78,6 +78,17 @@ defmodule Pigeon.Pushy do
     end
   end
 
+  defp connect_socket(config), do: connect_socket(config, 0)
+
+  defp connect_socket(_config, 3), do: {:error, :timeout}
+
+  defp connect_socket(config, tries) do
+    case Configurable.connect(config) do
+      {:ok, socket} -> {:ok, socket}
+      {:error, _reason} -> connect_socket(config, tries + 1)
+    end
+  end
+
   @doc false
   def process_end_stream(%Stream{id: stream_id} = stream, state) do
     %{queue: queue, config: config} = state
