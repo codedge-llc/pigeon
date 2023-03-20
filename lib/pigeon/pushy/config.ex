@@ -93,10 +93,9 @@ defimpl Pigeon.Configurable, for: Pigeon.Pushy.Config do
   def connect_socket_options(config) do
     opts =
       [
-        {:active, :once},
+        {:active, true},
         {:packet, :raw},
         {:reuseaddr, true},
-        {:alpn_advertised_protocols, [<<"h2">>]},
         :binary
       ]
       |> add_port(config)
