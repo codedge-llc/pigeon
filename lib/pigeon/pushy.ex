@@ -37,7 +37,7 @@ defmodule Pigeon.Pushy do
   end
 
   defp do_push(notification, state) do
-    encoded_notification = encode_payload(notification)
+    encoded_notification = Pigeon.Encodable.encode_requests(notification)
 
     response = fn notification ->
       case HTTPoison.post(pushy_uri(state.config), notification, pushy_headers()) do
