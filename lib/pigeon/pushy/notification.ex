@@ -38,6 +38,14 @@ defmodule Pigeon.Pushy.Notification do
           | :rate_limit_exceeded
           | :internal_server_error
           | :unknown_error
+
+  @new(map, String.t() | [String.t()])
+  def new(message, device_ids) do
+    %__MODULE__{
+      to: device_ids,
+      data: message
+    }
+  end
 end
 
 defimpl Pigeon.Encodable, for: Pigeon.Pushy.Notification do
