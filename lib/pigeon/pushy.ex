@@ -23,8 +23,6 @@ defmodule Pigeon.Pushy do
 
   @impl true
   def handle_push(notification, state) do
-    %{config: config} = state
-
     :ok = do_push(notification, state)
     {:noreply, state}
   end
@@ -42,7 +40,7 @@ defmodule Pigeon.Pushy do
     encoded_notification = encode_payload(notification)
 
     response = fn notification ->
-      case HTTPoison.post(pushy_uri(state.config), notification, pushy_headers(state)) do
+      case HTTPoison.post(pushy_uri(state.config), notification, pushy_headers()) do
         {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
           process_response(status, body, notification)
 
