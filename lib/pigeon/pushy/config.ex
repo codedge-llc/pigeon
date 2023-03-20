@@ -93,7 +93,7 @@ defimpl Pigeon.Configurable, for: Pigeon.Pushy.Config do
   def connect_socket_options(config) do
     opts =
       [
-        {:active, true},
+        {:active, :once},
         {:packet, :raw},
         {:reuseaddr, true},
         :binary
@@ -103,7 +103,6 @@ defimpl Pigeon.Configurable, for: Pigeon.Pushy.Config do
     {:ok, opts}
   end
 
-  def add_port(opts, %Config{port: 443}), do: opts
   def add_port(opts, %Config{port: port}), do: [{:port, port} | opts]
 
   def push_headers(
