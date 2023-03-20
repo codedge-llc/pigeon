@@ -2,17 +2,14 @@ defmodule Pigeon.Pushy do
   @moduledoc """
   `Pigeon.Adapter` for Pushy pushy notifications
   """
+  import Pigeon.Tasks, only: [process_on_response: 1]
   require Logger
 
-  defstruct config: nil,
-            queue: Pigeon.NotificationQueue.new(),
-            refresh_before: 5 * 60,
-            socket: nil
+  alias Pigeon.Pushy.Error
+
+  defstruct config: nil
 
   @behaviour Pigeon.Adapter
-
-  alias Pigeon.{Configurable, NotificationQueue}
-  alias Pigeon.Http2.{Client, Stream}
 
   @impl true
   def init(opts) do
@@ -21,99 +18,86 @@ defmodule Pigeon.Pushy do
 
     state = %__MODULE__{config: config}
 
-    with {:ok, socket} <- connect_socket(config) do
-      Configurable.schedule_ping(config)
-      {:ok, %{state | socket: socket}}
-    else
-      {:error, reason} -> {:stop, reason}
-    end
+    {:ok, state}
   end
 
   @impl true
   def handle_push(notification, state) do
-    %{config: config, queue: queue} = state
-    headers = Configurable.push_headers(config, notification, [])
-    payload = Configurable.push_payload(config, notification, [])
+    %{config: config} = state
 
-    Client.default().send_request(state.socket, headers, payload)
-
-    new_q = NotificationQueue.add(queue, state.stream_id, notification)
-
-    state =
-      state
-      |> inc_stream_id()
-      |> Map.put(:queue, new_q)
-
+    :ok = do_push(notification, state)
     {:noreply, state}
   end
 
   @impl true
-  def handle_info(:ping, state) do
-    Client.default().send_ping(state.socket)
-    Configurable.schedule_ping(state.config)
-
+  def handle_info({_from, {:ok, %HTTPoison.Response{status_code: 200}}}, state) do
     {:noreply, state}
   end
 
-  def handle_info({:closed, _}, %{config: config} = state) do
-    case connect_socket(config) do
-      {:ok, socket} ->
-        Configurable.schedule_ping(config)
+  def handle_info(_msg, state) do
+    {:noreply, state}
+  end
 
-        state =
-          state
-          |> reset_stream_id()
-          |> Map.put(:socket, socket)
+  defp do_push(notification, state) do
+    encoded_notification = encode_payload(notification)
 
-        {:noreply, state}
+    response = fn notification ->
+      case HTTPoison.post(pushy_uri(state.config), notification, pushy_headers(state)) do
+        {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
+          process_response(status, body, notification)
 
-      {:error, reason} ->
-        {:stop, reason}
+        {:error, %HTTPoison.Error{reason: :connect_timeout}} ->
+          notification
+          |> Map.put(:response, :timeout)
+          |> process_on_response()
+      end
+    end
+
+    Task.Supervisor.start_child(Pigeon.Tasks, fn -> response.(encoded_notification) end)
+    :ok
+  end
+
+  defp pushy_uri(%Pigeon.Pushy.Config{uri: base_uri, key: secret_key}) do
+    "https://#{base_uri}/pushy/?api_key=#{secret_key}"
+  end
+
+  def pushy_headers() do
+    [
+      {"Content-Type", "application/json"},
+      {"Accept", "application/json"}
+    ]
+  end
+
+  defp process_response(200, body, notification),
+    do: handle_200_status(body, notification)
+
+  defp process_response(status, body, notification),
+    do: handle_error_status_code(status, body, notification)
+
+  defp handle_200_status(body, notification) do
+    {:ok, json} = Pigeon.json_library().decode(body)
+
+    notification
+    |> Error.parse(json)
+    |> process_on_response()
+  end
+
+  defp handle_error_status_code(status, body, notification) do
+    case Pigeon.json_library().decode(body) do
+      {:ok, %{"reason" => _reason} = result_json} ->
+        notification
+        |> Error.parse(result_json)
+        |> process_on_response()
+
+      {:error, _} ->
+        notification
+        |> Map.put(:response, generic_error_reason(status))
+        |> process_on_response()
     end
   end
 
-  def handle_info(msg, state) do
-    case Client.default().handle_end_stream(msg, state) do
-      {:ok, %Stream{} = stream} -> process_end_stream(stream, state)
-      _else -> {:noreply, state}
-    end
-  end
-
-  defp connect_socket(config), do: connect_socket(config, 0)
-
-  defp connect_socket(_config, 3), do: {:error, :timeout}
-
-  defp connect_socket(config, tries) do
-    case Configurable.connect(config) do
-      {:ok, socket} -> {:ok, socket}
-      {:error, reason} ->
-        Logger.error("Could not establish connection to push: #{inspect(reason)}")
-        connect_socket(config, tries + 1)
-    end
-  end
-
-  @doc false
-  def process_end_stream(%Stream{id: stream_id} = stream, state) do
-    %{queue: queue, config: config} = state
-
-    case NotificationQueue.pop(queue, stream_id) do
-      {nil, new_queue} ->
-        # Do nothing if no queued item for stream
-        {:noreply, %{state | queue: new_queue}}
-
-      {notif, new_queue} ->
-        Configurable.handle_end_stream(config, stream, notif)
-        {:noreply, %{state | queue: new_queue}}
-    end
-  end
-
-  @doc false
-  def inc_stream_id(%{stream_id: stream_id} = state) do
-    %{state | stream_id: stream_id + 2}
-  end
-
-  @doc false
-  def reset_stream_id(state) do
-    %{state | stream_id: 1}
-  end
+  defp generic_error_reason(400), do: :invalid_json
+  defp generic_error_reason(401), do: :authentication_error
+  defp generic_error_reason(500), do: :internal_server_error
+  defp generic_error_reason(_), do: :unknown_error
 end
