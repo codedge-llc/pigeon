@@ -39,7 +39,7 @@ defmodule Pigeon.Pushy.Notification do
           | :internal_server_error
           | :unknown_error
 
-  @spec new(map, String.t() | [String.t()])
+  @spec new(map, String.t() | [String.t()]) :: __MODULE__.t()
   def new(message, device_ids) do
     %__MODULE__{
       to: device_ids,
