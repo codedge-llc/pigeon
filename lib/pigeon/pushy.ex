@@ -2,6 +2,7 @@ defmodule Pigeon.Pushy do
   @moduledoc """
   `Pigeon.Adapter` for Pushy pushy notifications
   """
+  require Logger
 
   defstruct config: nil,
             queue: Pigeon.NotificationQueue.new(),
