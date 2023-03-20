@@ -5,7 +5,7 @@ defmodule Pigeon.Pushy do
   import Pigeon.Tasks, only: [process_on_response: 1]
   require Logger
 
-  alias Pigeon.Pushy.Error
+  alias Pigeon.Pushy.{Error, Notification
 
   defstruct config: nil
 
@@ -14,7 +14,6 @@ defmodule Pigeon.Pushy do
   @impl true
   def init(opts) do
     config = Pigeon.Pushy.Config.new(opts)
-    Configurable.validate!(config)
 
     state = %__MODULE__{config: config}
 
@@ -37,7 +36,7 @@ defmodule Pigeon.Pushy do
   end
 
   defp do_push(notification, state) do
-    encoded_notification = Pigeon.Encodable.encode_requests(notification)
+    encoded_notification = encode_requests(notification)
 
     response = fn notification ->
       case HTTPoison.post(pushy_uri(state.config), notification, pushy_headers()) do
@@ -64,6 +63,32 @@ defmodule Pigeon.Pushy do
       {"Content-Type", "application/json"},
       {"Accept", "application/json"}
     ]
+  end
+
+  defp encode_requests(notif) do
+    message =
+      %{}
+      |> encode_target(notif.target)
+      |> maybe_encode_attr("android", notif.android)
+      |> maybe_encode_attr("apns", notif.apns)
+      |> maybe_encode_attr("data", notif.data)
+      |> maybe_encode_attr("fcm_options", notif.fcm_options)
+      |> maybe_encode_attr("notification", notif.notification)
+      |> maybe_encode_attr("webpush", notif.webpush)
+
+    %{"message" => message}
+    |> maybe_encode_attr("validate_only", notif.validate_only)
+    |> Pigeon.json_library().encode!()
+  end
+
+  defp encode_target(map, {type, value}) do
+    Map.put(map, to_string(type), value)
+  end
+
+  defp maybe_encode_attr(map, _key, nil), do: map
+
+  defp maybe_encode_attr(map, key, val) do
+    Map.put(map, key, val)
   end
 
   defp process_response(200, body, notification),
