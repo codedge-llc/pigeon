@@ -5,7 +5,7 @@ defmodule Pigeon.Pushy do
   import Pigeon.Tasks, only: [process_on_response: 1]
   require Logger
 
-  alias Pigeon.Pushy.{Error, Notification
+  alias Pigeon.Pushy.Error
 
   defstruct config: nil
 
@@ -66,23 +66,24 @@ defmodule Pigeon.Pushy do
   end
 
   defp encode_requests(notif) do
-    message =
-      %{}
-      |> encode_target(notif.target)
-      |> maybe_encode_attr("android", notif.android)
-      |> maybe_encode_attr("apns", notif.apns)
-      |> maybe_encode_attr("data", notif.data)
-      |> maybe_encode_attr("fcm_options", notif.fcm_options)
-      |> maybe_encode_attr("notification", notif.notification)
-      |> maybe_encode_attr("webpush", notif.webpush)
-
-    %{"message" => message}
-    |> maybe_encode_attr("validate_only", notif.validate_only)
+    %{}
+    |> encode_to(notif.to)
+    |> encode_data(notif.data)
+    |> maybe_encode_attr("time_to_live", notif.time_to_live)
+    |> maybe_encode_attr("content_available", notif.content_available)
+    |> maybe_encode_attr("mutable_content", notif.mutable_content)
+    |> maybe_encode_attr("notification", notif.notification)
+    |> maybe_encode_attr("schedule", notif.schedule)
+    |> maybe_encode_attr("collapse_key", notif.collapse_key)
     |> Pigeon.json_library().encode!()
   end
 
-  defp encode_target(map, {type, value}) do
-    Map.put(map, to_string(type), value)
+  defp encode_to(map, value) do
+    Map.put(map, "to", value)
+  end
+
+  defp encode_data(map, value) do
+    Map.put(map, "data", value)
   end
 
   defp maybe_encode_attr(map, _key, nil), do: map
