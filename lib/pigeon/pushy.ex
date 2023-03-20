@@ -87,7 +87,7 @@ defmodule Pigeon.Pushy do
     case Configurable.connect(config) do
       {:ok, socket} -> {:ok, socket}
       {:error, reason} ->
-        Logger.error("Could not establish connection to push: #{IO.inspect(reason)}")
+        Logger.error("Could not establish connection to push: #{inspect(reason)}")
         connect_socket(config, tries + 1)
     end
   end
