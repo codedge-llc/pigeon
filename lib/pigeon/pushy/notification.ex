@@ -12,7 +12,11 @@ defmodule Pigeon.Pushy.Notification do
             notification: nil,
             schedule: nil,
             collapse_key: nil,
-            response: nil
+            response: nil,
+            push_id: nil,
+            success: nil,
+            successful_device_count: nil,
+            failed: nil
 
   @type t :: %__MODULE__{
           __meta__: Pigeon.Metadata.t(),
@@ -24,7 +28,11 @@ defmodule Pigeon.Pushy.Notification do
           notification: map | nil,
           schedule: integer | nil,
           collapse_key: String.t() | nil,
-          response: atom | nil
+          response: atom | nil,
+          push_id: String.t() | nil,
+          success: boolean() | nil,
+          successful_device_count: integer() | nil,
+          failed: [String.t()] | nil
         }
 
   @type error_response ::

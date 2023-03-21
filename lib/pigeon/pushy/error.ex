@@ -2,7 +2,7 @@ defmodule Pigeon.Pushy.Error do
   @moduledoc false
 
   @doc false
-  @spec parse(Pigeon.Pushy.Notification.t(), map) :: atom()
+  @spec parse(Pigeon.Pushy.Notification.t(), map) :: Pigeon.Pushy.Notification.error_response()
   def parse(notification, error) do
     error
     |> Map.get("code")
