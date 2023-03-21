@@ -7,12 +7,11 @@ defmodule Pigeon.Pushy.ResultParser do
     |> Map.put(:push_id, push_id)
     |> Map.put(:success, success_status)
     |> Map.put(:successful_device_count, num_devices)
-    |> Map.put(:failed, failed_device_ids)
+    |> Map.put(:failed, failed_devices)
   end
 
-  def parse(notification, response) do
-    notification
-    |> Error.parse(response)
+  def parse(_notification, response = %{"code" => _}) do
+    Error.parse(response)
   end
 
 end
