@@ -38,7 +38,12 @@ defmodule Pigeon.Pushy do
   defp do_push(notification, state) do
     response = fn notification ->
       encoded_notification = encode_requests(notification)
-      case HTTPoison.post(pushy_uri(state.config), encoded_notification, pushy_headers()) do
+
+      case HTTPoison.post(
+             pushy_uri(state.config),
+             encoded_notification,
+             pushy_headers()
+           ) do
         {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
           process_response(status, body, notification)
 
