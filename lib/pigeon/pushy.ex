@@ -5,7 +5,7 @@ defmodule Pigeon.Pushy do
   import Pigeon.Tasks, only: [process_on_response: 1]
   require Logger
 
-  alias Pigeon.Pushy.Error
+  alias Pigeon.Pushy.{ResultParser}
 
   defstruct config: nil
 
@@ -100,15 +100,15 @@ defmodule Pigeon.Pushy do
   defp handle_200_status(body, notification) do
     {:ok, json} = Pigeon.json_library().decode(body)
 
-    json
+    ResultParser.parse(notification, json)
     |> process_on_response()
   end
 
   defp handle_error_status_code(status, body, notification) do
     case Pigeon.json_library().decode(body) do
       {:ok, %{"reason" => _reason} = result_json} ->
-        result_json
-        |> Error.parse()
+        notification
+        |> ResultParser.parse(result_parser)
         |> process_on_response()
 
       {:error, _} ->
