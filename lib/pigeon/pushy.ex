@@ -55,7 +55,7 @@ defmodule Pigeon.Pushy do
   end
 
   defp pushy_uri(%Pigeon.Pushy.Config{uri: base_uri, key: secret_key}) do
-    "https://#{base_uri}/pushy/?api_key=#{secret_key}"
+    "https://#{base_uri}/push/?api_key=#{secret_key}"
   end
 
   def pushy_headers() do
