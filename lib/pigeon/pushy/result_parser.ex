@@ -15,7 +15,6 @@ defmodule Pigeon.Pushy.ResultParser do
       |> Map.put(:push_id, push_id)
       |> Map.put(:success, success_status)
       |> Map.put(:successful_device_count, num_devices)
-      |> Map.put(:failed, failed_devices)
 
     if match?(%{"info" => %{"failed" => _}}, response) do
       notification
