@@ -24,7 +24,7 @@ defmodule Pigeon.Pushy.ResultParser do
     end
   end
 
-  def parse(_notification, response = %{"code" => _}) do
-    Error.parse(response)
+  def parse(notification, response = %{"code" => _}) do
+    Error.parse(notification, response)
   end
 end

@@ -2,11 +2,14 @@ defmodule Pigeon.Pushy.Error do
   @moduledoc false
 
   @doc false
-  @spec parse(map) :: Pigeon.Pushy.Notification.error_response()
-  def parse(error) do
-    error
-    |> Map.get("code")
-    |> parse_response()
+  @spec parse(Pigeon.Pushy.Notification.t(), map) :: Pigeon.Pushy.Notification.error_response()
+  def parse(notification, error) do
+    error_code = error
+      |> Map.get("code")
+      |> parse_response()
+
+    notification
+    |> Map.put(:response, error_code)
   end
 
   defp parse_response("NO_RECIPIENTS"), do: :no_recipients
