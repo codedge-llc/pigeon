@@ -54,6 +54,36 @@ defmodule Pigeon.Pushy.Notification do
       data: message
     }
   end
+
+  @spec put_time_to_live(__MODULE__.t(), integer()) :: __MODULE__.t()
+  def put_time_to_live(notification, time_to_live) do
+    %{notification | time_to_live: time_to_live
+  end
+
+  @spec put_content_available(__MODULE__.t(), boolean()) :: __MODULE__.t()
+  def put_content_available(notification, content_available) do
+    %{notification | content_available: content_available}
+  end
+
+  @spec put_mutable_content(__MODULE__.t(), boolean()) :: __MODULE__.t()
+  def put_mutable_content(notification, mutable_content) do
+    %{notification | mutable_content: mutable_content}
+  end
+
+  @spec put_notification(__MODULE__.t(), map) :: __MODULE__.t()
+  def put_notification(notification, notification_details) do
+    %{notification | notification: notification_details}
+  end
+
+  @spec put_schedule(__MODULE__.t(), integer) :: __MODULE__.t()
+  def put_schedule(notification, schedule) do
+    %{notification | schedule: schedule}
+  end
+
+  @spec put_collapse_key(__MODULE__.t(), String.t()) :: __MODULE__.t()
+  def put_collapse_key(notification, collapse_key) do
+    %{notification | collapse_key: collapse_key}
+  end
 end
 
 defimpl Pigeon.Encodable, for: Pigeon.Pushy.Notification do
