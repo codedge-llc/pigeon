@@ -57,7 +57,7 @@ defmodule Pigeon.Pushy.Notification do
 
   @spec put_time_to_live(__MODULE__.t(), integer()) :: __MODULE__.t()
   def put_time_to_live(notification, time_to_live) do
-    %{notification | time_to_live: time_to_live
+    %{notification | time_to_live: time_to_live}
   end
 
   @spec put_content_available(__MODULE__.t(), boolean()) :: __MODULE__.t()
