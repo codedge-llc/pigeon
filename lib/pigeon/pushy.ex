@@ -106,9 +106,9 @@ defmodule Pigeon.Pushy do
 
   defp handle_error_status_code(status, body, notification) do
     case Pigeon.json_library().decode(body) do
-      {:ok, %{"reason" => _reason} = result_json} ->
+      {:ok, %{"error" => _reason} = result_json} ->
         notification
-        |> ResultParser.parse(result_parser)
+        |> ResultParser.parse(result_json)
         |> process_on_response()
 
       {:error, _} ->
