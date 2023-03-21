@@ -49,7 +49,7 @@ defmodule Pigeon.Pushy do
       end
     end
 
-    Task.Supervisor.start_child(Pigeon.Tasks, fn -> response.(encoded_notification) end)
+    Task.Supervisor.start_child(Pigeon.Tasks, fn -> response.(notification) end)
     :ok
   end
 
