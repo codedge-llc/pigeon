@@ -110,8 +110,10 @@ defmodule Pigeon.Pushy.Notification do
         failed: nil
     }
   """
-  @spec new(map, String.t() | [String.t()]) :: __MODULE__.t()
-  def new(message, device_ids) do
+  @spec new(String.t() | [String.t()], map()) :: __MODULE__.t()
+  def new(device_ids, message \\ nil)
+
+  def new(device_ids, message) do
     %__MODULE__{
       to: device_ids,
       data: message
