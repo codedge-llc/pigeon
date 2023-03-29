@@ -66,4 +66,39 @@ defmodule Pigeon.Pushy.Config do
       port: Keyword.get(opts, :port, 443)
     }
   end
+
+  @doc ~S"""
+  Returns whether a given config has valid credentials.
+
+  ## Examples
+
+      iex> [] |> new() |> valid?()
+      false
+  """
+  def valid?(config) do
+    valid_item?(config.uri) and valid_item?(config.key)
+  end
+
+  defp valid_item?(item), do: is_binary(item) and String.length(item) > 0
+
+  @spec validate!(any) :: :ok | no_return
+  def validate!(config) do
+    if valid?(config) do
+      :ok
+    else
+      raise Pigeon.ConfigError,
+        reason: "attempted to start without valid key or uri",
+        config: redact(config)
+    end
+  end
+
+  defp redact(config) do
+    [:key]
+    |> Enum.reduce(config, fn k, acc ->
+      case Map.get(acc, k) do
+        nil -> acc
+        _ -> Map.put(acc, k, "[FILTERED]")
+      end
+    end)
+  end
 end

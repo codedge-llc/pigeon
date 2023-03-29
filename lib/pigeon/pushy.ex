@@ -119,6 +119,8 @@ en
   def init(opts) do
     config = Pigeon.Pushy.Config.new(opts)
 
+    Config.validate!(config)
+
     state = %__MODULE__{config: config}
 
     {:ok, state}
