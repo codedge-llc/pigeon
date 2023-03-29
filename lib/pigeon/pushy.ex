@@ -1,6 +1,110 @@
 defmodule Pigeon.Pushy do
   @moduledoc """
-  `Pigeon.Adapter` for Pushy pushy notifications
+  `Pigeon.Adapter` for Pushy push notifications.
+
+  This adapter provides support for sending push notifications via the Pushy API.
+  It is designed to work with the `Pigeon` library and implements the `Pigeon.Adapter` behaviour.
+
+  ## Example
+
+
+  Then, you can send a Pushy push notification like this:
+
+      notif = Pigeon.Pushy.Notification.new(%{"message" => "Hello, world!"}, "device_token")
+
+      Pigeon.push(notif)
+
+  ## Configuration
+
+  The following options can be set in the adapter configuration:
+
+  * `:key` - (required) the API key for your Pushy account.
+  * `:base_uri` - (optional) the base URI for the Pushy API. Defaults to "api.pushy.me".
+
+  ## Getting Started
+
+  1. Create a Pushy dispatcher.
+
+  ```
+  # lib/pushy.ex
+  defmodule YourApp.Pushy do
+    use Pigeon.Dispatcher, otp_app: :your_app
+  end
+  ```
+
+  2. (Optional) Add configuration to your `config.exs`.
+
+  To use this adapter, simply include it in your Pigeon configuration:
+
+      config :your_app, YourApp.Pushy,
+        adapter: Pigeon.Pushy,
+        key: "pushy secret key"
+en
+
+  3. Start your dispatcher on application boot.
+
+  ```
+  defmodule YourApp.Application do
+    @moduledoc false
+
+    use Application
+
+    @doc false
+    def start(_type, _args) do
+      children = [
+        YourApp.Pushy
+      ]
+      opts = [strategy: :one_for_one, name: YourApp.Supervisor]
+      Supervisor.start_link(children, opts)
+    end
+  end
+  ```
+
+  4. Create a notification.
+
+  ```
+  msg = %{ "body" => "your message" }
+  n = Pigeon.pushy.Notification.new(msg, "your device token")
+  ```
+
+  5. Send the notification.
+
+  ```
+  YourApp.Pushy.push(n)
+  ```
+
+  ## Handling Push Responses
+
+  1. Pass an optional anonymous function as your second parameter.
+
+  ```
+  data = %{ "message" => "your message" }
+  n = Pigeon.Pushy.Notification.new(data, "device token")
+  YourApp.Pushy.push(n, on_response: fn(x) -> IO.inspect(x) end)
+  ```
+
+  2. Responses return a notification with an updated `:response` key.
+     You could handle responses like so:
+
+  ```
+  on_response_handler = fn(x) ->
+    case x.response do
+      :success ->
+        # Push successful
+        :ok
+      :failure ->
+        # Retry or some other handling for x.failed (devices failed to send)
+      :timeout ->
+        # request didn't finish within expected time, server didn't respond
+      error ->
+        # Handle other errors
+    end
+  end
+
+  data = %{ "message" => "your message" }
+  n = Pigeon.Pushy.Notification.new(data, "your device token")
+  Pigeon.Pushy.push(n, on_response: on_response_handler)
+  ```
   """
   import Pigeon.Tasks, only: [process_on_response: 1]
   require Logger
