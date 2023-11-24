@@ -8,6 +8,7 @@
   `APNS.Token` ([#227](https://github.com/codedge-llc/pigeon/pull/227)).
 - Support HTTPoison 2.0. ([#236](https://github.com/codedge-llc/pigeon/pull/236))
 - Fix DispatcherWorker missing a clause for `{:stop, reason}` in the init function
+- APNS.Config.key now decodes properly for PEMs generated with OpenSSL 3.
 
 ## v2.0.0-rc.1
 

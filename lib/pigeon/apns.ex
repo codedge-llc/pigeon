@@ -130,7 +130,7 @@ defmodule Pigeon.APNS do
   5. From a shell, convert the certificate.
 
   ```
-  openssl pkcs12 -clcerts -nokeys -out cert.pem -in cert.p12
+  openssl pkcs12 -legacy -clcerts -nokeys -out cert.pem -in cert.p12
   ```
 
   6. Convert the key. Be sure to set a PEM pass phrase here. The pass phrase must be 4 or 
@@ -138,7 +138,7 @@ defmodule Pigeon.APNS do
      here in order to remove it in the next step.
 
   ```
-  openssl pkcs12 -nocerts -out key.pem -in key.p12
+  openssl pkcs12 -legacy -nocerts -out key.pem -in key.p12
   ```
 
   7. Remove the PEM pass phrase from the key.
