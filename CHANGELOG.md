@@ -9,6 +9,7 @@
 - Support HTTPoison 2.0. ([#236](https://github.com/codedge-llc/pigeon/pull/236))
 - Fix `DispatcherWorker` missing a clause for `{:stop, reason}` in the init function
 - `APNS.Config` keys now decode properly for PEMs generated with OpenSSL 3. ([#248](https://github.com/codedge-llc/pigeon/pull/248))
+- Add `ExpiredToken` as APNS error response. ([#240](https://github.com/codedge-llc/pigeon/pull/240))
 
 ## v2.0.0-rc.1
 
