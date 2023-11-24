@@ -79,6 +79,7 @@ defmodule Pigeon.APNS.Notification do
           | :missing_provider_token
           | :bad_path
           | :method_not_allowed
+          | :expired_token
           | :unregistered
           | :payload_too_large
           | :too_many_provider_token_updates
