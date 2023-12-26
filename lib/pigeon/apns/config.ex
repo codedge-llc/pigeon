@@ -141,6 +141,7 @@ defmodule Pigeon.APNS.Config do
 
   defp key(bin) when is_binary(bin) do
     case :public_key.pem_decode(bin) do
+      [{:PrivateKeyInfo, key, _}] -> {:PrivateKeyInfo, key}
       [{:RSAPrivateKey, key, _}] -> {:RSAPrivateKey, key}
       _ -> {:error, {:invalid, bin}}
     end
@@ -208,7 +209,7 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
     [
       cert_option(config),
       key_option(config),
-      {:password, ''},
+      {:password, ~c""},
       {:packet, 0},
       {:reuseaddr, true},
       {:active, true},
