@@ -251,15 +251,26 @@ defmodule Pigeon.APNS.Notification do
   def put_mutable_content(notification),
     do: update_payload(notification, "mutable-content", 1)
 
-  defp update_payload(notification, key, value) do
-    new_aps =
-      notification.payload
-      |> Map.get("aps")
-      |> Map.put(key, value)
+  @doc """
+  Updates `"interruption-level"` key in push payload.
 
-    new_payload = notification.payload |> Map.put("aps", new_aps)
-    %{notification | payload: new_payload}
-  end
+  Used for managing time sensitive notifications
+  ## Examples
+      iex> Pigeon.APNS.Notification.put_interruption_level(%Pigeon.APNS.Notification{}, "time-sensitive")
+      %Pigeon.APNS.Notification{
+        collapse_id: nil,
+        device_token: nil,
+        expiration: nil,
+        priority: nil,
+        push_type: "alert",
+        id: nil,
+        payload: %{"aps" => %{"interruption-level" => "time-sensitive"}},
+        topic: nil
+      }
+  """
+  @spec put_interruption_level(t, String.t()) :: t
+  def put_interruption_level(notification, level),
+    do: update_payload(notification, "interruption-level", level)
 
   @doc """
   Puts custom data in push payload.
@@ -282,6 +293,16 @@ defmodule Pigeon.APNS.Notification do
   @spec put_custom(t, %{String.t() => term}) :: t
   def put_custom(notification, data) do
     new_payload = Map.merge(notification.payload, data)
+    %{notification | payload: new_payload}
+  end
+
+  defp update_payload(notification, key, value) do
+    new_aps =
+      notification.payload
+      |> Map.get("aps")
+      |> Map.put(key, value)
+
+    new_payload = notification.payload |> Map.put("aps", new_aps)
     %{notification | payload: new_payload}
   end
 end
