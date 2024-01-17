@@ -1,5 +1,10 @@
 # Changelog
 
+
+## 1.6.2
+
+- Handle new PEM decode case for APNS cert keys.
+
 ## v1.6.1
 
 **Security**
