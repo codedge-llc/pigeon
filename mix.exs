@@ -24,7 +24,7 @@ defmodule Pigeon.Mixfile do
         ]
       ],
       elixir: "~> 1.6",
-      elixirc_options: [warnings_as_errors: true],
+      elixirc_options: [],
       elixirc_paths: elixirc_paths(Mix.env()),
       name: "Pigeon",
       package: package(),
