@@ -5,6 +5,9 @@ defmodule Pigeon.FCM.Error do
 
   @doc false
   @spec parse(map) :: Notification.error_response()
+  def parse(%{"details" => [%{"errorCode" => error_code}]}),
+    do: parse_response(error_code)
+
   def parse(error) do
     error
     |> Map.get("status")
@@ -19,5 +22,5 @@ defmodule Pigeon.FCM.Error do
   defp parse_response("UNAVAILABLE"), do: :unavailable
   defp parse_response("INTERNAL"), do: :internal
   defp parse_response("THIRD_PARTY_AUTH_ERROR"), do: :third_party_auth_error
-  defp parse_response(_), do: :unknown_error
+  defp parse_response(_other), do: :unknown_error
 end

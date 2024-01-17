@@ -40,6 +40,7 @@ defmodule Pigeon.FCM.Notification do
           | :unavailable
           | :internal
           | :third_party_auth_error
+          | :unknown_error
 
   @typedoc ~S"""
   FCM notification target. Must be one of the following:
