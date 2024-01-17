@@ -2,10 +2,14 @@
 
 ## 1.6.2
 
+**Changed**
+
+- Relax Poison dependency to allow 5.x.
+- Support HTTPoison 2.0, dropping support for ~> 0.7.
+
 **Fixed**
 
-- Handle new PEM decode case for APNS cert keys.
-- Relax Poison dependency to allow 5.x
+- Handle new PEM decode case for APNS cert keys with OpenSSL 3.0.
 
 ## v1.6.1
 
