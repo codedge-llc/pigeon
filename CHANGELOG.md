@@ -5,6 +5,7 @@
 **Fixed**
 
 - Handle new PEM decode case for APNS cert keys.
+- Relax Poison dependency to allow 5.x
 
 ## v1.6.1
 

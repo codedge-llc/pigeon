@@ -59,7 +59,7 @@ defmodule Pigeon.Mixfile do
       {:httpoison, "~> 0.7 or ~> 1.0"},
       {:joken, "~> 2.1"},
       {:kadabra, "~> 0.6.0", optional: true},
-      {:poison, "~> 2.0 or ~> 3.0 or ~> 4.0"}
+      {:poison, "~> 2.0 or ~> 3.0 or ~> 4.0 or ~> 5.0"}
     ]
   end
 
