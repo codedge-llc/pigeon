@@ -59,6 +59,8 @@ defmodule Pigeon.APNS.Error do
 
   defp parse_response("MethodNotAllowed"), do: :method_not_allowed
 
+  defp parse_response("ExpiredToken"), do: :expired_token
+
   defp parse_response("Unregistered"), do: :unregistered
 
   defp parse_response("PayloadTooLarge"), do: :payload_too_large

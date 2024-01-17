@@ -8,6 +8,7 @@ defmodule Pigeon.DispatcherWorker do
     GenServer.start_link(__MODULE__, opts)
   end
 
+  @impl GenServer
   def init(opts) do
     case opts[:adapter].init(opts) do
       {:ok, state} ->
@@ -16,9 +17,13 @@ defmodule Pigeon.DispatcherWorker do
 
       {:error, reason} ->
         {:error, reason}
+
+      {:stop, reason} ->
+        {:stop, reason}
     end
   end
 
+  @impl GenServer
   def handle_info({:"$push", notification}, %{adapter: adapter, state: state}) do
     case adapter.handle_push(notification, state) do
       {:noreply, new_state} ->
