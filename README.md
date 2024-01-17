@@ -16,7 +16,7 @@ Add `:pigeon` and as a `mix.exs` dependency:
 ```elixir
 def deps do
   [
-    {:pigeon, "~> 2.0.0-rc.1"}
+    {:pigeon, "~> 2.0.0-rc.2"}
   ]
 end
 ```
@@ -25,10 +25,10 @@ end
 
 Check the module documentation for your push notification service.
 
-- [Pigeon.ADM](https://hexdocs.pm/pigeon/2.0.0-rc.1/Pigeon.ADM.html) - Amazon Android.
-- [Pigeon.APNS](https://hexdocs.pm/pigeon/2.0.0-rc.1/Pigeon.APNS.html) - Apple iOS.
-- [Pigeon.FCM](https://hexdocs.pm/pigeon/2.0.0-rc.1/Pigeon.FCM.html) - Firebase Cloud Messaging v1 API.
-- [Pigeon.LegacyFCM](https://hexdocs.pm/pigeon/2.0.0-rc.1/Pigeon.LegacyFCM.html) - Firebase Cloud Messaging Legacy API.
+- [Pigeon.ADM](https://hexdocs.pm/pigeon/2.0.0-rc.2/Pigeon.ADM.html) - Amazon Android.
+- [Pigeon.APNS](https://hexdocs.pm/pigeon/2.0.0-rc.2/Pigeon.APNS.html) - Apple iOS.
+- [Pigeon.FCM](https://hexdocs.pm/pigeon/2.0.0-rc.2/Pigeon.FCM.html) - Firebase Cloud Messaging v1 API.
+- [Pigeon.LegacyFCM](https://hexdocs.pm/pigeon/2.0.0-rc.2/Pigeon.LegacyFCM.html) - Firebase Cloud Messaging Legacy API.
 
 ### Creating Dynamic Runtime Dispatchers
 
