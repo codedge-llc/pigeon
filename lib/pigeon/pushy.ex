@@ -39,7 +39,6 @@ defmodule Pigeon.Pushy do
       config :your_app, YourApp.Pushy,
         adapter: Pigeon.Pushy,
         key: "pushy secret key"
-en
 
   3. Start your dispatcher on application boot.
 
@@ -119,7 +118,7 @@ en
   def init(opts) do
     config = Pigeon.Pushy.Config.new(opts)
 
-    Config.validate!(config)
+    Pigeon.Pushy.Config.validate!(config)
 
     state = %__MODULE__{config: config}
 
