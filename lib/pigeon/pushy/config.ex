@@ -62,7 +62,7 @@ defmodule Pigeon.Pushy.Config do
   def new(opts) when is_list(opts) do
     %__MODULE__{
       key: opts |> Keyword.get(:key),
-      uri: Keyword.get(opts, :uri, 'api.pushy.me'),
+      uri: Keyword.get(opts, :uri, "api.pushy.me"),
       port: Keyword.get(opts, :port, 443)
     }
   end
