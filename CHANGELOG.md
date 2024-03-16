@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+**Changed**
+
+- Bump `goth` dependency to `~> 1.4.3`. ([#252](https://github.com/codedge-llc/pigeon/pull/252))
+
 ## v2.0.0-rc.2
 
 **Fixed**
