@@ -32,23 +32,23 @@ defmodule PigeonTest.GothHttpClient.Stub do
   end
 
   # config/test.exs
-
   # Config for the Goth genserver, YourApp.Goth
   config :your_app, YourApp.Goth,
     source: {:metadata, []},
     http_client: {&PigeonTest.GothHttpClient.Stub.access_token_response/1, []}
-  ```
+
 
   # application.exs
   def start(_type, _args) do
-      children = [
-        # The `child_spec/1` handles fetching the proper config
-        YourApp.Goth,
-        YourApp.FCM
-      ]
-      opts = [strategy: :one_for_one, name: YourApp.Supervisor]
-      Supervisor.start_link(children, opts)
-    end
+    children = [
+      # The `child_spec/1` handles fetching the proper config
+      YourApp.Goth,
+      YourApp.FCM
+    ]
+    opts = [strategy: :one_for_one, name: YourApp.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+  ```
   """
 
   @doc """
