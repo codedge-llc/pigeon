@@ -13,7 +13,7 @@ defmodule Pigeon.FCM do
   end
   ```
 
-  2. Configure [`goth`](https://hexdocs.pm/goth/1.4.3/readme.html#installation), and add it to `config.exs`
+  2. Configure the [`goth`](https://hexdocs.pm/goth/1.4.3/readme.html#installation) library, and add it to `config.exs`
 
   ```
   # config.exs
@@ -89,6 +89,49 @@ defmodule Pigeon.FCM do
   ```
   YourApp.FCM.push(n)
   ```
+
+  ## Customizable Goth Token Fetcher
+  If you need a customizable `:token_fetcher` that handles fetching its own configuration, here's
+  an example you can use to get started.
+
+  For other `:source` configurations of `YourApp.Goth`, check out the `goth` documentation for [`Goth.start_link/1`](https://hexdocs.pm/goth/Goth.html#start_link/1)
+
+  ```
+  # lib/your_app/goth.ex
+  defmodule YourApp.Goth
+
+    @spec child_spec(any()) :: Supervisor.child_spec()
+    def child_spec(_args) do
+      env_opts = Keyword.new(Application.get_env(:your_app, YourApp.Goth, []))
+      opts = Keyword.merge([name: YourApp.Goth], env_opts)
+
+      %{
+        :id => YourApp.Goth,
+        :start => {Goth, :start_link, [opts]}
+      }
+    end
+  end
+
+  # config.exs
+  config :your_app, YourApp.Goth, source: {:metadata, []}
+
+  # config/test.exs
+  config :your_app, YourApp.Goth,
+    source: {:metadata, []},
+    http_client: {&PigeonTest.GothHttpClient.Stub.access_token_response/1, []}
+
+  # application.exs
+  def start(_type, _args) do
+    children = [
+      # The `child_spec/1` handles fetching the proper config
+      YourApp.Goth,
+      YourApp.FCM
+    ]
+    opts = [strategy: :one_for_one, name: YourApp.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+  ```
+
   """
 
   @max_retries 3
