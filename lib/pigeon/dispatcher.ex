@@ -13,7 +13,7 @@ defmodule Pigeon.Dispatcher do
   opts = [
     adapter: Pigeon.FCM,
     project_id: "example-project-123",
-    service_account_json: File.read!("service-account.json")
+    token_fetcher: YourApp.Goth
   ]
 
   {:ok, pid} = Pigeon.Dispatcher.start_link(opts)
@@ -33,6 +33,7 @@ defmodule Pigeon.Dispatcher do
     @doc false
     def start(_type, _args) do
       children = [
+        {Goth, name: YourApp.Goth},
         YourApp.Repo,
         {Registry, keys: :unique, name: Registry.YourApp}
       ] ++ push_workers()
@@ -62,7 +63,7 @@ defmodule Pigeon.Dispatcher do
         adapter: Pigeon.FCM,
         name: {:via, Registry, {Registry.YourApp, config.name}},
         project_id: config.project_id,
-        service_account_json: config.service_account_json
+        token_fetcher: String.to_existing_atom(config.token_fetcher)
       ]}
     end
   end

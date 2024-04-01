@@ -13,15 +13,16 @@ defmodule Pigeon.FCM do
   end
   ```
 
-  2. (Optional) Add configuration to your `config.exs`.
+  2. Configure [`goth`](https://hexdocs.pm/goth/1.4.3/readme.html#installation), and add it to `config.exs`
 
   ```
   # config.exs
+  # See Step 3 for alternative configuration
 
   config :your_app, YourApp.FCM,
     adapter: Pigeon.FCM,
     project_id: "example-project-123",
-    service_account_json: File.read!("service-account.json")
+    token_fetcher: YourApp.Goth
   ```
 
   3. Start your dispatcher on application boot.
@@ -35,6 +36,7 @@ defmodule Pigeon.FCM do
     @doc false
     def start(_type, _args) do
       children = [
+        {Goth, name: YourApp.Goth},
         YourApp.FCM
       ]
       opts = [strategy: :one_for_one, name: YourApp.Supervisor]
@@ -43,7 +45,7 @@ defmodule Pigeon.FCM do
   end
   ```
 
-  If you skipped step two, include your configuration.
+  If preferred, you can include your configuration directly
 
   ```
   defmodule YourApp.Application do
@@ -54,6 +56,7 @@ defmodule Pigeon.FCM do
     @doc false
     def start(_type, _args) do
       children = [
+        {Goth, name: YourApp.Goth},
         {YourApp.FCM, fcm_opts()}
       ]
       opts = [strategy: :one_for_one, name: YourApp.Supervisor]
@@ -64,7 +67,7 @@ defmodule Pigeon.FCM do
       [
         adapter: Pigeon.FCM,
         project_id: "example-project-123",
-        service_account_json: File.read!("service-account.json")
+        token_fetcher: YourApp.Goth
       ]
     end
   end

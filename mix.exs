@@ -65,7 +65,8 @@ defmodule Pigeon.Mixfile do
           Pigeon.FCM,
           Pigeon.FCM.Notification,
           Pigeon.LegacyFCM,
-          Pigeon.LegacyFCM.Notification
+          Pigeon.LegacyFCM.Notification,
+          PigeonTest.GothHttpClient.Stub
         ]
       ],
       main: "Pigeon"

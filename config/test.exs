@@ -33,6 +33,6 @@ config :pigeon, PigeonTest.LegacyFCM,
 config :pigeon, PigeonTest.FCM,
   adapter: Pigeon.FCM,
   project_id: System.get_env("FCM_PROJECT"),
-  goth: PigeonTest.Goth
+  token_fetcher: PigeonTest.Goth
 
 config :pigeon, PigeonTest.Sandbox, adapter: Pigeon.Sandbox

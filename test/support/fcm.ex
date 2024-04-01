@@ -12,31 +12,49 @@ defmodule PigeonTest.GothHttpClient.Stub do
   @moduledoc """
   A collection of functions that can be used as custom `:http_client` values. Used to avoid
   calling out to GCP during tests.
-  """
 
-  @doc """
-  Always returns a stub access_token response, as if being requested of a Google Metadata Server
 
   ## Usage
   ```
-  goth_opts = [
-    name: PigeonTest.Goth,
-    source: {:metadata, []}
+  # lib/your_app/goth.ex
+  defmodule YourApp.Goth
+
+    @spec child_spec(any()) :: Supervisor.child_spec()
+    def child_spec(_args) do
+      env_opts = Keyword.new(Application.get_env(:your_app, YourApp.Goth, []))
+      opts = Keyword.merge([name: YourApp.Goth], env_opts)
+
+      %{
+        :id => YourApp.Goth,
+        :start => {Goth, :start_link, [opts]}
+      }
+    end
+  end
+
+  # config/test.exs
+
+  # Config for the Goth genserver, YourApp.Goth
+  config :your_app, YourApp.Goth,
+    source: {:metadata, []},
     http_client: {&PigeonTest.GothHttpClient.Stub.access_token_response/1, []}
-  ]
+  ```
 
-  fcm_opts = [
-    adapter: Pigeon.Sandbox,
-    project_id: "example-123",
-    goth: PigeonTest.Goth
-  ]
+  # application.exs
+  def start(_type, _args) do
+      children = [
+        # The `child_spec/1` handles fetching the proper config
+        YourApp.Goth,
+        YourApp.FCM
+      ]
+      opts = [strategy: :one_for_one, name: YourApp.Supervisor]
+      Supervisor.start_link(children, opts)
+    end
+  """
 
-  children = [
-    {Goth, goth_opts}
-    {PigeonTest.FCM, fcm_opts}
-  ]
+  @doc """
+  Always returns a stub access_token response, as if being requested of a Google Metadata Server.
 
-  Supervisor.start_link(children, strategy: :one_for_one)
+  See module documentation for usage.
   """
   @spec access_token_response(keyword()) ::
           {:ok,

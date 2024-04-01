@@ -1,18 +1,20 @@
 defmodule Pigeon.FCM.Config do
   @moduledoc false
 
-  defstruct goth: nil,
+  defstruct token_fetcher: nil,
             project_id: nil,
             uri: "fcm.googleapis.com",
             port: 443
 
   @typedoc """
-  TODO - the name or via-tuple of your Goth implementation, e.g. `YourApp.Goth`
+  the name, or custom module, of your Goth implementation, e.g. `YourApp.Goth`.
+
+  This is passed directly to `Goth.fetch!/1`.
   """
-  @type goth_name :: module() | term()
+  @type token_fetcher :: module() | term()
 
   @type t :: %__MODULE__{
-          goth: nil | goth_name(),
+          token_fetcher: nil | token_fetcher(),
           project_id: nil | String.t(),
           uri: String.t(),
           port: pos_integer()
@@ -25,12 +27,12 @@ defmodule Pigeon.FCM.Config do
 
       iex> Pigeon.FCM.Config.new(
       ...>   project_id: "example-project",
-      ...>   goth: YourApp.Goth
+      ...>   token_fetcher: YourApp.Goth
       ...> )
       %Pigeon.FCM.Config{
         port: 443,
         project_id: "example-project",
-        goth: YourApp.Goth,
+        token_fetcher: YourApp.Goth,
         uri: "fcm.googleapis.com"
       }
   """
@@ -38,7 +40,7 @@ defmodule Pigeon.FCM.Config do
     opts = Map.new(opts)
 
     %__MODULE__{
-      goth: opts[:goth],
+      token_fetcher: opts[:token_fetcher],
       project_id: opts[:project_id],
       uri: Map.get(opts, :uri, "fcm.googleapis.com"),
       port: Map.get(opts, :port, 443)
@@ -88,7 +90,7 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
         _notification,
         _opts
       ) do
-    token = Goth.fetch!(config.goth)
+    token = Goth.fetch!(config.token_fetcher)
 
     [
       {":method", "POST"},
@@ -132,10 +134,10 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
     |> Enum.each(&do_validate!(&1, config))
   end
 
-  defp do_validate!({:goth, mod}, config)
+  defp do_validate!({:token_fetcher, mod}, config)
        when not is_atom(mod) or is_nil(mod) do
     raise Pigeon.ConfigError,
-      reason: "attempted to start without valid :goth module",
+      reason: "attempted to start without valid :token_fetcher module",
       config: redact(config)
   end
 
