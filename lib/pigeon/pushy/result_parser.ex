@@ -4,11 +4,11 @@ defmodule Pigeon.Pushy.ResultParser do
 
   def parse(
         notification,
-        response = %{
+        %{
           "id" => push_id,
           "success" => success_status,
           "info" => %{"devices" => num_devices}
-        }
+        } = response
       ) do
     notification =
       notification
@@ -25,7 +25,7 @@ defmodule Pigeon.Pushy.ResultParser do
     end
   end
 
-  def parse(notification, response = %{"code" => _}) do
+  def parse(notification, %{"code" => _} = response) do
     Error.parse(notification, response)
   end
 end
