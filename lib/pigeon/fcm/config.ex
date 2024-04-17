@@ -4,6 +4,7 @@ defmodule Pigeon.FCM.Config do
   defstruct port: 443,
             project_id: nil,
             service_account_json: nil,
+            ping_period: 60_000,
             uri: 'fcm.googleapis.com'
 
   @type t :: %__MODULE__{
@@ -44,6 +45,7 @@ defmodule Pigeon.FCM.Config do
       port: Keyword.get(opts, :port, 443),
       project_id: project_id,
       service_account_json: service_account_json,
+      ping_period: Keyword.get(opts, :ping_period, 60_000),
       uri: Keyword.get(opts, :uri, 'fcm.googleapis.com')
     }
   end
@@ -143,7 +145,9 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
     end
   end
 
-  def schedule_ping(_config), do: :ok
+  def schedule_ping(%{ping_period: ping}) do
+    Process.send_after(self(), :ping, ping)
+  end
 
   def close(_config) do
   end

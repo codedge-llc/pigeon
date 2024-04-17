@@ -75,11 +75,11 @@ defmodule Pigeon.FCM do
   ```
   n = Pigeon.FCM.Notification.new({:token, "reg ID"}, %{"body" => "test message"})
   ```
-   
-  5. Send the notification. 
 
-  On successful response, `:name` will be set to the name returned from the FCM 
-  API and `:response` will be `:success`. If there was an error, `:error` will 
+  5. Send the notification.
+
+  On successful response, `:name` will be set to the name returned from the FCM
+  API and `:response` will be `:success`. If there was an error, `:error` will
   contain a JSON map of the response and `:response` will be an atomized version
   of the error type.
 
@@ -96,7 +96,8 @@ defmodule Pigeon.FCM do
             retries: @max_retries,
             socket: nil,
             stream_id: 1,
-            token: nil
+            token: nil,
+            last_ping_time: nil
 
   @behaviour Pigeon.Adapter
 
@@ -151,7 +152,9 @@ defmodule Pigeon.FCM do
     Client.default().send_ping(state.socket)
     Configurable.schedule_ping(state.config)
 
-    {:noreply, state}
+    metadata = %{uri: state.config.uri, client: self(), connection: state.socket}
+    :telemetry.execute([:pigeon, :ping, :start], %{}, metadata)
+    {:noreply, state |> Map.put(:last_ping_time, System.monotonic_time())}
   end
 
   def handle_info({:closed, _}, %{config: config} = state) do
@@ -190,6 +193,14 @@ defmodule Pigeon.FCM do
   def handle_info(msg, state) do
     case Client.default().handle_end_stream(msg, state) do
       {:ok, %Stream{} = stream} -> process_end_stream(stream, state)
+      :pong ->
+        if not is_nil(state.last_ping_time) do
+          duration = System.monotonic_time() - state.last_ping_time
+          socket = :sys.get_state(:sys.get_state(:sys.get_state(state.socket).connection).config.socket).socket
+          metadata = %{uri: state.config.uri, client: self(), connection: state.socket, socket: socket}
+          :telemetry.execute([:pigeon, :ping, :stop], %{duration: duration}, metadata)
+        end
+        {:noreply, state |> Map.put(:last_ping_time, nil)}
       _else -> {:noreply, state}
     end
   end

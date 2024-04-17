@@ -88,7 +88,7 @@ defmodule Pigeon.APNS do
   ```
   n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic")
   ```
-   
+
   5. Send the packet. Pushes are synchronous and return the notification with an
    updated `:response` key.
 
@@ -133,8 +133,8 @@ defmodule Pigeon.APNS do
   openssl pkcs12 -legacy -clcerts -nokeys -out cert.pem -in cert.p12
   ```
 
-  6. Convert the key. Be sure to set a PEM pass phrase here. The pass phrase must be 4 or 
-     more characters in length or this will not work. You will need that pass phrase added 
+  6. Convert the key. Be sure to set a PEM pass phrase here. The pass phrase must be 4 or
+     more characters in length or this will not work. You will need that pass phrase added
      here in order to remove it in the next step.
 
   ```
@@ -153,7 +153,8 @@ defmodule Pigeon.APNS do
   defstruct queue: Pigeon.NotificationQueue.new(),
             stream_id: 1,
             socket: nil,
-            config: nil
+            config: nil,
+            last_ping_time: nil
 
   @behaviour Pigeon.Adapter
 
@@ -199,7 +200,9 @@ defmodule Pigeon.APNS do
     Client.default().send_ping(state.socket)
     Configurable.schedule_ping(state.config)
 
-    {:noreply, state}
+    metadata = %{uri: state.config.uri, client: self(), connection: state.socket}
+    :telemetry.execute([:pigeon, :ping, :start], %{}, metadata)
+    {:noreply, state |> Map.put(:last_ping_time, System.monotonic_time())}
   end
 
   def handle_info({:closed, _}, %{config: config} = state) do
@@ -223,6 +226,14 @@ defmodule Pigeon.APNS do
   def handle_info(msg, state) do
     case Client.default().handle_end_stream(msg, state) do
       {:ok, %Stream{} = stream} -> process_end_stream(stream, state)
+      :pong ->
+        if not is_nil(state.last_ping_time) do
+          duration = System.monotonic_time() - state.last_ping_time
+          socket = :sys.get_state(:sys.get_state(:sys.get_state(state.socket).connection).config.socket).socket
+          metadata = %{uri: state.config.uri, client: self(), connection: state.socket, socket: socket}
+          :telemetry.execute([:pigeon, :ping, :stop], %{duration: duration}, metadata)
+        end
+        {:noreply, state |> Map.put(:last_ping_time, nil)}
       _else -> {:noreply, state}
     end
   end

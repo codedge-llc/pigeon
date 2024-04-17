@@ -42,6 +42,10 @@ defmodule Pigeon.Http2.Client.Kadabra do
     {:ok, pigeon_stream}
   end
 
+  def handle_end_stream({:pong, _pid}, _state) do
+    :pong
+  end
+
   def handle_end_stream(msg, _state) do
     msg
   end
