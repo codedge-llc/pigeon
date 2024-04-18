@@ -96,8 +96,7 @@ defmodule Pigeon.FCM do
             retries: @max_retries,
             socket: nil,
             stream_id: 1,
-            token: nil,
-            last_ping_time: nil
+            token: nil
 
   @behaviour Pigeon.Adapter
 
@@ -152,9 +151,7 @@ defmodule Pigeon.FCM do
     Client.default().send_ping(state.socket)
     Configurable.schedule_ping(state.config)
 
-    metadata = %{uri: state.config.uri, client: self(), connection: state.socket}
-    :telemetry.execute([:pigeon, :ping, :start], %{}, metadata)
-    {:noreply, state |> Map.put(:last_ping_time, System.monotonic_time())}
+    {:noreply, state}
   end
 
   def handle_info({:closed, _}, %{config: config} = state) do
@@ -193,14 +190,6 @@ defmodule Pigeon.FCM do
   def handle_info(msg, state) do
     case Client.default().handle_end_stream(msg, state) do
       {:ok, %Stream{} = stream} -> process_end_stream(stream, state)
-      :pong ->
-        if not is_nil(state.last_ping_time) do
-          duration = System.monotonic_time() - state.last_ping_time
-          socket = :sys.get_state(:sys.get_state(:sys.get_state(state.socket).connection).config.socket).socket
-          metadata = %{uri: state.config.uri, client: self(), connection: state.socket, socket: socket}
-          :telemetry.execute([:pigeon, :ping, :stop], %{duration: duration}, metadata)
-        end
-        {:noreply, state |> Map.put(:last_ping_time, nil)}
       _else -> {:noreply, state}
     end
   end

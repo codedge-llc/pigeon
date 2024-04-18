@@ -145,9 +145,7 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
     end
   end
 
-  def schedule_ping(%{ping_period: ping}) do
-    Process.send_after(self(), :ping, ping)
-  end
+  def schedule_ping(_config), do: :ok
 
   def close(_config) do
   end
