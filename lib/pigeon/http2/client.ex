@@ -24,6 +24,8 @@ defmodule Pigeon.Http2.Client do
 
   @callback send_ping(pid) :: :ok
 
+  @callback send_ping(pid, <<_::64>>) :: :ok
+
   @callback send_request(
               pid,
               headers :: [{binary, binary}, ...],

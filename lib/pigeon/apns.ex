@@ -153,8 +153,7 @@ defmodule Pigeon.APNS do
   defstruct queue: Pigeon.NotificationQueue.new(),
             stream_id: 1,
             socket: nil,
-            config: nil,
-            last_ping_time: nil
+            config: nil
 
   @behaviour Pigeon.Adapter
 
@@ -197,12 +196,14 @@ defmodule Pigeon.APNS do
   end
 
   def handle_info(:ping, state) do
-    Client.default().send_ping(state.socket)
+    now = System.monotonic_time()
+    encoded_now = <<now::signed-64>>
+    Client.default().send_ping(state.socket, encoded_now)
     Configurable.schedule_ping(state.config)
 
     metadata = %{uri: state.config.uri, client: self(), connection: state.socket}
     :telemetry.execute([:pigeon, :ping, :start], %{}, metadata)
-    {:noreply, state |> Map.put(:last_ping_time, System.monotonic_time())}
+    {:noreply, state}
   end
 
   def handle_info({:closed, _}, %{config: config} = state) do
@@ -226,15 +227,26 @@ defmodule Pigeon.APNS do
   def handle_info(msg, state) do
     case Client.default().handle_end_stream(msg, state) do
       {:ok, %Stream{} = stream} -> process_end_stream(stream, state)
-      :pong ->
-        if not is_nil(state.last_ping_time) do
-          duration = System.monotonic_time() - state.last_ping_time
-          socket = :sys.get_state(:sys.get_state(:sys.get_state(state.socket).connection).config.socket).socket
-          metadata = %{uri: state.config.uri, client: self(), connection: state.socket, socket: socket}
+      {:pong, data} ->
+        <<parsed_data::signed-64>> = data
+        if parsed_data != 0 do
+          duration = System.monotonic_time() - parsed_data
+          metadata = generate_telemetry_metadata(state)
           :telemetry.execute([:pigeon, :ping, :stop], %{duration: duration}, metadata)
         end
-        {:noreply, state |> Map.put(:last_ping_time, nil)}
+        {:noreply, state}
       _else -> {:noreply, state}
+    end
+  end
+
+  defp generate_telemetry_metadata(state) do
+    with %{connection: connection} <- :sys.get_state(state.socket),
+         %{config: %{socket: kadabra_socket}} <- :sys.get_state(connection),
+         %{socket: socket} <- :sys.get_state(kadabra_socket) do
+      %{uri: state.config.uri, client: self(), connection: state.socket, socket: socket}
+    else
+      nil ->
+        %{uri: state.config.uri, client: self(), connection: state.socket}
     end
   end
 
