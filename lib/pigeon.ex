@@ -120,12 +120,15 @@ defmodule Pigeon do
     on_response = fn x -> send(myself, {:"$push", ref, x}) end
     notification = put_on_response(notification, on_response)
 
-    push_async(pid, notification)
+    worker_info =
+      with {:ok, worker_pid} when is_pid(worker_pid) <- push_async(pid, notification) do
+        GenServer.call(worker_pid, :info)
+      end
 
     receive do
-      {:"$push", ^ref, x} -> x
+      {:"$push", ^ref, x} -> x |> put_worker_info(worker_info)
     after
-      timeout -> %{notification | response: :timeout}
+      timeout -> %{notification | response: :timeout} |> put_worker_info(worker_info)
     end
   end
 
@@ -136,7 +139,7 @@ defmodule Pigeon do
 
       pid ->
         send(pid, {:"$push", notification})
-        :ok
+        {:ok, pid}
     end
   end
 
@@ -144,4 +147,7 @@ defmodule Pigeon do
     meta = %{notification.__meta__ | on_response: on_response}
     %{notification | __meta__: meta}
   end
+
+  defp put_worker_info(response, info) when is_map(info), do: Map.put(response, :worker_info, info)
+  defp put_worker_info(response, _), do: response
 end

@@ -43,4 +43,23 @@ defmodule Pigeon.DispatcherWorker do
         {:stop, reason, %{adapter: adapter, state: new_state}}
     end
   end
+
+  @impl GenServer
+  def handle_call(:info, _from, %{adapter: adapter, state: state}) do
+    info = %{peername: peername(state)}
+    {:reply, info, %{adapter: adapter, state: state}}
+  end
+
+  defp peername(state) do
+    with %{socket: socket} <- state,
+         %{connection: connection} <- :sys.get_state(socket),
+         %{config: %{socket: socket2}} <- :sys.get_state(connection),
+         %{socket: socket3} <- :sys.get_state(socket2),
+         {_, {_, port, _, _}, _} <- socket3,
+         {:ok, addr} <- :inet.peername(port) do
+      addr
+    else
+      _ -> "unknown"
+    end
+  end
 end
