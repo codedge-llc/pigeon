@@ -119,19 +119,34 @@ defmodule Pigeon do
     ref = :erlang.make_ref()
     on_response = fn x -> send(myself, {:"$push", ref, x}) end
     notification = put_on_response(notification, on_response)
-
-    worker_info =
-      with {:ok, worker_pid} when is_pid(worker_pid) <- push_async(pid, notification) do
-        GenServer.call(worker_pid, :info)
-      end
+    t0 = :erlang.monotonic_time()
+    start_response = push_async(pid, notification)
+    worker_pid = get_worker_pid(start_response)
+    worker_info = GenServer.call(worker_pid, :info)
+    timeout = calculate_timeout(timeout, worker_info)
 
     receive do
-      {:"$push", ^ref, x} -> x |> put_worker_info(worker_info)
+      {:"$push", ^ref, x} ->
+        rtt = :erlang.monotonic_time() - t0
+        GenServer.cast(worker_pid, {:update_timing_data, rtt})
+        rtt_ms = System.convert_time_unit(rtt, :native, :millisecond)
+        Map.merge(x, %{worker_info: worker_info, response_time_ms: rtt_ms})
     after
-      timeout -> %{notification | response: :timeout} |> put_worker_info(worker_info)
+      timeout ->
+        notification =
+          Map.merge(notification, %{
+            response: :timeout,
+            worker_info: worker_info,
+            response_time_ms: timeout
+          })
+
+        GenServer.cast(worker_pid, {:handle_timeout, notification})
+        notification
     end
   end
 
+  @spec push_async(pid(), notification) ::
+          :ok | DynamicSupervisor.on_start_child()
   defp push_async(pid, notification) do
     case Pigeon.Registry.next(pid) do
       nil ->
@@ -148,6 +163,19 @@ defmodule Pigeon do
     %{notification | __meta__: meta}
   end
 
-  defp put_worker_info(response, info) when is_map(info), do: Map.put(response, :worker_info, info)
-  defp put_worker_info(response, _), do: response
+  defp get_worker_pid({:ok, pid}), do: pid
+  defp get_worker_pid({:ok, pid, _}), do: pid
+  defp get_worker_pid({:error, {:already_started, pid}}), do: pid
+  defp get_worker_pid(_), do: nil
+
+  defp calculate_timeout(:dynamic, worker_info),
+    do: worker_info.average_response_time_ms * 2
+
+  defp calculate_timeout({:dynamic, max}, worker_info),
+    do: min(worker_info.average_response_time_ms * 2, max)
+
+  defp calculate_timeout({:dynamic, max, multiplier}, worker_info),
+    do: min(worker_info.average_response_time_ms * multiplier, max)
+
+  defp calculate_timeout(timeout, _), do: timeout
 end
