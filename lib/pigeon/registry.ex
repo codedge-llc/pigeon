@@ -9,8 +9,8 @@ defmodule Pigeon.Registry do
     }
   end
 
-  def register(pid) do
-    Registry.register(__MODULE__, pid, nil)
+  def register(pid, priority \\ 0) do
+    Registry.register(__MODULE__, pid, priority)
   end
 
   def unregister(pid) do
@@ -20,9 +20,7 @@ defmodule Pigeon.Registry do
   def next(pid) do
     __MODULE__
     |> Registry.lookup(pid)
-    |> case do
-      [] -> nil
-      pids -> pids |> Enum.random() |> elem(0)
-    end
+    |> Enum.min_by(fn {_, priority} -> priority end, fn -> {nil, 0} end)
+    |> elem(0)
   end
 end

@@ -42,14 +42,17 @@ defmodule Pigeon.DispatcherWorker do
   def init(opts) do
     case opts[:adapter].init(opts) do
       {:ok, state} ->
-        Pigeon.Registry.register(opts[:supervisor])
+        Pigeon.Registry.register(opts[:supervisor], 0)
 
         state =
           state
           |> Map.put(:timing_data, TimingData.new(opts))
           |> Map.put(:on_timeout, opts[:on_timeout])
+          |> Map.put(:supervisor, opts[:supervisor])
+          |> Map.put(:adapter, opts[:adapter])
+          |> Map.put(:penalty_box, false)
 
-        {:ok, %{adapter: opts[:adapter], state: state}}
+        {:ok, state}
 
       {:error, reason} ->
         {:error, reason}
@@ -60,28 +63,26 @@ defmodule Pigeon.DispatcherWorker do
   end
 
   @impl GenServer
-  def handle_info({:"$push", notification}, %{adapter: adapter, state: state}) do
-    case adapter.handle_push(notification, state) do
-      {:noreply, new_state} ->
-        {:noreply, %{adapter: adapter, state: new_state}}
-
-      {:stop, reason, new_state} ->
-        {:stop, reason, %{adapter: adapter, state: new_state}}
+  def handle_info({:"$push", notification}, state) do
+    case state.adapter.handle_push(notification, state) do
+      {:noreply, new_state} -> {:noreply, new_state}
+      {:stop, reason, new_state} -> {:stop, reason, new_state}
     end
   end
 
-  def handle_info(msg, %{adapter: adapter, state: state}) do
-    case adapter.handle_info(msg, state) do
-      {:noreply, new_state} ->
-        {:noreply, %{adapter: adapter, state: new_state}}
+  def handle_info({:set_penalty_box, value, duration_ms}, state) do
+    {:noreply, set_penalty_box(state, value, duration_ms)}
+  end
 
-      {:stop, reason, new_state} ->
-        {:stop, reason, %{adapter: adapter, state: new_state}}
+  def handle_info(msg, state) do
+    case state.adapter.handle_info(msg, state) do
+      {:noreply, new_state} -> {:noreply, new_state}
+      {:stop, reason, new_state} -> {:stop, reason, new_state}
     end
   end
 
   @impl GenServer
-  def handle_call(:info, _from, %{adapter: adapter, state: state}) do
+  def handle_call(:info, _from, state) do
     average_response_time_ms =
       System.convert_time_unit(
         state.timing_data.average_native,
@@ -94,14 +95,11 @@ defmodule Pigeon.DispatcherWorker do
       average_response_time_ms: average_response_time_ms
     }
 
-    {:reply, info, %{adapter: adapter, state: state}}
+    {:reply, info, state}
   end
 
   @impl GenServer
-  def handle_cast({:update_timing_data, response_time_native}, %{
-        adapter: adapter,
-        state: state
-      }) do
+  def handle_cast({:update_timing_data, response_time_native}, state) do
     state =
       Map.update!(
         state,
@@ -109,15 +107,21 @@ defmodule Pigeon.DispatcherWorker do
         &TimingData.update(&1, response_time_native)
       )
 
-    {:noreply, %{adapter: adapter, state: state}}
+    update_priority(state)
+    {:noreply, state}
   end
 
   @impl GenServer
-  def handle_cast(:handle_timeout, s) do
-    if s.state[:on_timeout] == :stop do
-      {:stop, :timeout, s}
-    else
-      {:noreply, s}
+  def handle_cast(:handle_timeout, state) do
+    case state[:on_timeout] do
+      :stop ->
+        {:stop, :timeout, state}
+
+      {:penalty_box, duration_ms} ->
+        {:noreply, set_penalty_box(state, true, duration_ms)}
+
+      _ ->
+        {:noreply, state}
     end
   end
 
@@ -132,5 +136,30 @@ defmodule Pigeon.DispatcherWorker do
     else
       _ -> "unknown"
     end
+  end
+
+  defp set_penalty_box(state, true, duration_ms) do
+    Process.send_after(self(), {:set_penalty_box, false, nil}, duration_ms)
+    state = %{state | penalty_box: true}
+    update_priority(state)
+  end
+
+  defp set_penalty_box(state, false, _) do
+    state = %{state | penalty_box: false}
+    update_priority(state)
+  end
+
+  defp update_priority(state = %{penalty_box: true}) do
+    Pigeon.Registry.unregister(state.supervisor)
+    Pigeon.Registry.register(state.supervisor, :infinity)
+    state
+  end
+
+  defp update_priority(state) do
+    mailbox_size = Process.info(self())[:message_queue_len]
+    p = state.timing_data.average_native * mailbox_size
+    Pigeon.Registry.unregister(state.supervisor)
+    Pigeon.Registry.register(state.supervisor, p)
+    state
   end
 end
