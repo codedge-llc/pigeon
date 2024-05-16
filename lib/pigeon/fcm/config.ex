@@ -5,7 +5,7 @@ defmodule Pigeon.FCM.Config do
             project_id: nil,
             service_account_json: nil,
             ping_period: 60_000,
-            uri: 'fcm.googleapis.com'
+            uri: ~c"fcm.googleapis.com"
 
   @type t :: %__MODULE__{
           port: pos_integer,
@@ -46,7 +46,7 @@ defmodule Pigeon.FCM.Config do
       project_id: project_id,
       service_account_json: service_account_json,
       ping_period: Keyword.get(opts, :ping_period, 60_000),
-      uri: Keyword.get(opts, :uri, 'fcm.googleapis.com')
+      uri: Keyword.get(opts, :uri, ~c"fcm.googleapis.com")
     }
   end
 
@@ -134,12 +134,14 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
       %{"name" => name} ->
         notif
         |> Map.put(:name, name)
+        |> Map.put(:peername, stream.peername)
         |> Map.put(:response, :success)
         |> process_on_response()
 
       %{"error" => error} ->
         notif
         |> Map.put(:error, error)
+        |> Map.put(:peername, stream.peername)
         |> Map.put(:response, Error.parse(error))
         |> process_on_response()
     end

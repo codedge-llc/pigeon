@@ -34,13 +34,15 @@ defmodule Pigeon.Http2.Client.Kadabra do
   end
 
   def handle_end_stream({:end_stream, stream}, _state) do
-    %{id: id, status: status, headers: headers, body: body} = stream
+    %{id: id, status: status, headers: headers, body: body, peername: peername} =
+      stream
 
     pigeon_stream = %Pigeon.Http2.Stream{
       id: id,
       status: status,
       headers: headers,
-      body: body
+      body: body,
+      peername: peername
     }
 
     {:ok, pigeon_stream}

@@ -52,7 +52,9 @@ defmodule Pigeon.Mixfile do
       {:httpoison, "~> 1.0 or ~> 2.0"},
       {:jason, "~> 1.0", optional: true},
       {:joken, "~> 2.1"},
-      {:kadabra, git: "https://github.com/Tango-Tango/kadabra.git", ref: "b0aecb7f09d6829834af0a4d94f64b2e1e5b7034"}
+      {:kadabra,
+       git: "https://github.com/Tango-Tango/kadabra.git",
+       ref: "28c104934d56aca2e55cde2676547fd03cba2b43"}
     ]
   end
 

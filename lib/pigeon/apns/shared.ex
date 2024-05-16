@@ -47,11 +47,13 @@ defmodule Pigeon.APNS.Shared do
         notification
         |> Map.put(:id, get_header(headers, @apns_id))
         |> Map.put(:response, :success)
+        |> Map.put(:peername, stream[:peername])
         |> process_on_response()
 
       _error ->
         notification
         |> Map.put(:response, Error.parse(body))
+        |> Map.put(:peername, stream[:peername])
         |> process_on_response()
     end
   end
