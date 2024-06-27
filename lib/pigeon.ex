@@ -13,7 +13,7 @@ defmodule Pigeon do
 
   @doc false
   def start(_type, _args) do
-    Client.default().start
+    Client.default().start()
     opts = [strategy: :one_for_one, name: :pigeon]
     Supervisor.start_link(workers(), opts)
   end
