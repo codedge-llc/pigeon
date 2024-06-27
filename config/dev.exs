@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 config :pigeon, :fcm,
   fcm_default: %{
