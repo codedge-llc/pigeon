@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 config :pigeon, :test,
   fcm_key: System.get_env("GCM_KEY"),
