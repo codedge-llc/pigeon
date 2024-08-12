@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.3
+
+**Fixed**
+
+- Clean up Elixir 1.17 deprecation warnings ([#262](https://github.com/codedge-llc/pigeon/pull/262)).
+
 ## 1.6.2
 
 **Changed**
