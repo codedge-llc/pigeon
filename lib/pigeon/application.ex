@@ -7,7 +7,7 @@ defmodule Pigeon.Application do
 
   @doc false
   def start(_type, _args) do
-    Client.default().start
+    Client.default().start()
 
     children = [
       Pigeon.Registry,

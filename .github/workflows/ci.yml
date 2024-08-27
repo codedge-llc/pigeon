@@ -65,17 +65,12 @@ jobs:
         run: mix deps.get
       - name: Run tests
         env:
-          ADM_OAUTH2_CLIENT_ID: ${{ secrets.ADM_OAUTH2_CLIENT_ID }}
-          ADM_OAUTH2_CLIENT_SECRET: ${{ secrets.ADM_OAUTH2_CLIENT_SECRET }}
-          APNS_AUTH_KEY_P8: ${{ secrets.APNS_AUTH_KEY_P8 }}
-          APNS_CERT: ${{ secrets.APNS_CERT }}
-          APNS_JWT_KEY_IDENTIFIER: ${{ secrets.APNS_JWT_KEY_IDENTIFIER }}
-          APNS_JWT_TEAM_ID: ${{ secrets.APNS_JWT_TEAM_ID }}
+          APNS_KEY_IDENTIFIER: ${{ secrets.APNS_KEY_IDENTIFIER }}
+          APNS_TEAM_ID: ${{ secrets.APNS_TEAM_ID }}
           APNS_KEY_UNENCRYPTED: ${{ secrets.APNS_KEY_UNENCRYPTED }}
-          APNS_TOPIC: ${{ secrets.APNS_TOPIC }}
+          APNS_TOPIC: ${{ vars.APNS_TOPIC }}
           FCM_PROJECT: ${{ secrets.FCM_PROJECT }}
           FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
-          GCM_KEY: ${{ secrets.GCM_KEY }}
-          VALID_APNS_TOKEN: ${{ secrets.VALID_APNS_TOKEN }}
-          VALID_GCM_REG_ID: ${{ secrets.VALID_GCM_REG_ID }}
+          VALID_APNS_TOKEN: ${{ vars.VALID_APNS_TOKEN }}
+          VALID_GCM_REG_ID: ${{ vars.VALID_GCM_REG_ID }}
         run: mix test

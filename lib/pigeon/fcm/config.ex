@@ -4,7 +4,7 @@ defmodule Pigeon.FCM.Config do
   defstruct port: 443,
             project_id: nil,
             service_account_json: nil,
-            uri: 'fcm.googleapis.com'
+            uri: ~c"fcm.googleapis.com"
 
   @type t :: %__MODULE__{
           port: pos_integer,
@@ -44,7 +44,7 @@ defmodule Pigeon.FCM.Config do
       port: Keyword.get(opts, :port, 443),
       project_id: project_id,
       service_account_json: service_account_json,
-      uri: Keyword.get(opts, :uri, 'fcm.googleapis.com')
+      uri: Keyword.get(opts, :uri, ~c"fcm.googleapis.com")
     }
   end
 

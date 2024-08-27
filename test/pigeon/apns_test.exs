@@ -9,6 +9,7 @@ defmodule Pigeon.APNSTest do
   @invalid_key_msg ~r/^attempted to start without valid key/
   @invalid_team_id_msg ~r/^attempted to start without valid team_id/
   @invalid_key_id_msg ~r/^attempted to start without valid key_identifier/
+  @default_timeout 10_000
 
   def test_message(msg) do
     "#{DateTime.to_string(DateTime.utc_now())} - #{msg}"
@@ -163,7 +164,10 @@ defmodule Pigeon.APNSTest do
 
       assert PigeonTest.APNS.push(n, on_response: on_response) == :ok
 
-      assert_receive(%Pigeon.APNS.Notification{response: :success}, 5_000)
+      assert_receive(
+        %Pigeon.APNS.Notification{response: :success},
+        @default_timeout
+      )
     end
 
     test "returns :bad_message_id response if apns-id is invalid" do
@@ -179,7 +183,7 @@ defmodule Pigeon.APNSTest do
 
       assert_receive(
         %Pigeon.APNS.Notification{response: :bad_message_id},
-        5_000
+        @default_timeout
       )
     end
 
@@ -196,7 +200,7 @@ defmodule Pigeon.APNSTest do
 
       assert_receive(
         %Pigeon.APNS.Notification{response: :bad_device_token},
-        5_000
+        @default_timeout
       )
     end
 
@@ -211,7 +215,10 @@ defmodule Pigeon.APNSTest do
 
       assert PigeonTest.APNS.push(n, on_response: on_response) == :ok
 
-      assert_receive(%Pigeon.APNS.Notification{response: :missing_topic}, 5_000)
+      assert_receive(
+        %Pigeon.APNS.Notification{response: :missing_topic},
+        @default_timeout
+      )
     end
   end
 end

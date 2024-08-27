@@ -48,7 +48,8 @@ defmodule Pigeon.Adapter do
   @doc """
   Invoked to handle all other messages.
   """
-  @callback handle_info(term, term) :: {:noreply, term}
+  @callback handle_info(term, term) ::
+              {:noreply, term} | {:stop, reason :: term}
 
   @doc """
   Invoked to handle push notifications.

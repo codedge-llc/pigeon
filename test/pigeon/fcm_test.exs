@@ -10,6 +10,7 @@ defmodule Pigeon.FCMTest do
   @data %{"message" => "Test push"}
   @invalid_project_msg ~r/^attempted to start without valid :project_id/
   @invalid_service_account_json_msg ~r/^attempted to start without valid :service_account_json/
+  @default_timeout 10000
 
   defp valid_fcm_reg_id do
     Application.get_env(:pigeon, :test)[:valid_fcm_reg_id]
@@ -36,7 +37,7 @@ defmodule Pigeon.FCMTest do
       notification =
         {:token, valid_fcm_reg_id()}
         |> Notification.new(%{}, @data)
-        |> PigeonTest.FCM.push()
+        |> PigeonTest.FCM.push(timeout: @default_timeout)
 
       assert notification.name
     end
@@ -47,7 +48,7 @@ defmodule Pigeon.FCMTest do
       pid = self()
       PigeonTest.FCM.push(n, on_response: fn x -> send(pid, x) end)
 
-      assert_receive(n = %Notification{target: ^target}, 5000)
+      assert_receive(n = %Notification{target: ^target}, @default_timeout)
       assert n.name
       assert n.response == :success
     end
@@ -64,7 +65,7 @@ defmodule Pigeon.FCMTest do
 
       Pigeon.push(dispatcher, n, on_response: fn x -> send(pid, x) end)
 
-      assert_receive(n = %Notification{target: ^target}, 5000)
+      assert_receive(n = %Notification{target: ^target}, @default_timeout)
       assert n.name
       assert n.response == :success
     end
@@ -75,7 +76,7 @@ defmodule Pigeon.FCMTest do
       pid = self()
       PigeonTest.FCM.push(n, on_response: fn x -> send(pid, x) end)
 
-      assert_receive(n = %Notification{target: ^target}, 5000)
+      assert_receive(n = %Notification{target: ^target}, @default_timeout)
       assert n.error
       refute n.name
       assert n.response == :invalid_argument
@@ -90,7 +91,7 @@ defmodule Pigeon.FCMTest do
         on_response: fn x -> send(pid, x) end
       )
 
-      assert_receive(n = %Notification{target: ^target}, 5000)
+      assert_receive(n = %Notification{target: ^target}, @default_timeout)
       refute n.name
       assert n.response == :not_started
     end

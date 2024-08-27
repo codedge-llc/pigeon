@@ -43,3 +43,5 @@ scratchpad.txt
 .idea
 pigeon.iml
 .envrc
+
+.env.test

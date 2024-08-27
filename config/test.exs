@@ -8,31 +8,23 @@ config :pigeon, :test,
   valid_apns_token: System.get_env("VALID_APNS_TOKEN"),
   valid_fcm_reg_id: System.get_env("VALID_GCM_REG_ID")
 
-config :pigeon, PigeonTest.ADM,
-  adapter: Pigeon.ADM,
-  client_id: System.get_env("ADM_OAUTH2_CLIENT_ID"),
-  client_secret: System.get_env("ADM_OAUTH2_CLIENT_SECRET")
-
 config :pigeon, PigeonTest.APNS,
   adapter: Pigeon.APNS,
-  cert: System.get_env("APNS_CERT"),
   key: System.get_env("APNS_KEY_UNENCRYPTED"),
-  mode: :dev
+  key_identifier: System.get_env("APNS_KEY_IDENTIFIER"),
+  team_id: System.get_env("APNS_TEAM_ID"),
+  mode: :prod
 
 config :pigeon, PigeonTest.APNS.JWT,
   adapter: Pigeon.APNS,
-  key: System.get_env("APNS_AUTH_KEY_P8"),
-  key_identifier: System.get_env("APNS_JWT_KEY_IDENTIFIER"),
-  team_id: System.get_env("APNS_JWT_TEAM_ID"),
-  mode: :dev
-
-config :pigeon, PigeonTest.LegacyFCM,
-  adapter: Pigeon.LegacyFCM,
-  key: System.get_env("GCM_KEY")
+  key: System.get_env("APNS_KEY_UNENCRYPTED"),
+  key_identifier: System.get_env("APNS_KEY_IDENTIFIER"),
+  team_id: System.get_env("APNS_TEAM_ID"),
+  mode: :prod
 
 config :pigeon, PigeonTest.FCM,
   adapter: Pigeon.FCM,
-  project_id: System.get_env("FCM_PROJECT"),
+  project_id: System.get_env("FCM_PROJECT_ID"),
   service_account_json: System.get_env("FCM_SERVICE_ACCOUNT_JSON")
 
 config :pigeon, PigeonTest.Sandbox, adapter: Pigeon.Sandbox

@@ -9,7 +9,7 @@ defmodule Pigeon.APNS.Token do
 
   @type t :: {non_neg_integer(), binary() | nil}
 
-  @spec start_link((() -> any())) :: Agent.on_start()
+  @spec start_link((-> any())) :: Agent.on_start()
   def start_link(_) do
     Agent.start_link(fn -> %{} end, name: __MODULE__)
   end

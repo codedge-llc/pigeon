@@ -51,6 +51,12 @@ Unit tests can be run with `mix test` or `mix coveralls.html`. Environment varia
 various credentials. See [config/test.exs](https://github.com/codedge-llc/pigeon/blob/master/config/test.exs)
 for the full list.
 
+```sh
+cp .env.test.example .env.test
+# Update the environment values with your project ones
+source .env.test
+```
+
 ### Formatting
 
 This project uses Elixir's `mix format` and [Prettier](https://prettier.io) for formatting.
