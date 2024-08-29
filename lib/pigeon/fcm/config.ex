@@ -26,7 +26,7 @@ defmodule Pigeon.FCM.Config do
         port: 443,
         project_id: "example-project",
         service_account_json: %{"dummy" => "contents"},
-        uri: 'fcm.googleapis.com'
+        uri: ~c"fcm.googleapis.com"
       }
   """
   def new(opts) when is_list(opts) do
