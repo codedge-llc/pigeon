@@ -2,7 +2,7 @@ defmodule Pigeon.LegacyFCM.Config do
   @moduledoc false
 
   defstruct key: nil,
-            uri: 'fcm.googleapis.com',
+            uri: ~c"fcm.googleapis.com",
             port: 443
 
   @type t :: %__MODULE__{
@@ -30,7 +30,7 @@ defmodule Pigeon.LegacyFCM.Config do
   def new(opts) when is_list(opts) do
     %__MODULE__{
       key: Keyword.get(opts, :key),
-      uri: Keyword.get(opts, :uri, 'fcm.googleapis.com'),
+      uri: Keyword.get(opts, :uri, ~c"fcm.googleapis.com"),
       port: Keyword.get(opts, :port, 443)
     }
   end
@@ -167,7 +167,9 @@ defimpl Pigeon.Configurable, for: Pigeon.LegacyFCM.Config do
   def parse_error(data) do
     case Pigeon.json_library().decode(data) do
       {:ok, response} ->
-        (response["reason"] || "unknown") |> Macro.underscore() |> String.to_existing_atom()
+        (response["reason"] || "unknown")
+        |> Macro.underscore()
+        |> String.to_existing_atom()
 
       error ->
         "JSON parse failed: #{inspect(error)}, body: #{inspect(data)}"
