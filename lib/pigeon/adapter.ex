@@ -46,14 +46,15 @@ defmodule Pigeon.Adapter do
   @callback init(opts :: Keyword.t()) :: {:ok, any} | {:stop, any}
 
   @doc """
-  Invoked to handle all other messages.
-  """
-  @callback handle_info(term, term) :: {:noreply, term}
-
-  @doc """
   Invoked to handle push notifications.
   """
   @callback handle_push(notification :: struct | [struct], state :: term) ::
               {:noreply, new_state :: term}
               | {:stop, reason :: term, new_state :: term}
+
+  @doc """
+  Invoked to handle all other messages.
+  """
+  @callback handle_info(term, term) ::
+              {:noreply, term} | {:stop, reason :: term}
 end
