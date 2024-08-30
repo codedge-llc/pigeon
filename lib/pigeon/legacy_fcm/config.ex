@@ -18,13 +18,13 @@ defmodule Pigeon.LegacyFCM.Config do
 
       iex> Pigeon.LegacyFCM.Config.new(
       ...>   key: "fcm_key",
-      ...>   uri: 'test.server.example.com',
+      ...>   uri: ~c"test.server.example.com",
       ...>   port: 5228
       ...> )
       %Pigeon.LegacyFCM.Config{
         key: "fcm_key",
         port: 5228, 
-        uri: 'test.server.example.com'
+        uri: ~c"test.server.example.com"
       }
   """
   def new(opts) when is_list(opts) do
