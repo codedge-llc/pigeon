@@ -5,7 +5,6 @@ workers = [
   PigeonTest.APNS,
   PigeonTest.APNS.JWT,
   PigeonTest.FCM,
-  PigeonTest.LegacyFCM,
   PigeonTest.Sandbox
 ]
 
