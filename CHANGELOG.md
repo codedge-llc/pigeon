@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## v2.0.0-rc.3
+
+### Breaking Changes
+
+- `Pigeon.LegacyFCM` has been removed entirely and migrated to [pigeon_legacy_fcm](https://github.com/codedge-llc/pigeon-legacy-fcm) package.
+- FCM `service_account_json` config option has been removed and replaced with `:auth`, a [Goth](https://github.com/peburrows/goth) configuration.
+  See documentation for setup, and [#235](https://github.com/codedge-llc/pigeon/pull/235) for more details.
 
 **Changed**
 
