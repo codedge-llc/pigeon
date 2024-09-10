@@ -28,7 +28,6 @@ Check the module documentation for your push notification service.
 - [Pigeon.ADM](https://hexdocs.pm/pigeon/2.0.0-rc.2/Pigeon.ADM.html) - Amazon Android.
 - [Pigeon.APNS](https://hexdocs.pm/pigeon/2.0.0-rc.2/Pigeon.APNS.html) - Apple iOS.
 - [Pigeon.FCM](https://hexdocs.pm/pigeon/2.0.0-rc.2/Pigeon.FCM.html) - Firebase Cloud Messaging v1 API.
-- [Pigeon.LegacyFCM](https://hexdocs.pm/pigeon/2.0.0-rc.2/Pigeon.LegacyFCM.html) - Firebase Cloud Messaging Legacy API.
 
 ### Creating Dynamic Runtime Dispatchers
 

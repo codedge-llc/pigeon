@@ -26,10 +26,6 @@ config :pigeon, PigeonTest.APNS.JWT,
   team_id: System.get_env("APNS_JWT_TEAM_ID"),
   mode: :dev
 
-config :pigeon, PigeonTest.LegacyFCM,
-  adapter: Pigeon.LegacyFCM,
-  key: System.get_env("GCM_KEY")
-
 config :pigeon, PigeonTest.FCM,
   adapter: Pigeon.FCM,
   project_id: System.get_env("FCM_PROJECT"),
