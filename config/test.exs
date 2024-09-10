@@ -28,7 +28,7 @@ config :pigeon, PigeonTest.APNS.JWT,
 
 config :pigeon, PigeonTest.FCM,
   adapter: Pigeon.FCM,
-  project_id: System.get_env("FCM_PROJECT"),
-  token_fetcher: PigeonTest.Goth
+  auth: PigeonTest.Goth,
+  project_id: System.get_env("FCM_PROJECT")
 
 config :pigeon, PigeonTest.Sandbox, adapter: Pigeon.Sandbox

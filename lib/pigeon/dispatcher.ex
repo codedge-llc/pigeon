@@ -12,8 +12,8 @@ defmodule Pigeon.Dispatcher do
   # FCM as an example, but use the relevant options for your push type.
   opts = [
     adapter: Pigeon.FCM,
-    project_id: "example-project-123",
-    token_fetcher: YourApp.Goth
+    auth: YourApp.Goth,
+    project_id: "example-project-123"
   ]
 
   {:ok, pid} = Pigeon.Dispatcher.start_link(opts)
@@ -61,9 +61,9 @@ defmodule Pigeon.Dispatcher do
     defp push_spec(%{type: "fcm"} = config) do
       {Pigeon.Dispatcher, [
         adapter: Pigeon.FCM,
+        auth: String.to_existing_atom(config.auth),
         name: {:via, Registry, {Registry.YourApp, config.name}},
-        project_id: config.project_id,
-        token_fetcher: String.to_existing_atom(config.token_fetcher)
+        project_id: config.project_id
       ]}
     end
   end
