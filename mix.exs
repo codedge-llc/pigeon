@@ -67,8 +67,7 @@ defmodule Pigeon.Mixfile do
         "APNS - Apple iOS": [Pigeon.APNS, Pigeon.APNS.Notification],
         "FCM - Firebase Cloud Messaging": [
           Pigeon.FCM,
-          Pigeon.FCM.Notification,
-          PigeonTest.GothHttpClient.Stub
+          Pigeon.FCM.Notification
         ]
       ],
       formatters: ["html"],

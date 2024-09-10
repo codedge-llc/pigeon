@@ -4,28 +4,35 @@ defmodule Pigeon.FCM do
 
   ## Getting Started
 
-  1. Create a `FCM` dispatcher.
+  ### Create a dispatcher.
 
-  ```
-  # lib/fcm.ex
-  defmodule YourApp.FCM do
-    use Pigeon.Dispatcher, otp_app: :your_app
-  end
-  ```
+    ```
+    # lib/your_app/fcm.ex
 
-  2. Configure the [`goth`](https://hexdocs.pm/goth/1.4.3/readme.html#installation) library, and add it to `config.exs`
+    defmodule YourApp.FCM do
+      use Pigeon.Dispatcher, otp_app: :your_app
+    end
+    ```
+
+  ### Install and configure Goth.
+
+  Install and configure [`goth`](https://hexdocs.pm/goth/1.4.3/readme.html#installation)
+  if you haven't already. `Pigeon.FCM` requires it for token authentication.
+
+  ### Configure your dispatcher.
+
+  Configure your `FCM` dispatcher and start it on application boot.
 
   ```
   # config.exs
-  # See Step 3 for alternative configuration
 
   config :your_app, YourApp.FCM,
     adapter: Pigeon.FCM,
-    auth: YourApp.Goth,
+    auth: YourApp.Goth, # Your Goth worker configured in the previous step.
     project_id: "example-project-123"
   ```
 
-  3. Start your dispatcher on application boot.
+  Add it to your supervision tree.
 
   ```
   defmodule YourApp.Application do
@@ -45,7 +52,7 @@ defmodule Pigeon.FCM do
   end
   ```
 
-  If preferred, you can include your configuration directly
+  If preferred, you can include your configuration directly.
 
   ```
   defmodule YourApp.Application do
@@ -73,13 +80,13 @@ defmodule Pigeon.FCM do
   end
   ```
 
-  4. Create a notification.
+  ### Create a notification.
 
   ```
   n = Pigeon.FCM.Notification.new({:token, "reg ID"}, %{"body" => "test message"})
   ```
 
-  5. Send the notification.
+  ### Send the notification.
 
   On successful response, `:name` will be set to the name returned from the FCM
   API and `:response` will be `:success`. If there was an error, `:error` will
@@ -92,47 +99,9 @@ defmodule Pigeon.FCM do
 
   ## Customizing Goth
 
-  If you need a customizable `:auth` that handles fetching its own configuration, here's
-  an example you can use to get started.
-
-  For other `:source` configurations of `YourApp.Goth`, check out the `goth` documentation for [`Goth.start_link/1`](https://hexdocs.pm/goth/Goth.html#start_link/1)
-
-  ```
-  # lib/your_app/goth.ex
-  defmodule YourApp.Goth
-
-    @spec child_spec(any()) :: Supervisor.child_spec()
-    def child_spec(_args) do
-      env_opts = Keyword.new(Application.get_env(:your_app, YourApp.Goth, []))
-      opts = Keyword.merge([name: YourApp.Goth], env_opts)
-
-      %{
-        :id => YourApp.Goth,
-        :start => {Goth, :start_link, [opts]}
-      }
-    end
-  end
-
-  # config.exs
-  config :your_app, YourApp.Goth, source: {:metadata, []}
-
-  # config/test.exs
-  config :your_app, YourApp.Goth,
-    source: {:metadata, []},
-    http_client: {&PigeonTest.GothHttpClient.Stub.access_token_response/1, []}
-
-  # application.exs
-  def start(_type, _args) do
-    children = [
-      # The `child_spec/1` handles fetching the proper config
-      YourApp.Goth,
-      YourApp.FCM
-    ]
-    opts = [strategy: :one_for_one, name: YourApp.Supervisor]
-    Supervisor.start_link(children, opts)
-  end
-  ```
-
+  You can use any of the configuration options (e.g. `:source`) for Goth. Check out the 
+  documentation of [`Goth.start_link/1`](https://hexdocs.pm/goth/Goth.html#start_link/1) 
+  for more details.
   """
 
   @max_retries 3
