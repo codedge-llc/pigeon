@@ -9,7 +9,7 @@ defmodule Pigeon.FCMTest do
 
   @data %{"message" => "Test push"}
   @invalid_project_msg ~r/^attempted to start without valid :project_id/
-  @invalid_fetcher_msg ~r/^attempted to start without valid :token_fetcher module/
+  @invalid_auth_msg ~r/^attempted to start without valid :auth module/
 
   defp valid_fcm_reg_id do
     Application.get_env(:pigeon, :test)[:valid_fcm_reg_id]
@@ -18,14 +18,14 @@ defmodule Pigeon.FCMTest do
   describe "init/1" do
     test "raises if configured with invalid project" do
       assert_raise(Pigeon.ConfigError, @invalid_project_msg, fn ->
-        [project_id: nil, token_fetcher: PigeonTest.Goth]
+        [project_id: nil, auth: PigeonTest.Goth]
         |> Pigeon.FCM.init()
       end)
     end
 
-    test "raises if configured with invalid token_fetcher module" do
-      assert_raise(Pigeon.ConfigError, @invalid_fetcher_msg, fn ->
-        [project_id: "example", token_fetcher: nil]
+    test "raises if configured with invalid auth module" do
+      assert_raise(Pigeon.ConfigError, @invalid_auth_msg, fn ->
+        [project_id: "example", auth: nil]
         |> Pigeon.FCM.init()
       end)
     end

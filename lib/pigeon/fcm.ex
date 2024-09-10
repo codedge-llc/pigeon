@@ -21,8 +21,8 @@ defmodule Pigeon.FCM do
 
   config :your_app, YourApp.FCM,
     adapter: Pigeon.FCM,
-    project_id: "example-project-123",
-    token_fetcher: YourApp.Goth
+    auth: YourApp.Goth,
+    project_id: "example-project-123"
   ```
 
   3. Start your dispatcher on application boot.
@@ -66,8 +66,8 @@ defmodule Pigeon.FCM do
     defp fcm_opts do
       [
         adapter: Pigeon.FCM,
-        project_id: "example-project-123",
-        token_fetcher: YourApp.Goth
+        auth: YourApp.Goth,
+        project_id: "example-project-123"
       ]
     end
   end
@@ -90,8 +90,9 @@ defmodule Pigeon.FCM do
   YourApp.FCM.push(n)
   ```
 
-  ## Customizable Goth Token Fetcher
-  If you need a customizable `:token_fetcher` that handles fetching its own configuration, here's
+  ## Customizing Goth
+
+  If you need a customizable `:auth` that handles fetching its own configuration, here's
   an example you can use to get started.
 
   For other `:source` configurations of `YourApp.Goth`, check out the `goth` documentation for [`Goth.start_link/1`](https://hexdocs.pm/goth/Goth.html#start_link/1)
