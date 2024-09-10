@@ -73,6 +73,7 @@ defmodule Pigeon.Mixfile do
       ],
       formatters: ["html"],
       main: "Pigeon",
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md"],
       source_ref: "v#{@version}",
       source_url: @source_url
     ]
