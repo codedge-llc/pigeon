@@ -1,16 +1,23 @@
 defmodule Pigeon.FCM.Config do
   @moduledoc false
 
-  defstruct port: 443,
+  defstruct token_fetcher: nil,
             project_id: nil,
-            service_account_json: nil,
-            uri: ~c"fcm.googleapis.com"
+            uri: ~c"fcm.googleapis.com",
+            port: 443
+
+  @typedoc """
+  The name, or custom module, of your Goth implementation, e.g. `YourApp.Goth`.
+
+  This is passed directly to `Goth.fetch!/1`.
+  """
+  @type token_fetcher :: module() | term()
 
   @type t :: %__MODULE__{
-          port: pos_integer,
-          project_id: binary,
-          service_account_json: binary,
-          uri: charlist
+          token_fetcher: nil | token_fetcher(),
+          project_id: nil | String.t(),
+          uri: String.t(),
+          port: pos_integer()
         }
 
   @doc ~S"""
@@ -20,70 +27,41 @@ defmodule Pigeon.FCM.Config do
 
       iex> Pigeon.FCM.Config.new(
       ...>   project_id: "example-project",
-      ...>   service_account_json: "{\"dummy\":\"contents\"}"
+      ...>   token_fetcher: YourApp.Goth
       ...> )
       %Pigeon.FCM.Config{
         port: 443,
         project_id: "example-project",
-        service_account_json: %{"dummy" => "contents"},
+        token_fetcher: YourApp.Goth,
         uri: ~c"fcm.googleapis.com"
       }
   """
-  def new(opts) when is_list(opts) do
-    project_id =
-      opts
-      |> Keyword.get(:project_id)
-      |> decode_bin()
-
-    service_account_json =
-      opts
-      |> Keyword.get(:service_account_json)
-      |> decode_json()
+  def new(opts) do
+    opts = Map.new(opts)
 
     %__MODULE__{
-      port: Keyword.get(opts, :port, 443),
-      project_id: project_id,
-      service_account_json: service_account_json,
-      uri: Keyword.get(opts, :uri, ~c"fcm.googleapis.com")
+      port: Map.get(opts, :port, 443),
+      project_id: opts[:project_id],
+      token_fetcher: opts[:token_fetcher],
+      uri: Map.get(opts, :uri, ~c"fcm.googleapis.com")
     }
-  end
-
-  def decode_bin(bin) when is_binary(bin) do
-    bin
-  end
-
-  def decode_bin(other) do
-    {:error, {:invalid, other}}
-  end
-
-  def decode_json(bin) when is_binary(bin) do
-    case Pigeon.json_library().decode(bin) do
-      {:ok, json} -> json
-      {:error, _reason} -> {:error, {:invalid, bin}}
-    end
-  end
-
-  def decode_json(other) do
-    {:error, {:invalid, other}}
   end
 end
 
 defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   @moduledoc false
 
-  require Logger
-
   import Pigeon.Tasks, only: [process_on_response: 1]
 
   alias Pigeon.Encodable
-  alias Pigeon.FCM.{Config, Error}
+  alias Pigeon.FCM.Error
 
   @type sock :: {:sslsocket, any, pid | {any, any}}
 
   # Configurable Callbacks
 
   @spec connect(any) :: {:ok, sock} | {:error, String.t()}
-  def connect(%Config{uri: uri} = config) do
+  def connect(%@for{uri: uri} = config) do
     case connect_socket_options(config) do
       {:ok, options} ->
         Pigeon.Http2.Client.default().connect(uri, :https, options)
@@ -104,18 +82,20 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
     {:ok, opts}
   end
 
-  def add_port(opts, %Config{port: 443}), do: opts
-  def add_port(opts, %Config{port: port}), do: [{:port, port} | opts]
+  def add_port(opts, %@for{port: 443}), do: opts
+  def add_port(opts, %@for{port: port}), do: [{:port, port} | opts]
 
   def push_headers(
-        %Config{project_id: project_id},
+        config,
         _notification,
-        opts
+        _opts
       ) do
+    token = Goth.fetch!(config.token_fetcher)
+
     [
       {":method", "POST"},
-      {":path", "/v1/projects/#{project_id}/messages:send"},
-      {"authorization", "Bearer #{opts[:token].token}"},
+      {":path", "/v1/projects/#{config.project_id}/messages:send"},
+      {"authorization", "#{token.type} #{token.token}"},
       {"content-type", "application/json"},
       {"accept", "application/json"}
     ]
@@ -148,19 +128,26 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   def close(_config) do
   end
 
-  def validate!(%{project_id: {:error, _}} = config) do
+  def validate!(config) do
+    config
+    |> Map.from_struct()
+    |> Enum.each(&do_validate!(&1, config))
+  end
+
+  defp do_validate!({:token_fetcher, mod}, config)
+       when not is_atom(mod) or is_nil(mod) do
+    raise Pigeon.ConfigError,
+      reason: "attempted to start without valid :token_fetcher module",
+      config: redact(config)
+  end
+
+  defp do_validate!({:project_id, value}, config) when not is_binary(value) do
     raise Pigeon.ConfigError,
       reason: "attempted to start without valid :project_id",
       config: redact(config)
   end
 
-  def validate!(%{service_account_json: {:error, _}} = config) do
-    raise Pigeon.ConfigError,
-      reason: "attempted to start without valid :service_account_json",
-      config: redact(config)
-  end
-
-  def validate!(_config), do: :ok
+  defp do_validate!({_key, _value}, _config), do: :ok
 
   @doc false
   def redact(config) when is_map(config) do

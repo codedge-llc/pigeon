@@ -13,15 +13,16 @@ defmodule Pigeon.FCM do
   end
   ```
 
-  2. (Optional) Add configuration to your `config.exs`.
+  2. Configure the [`goth`](https://hexdocs.pm/goth/1.4.3/readme.html#installation) library, and add it to `config.exs`
 
   ```
   # config.exs
+  # See Step 3 for alternative configuration
 
   config :your_app, YourApp.FCM,
     adapter: Pigeon.FCM,
     project_id: "example-project-123",
-    service_account_json: File.read!("service-account.json")
+    token_fetcher: YourApp.Goth
   ```
 
   3. Start your dispatcher on application boot.
@@ -35,6 +36,7 @@ defmodule Pigeon.FCM do
     @doc false
     def start(_type, _args) do
       children = [
+        {Goth, name: YourApp.Goth},
         YourApp.FCM
       ]
       opts = [strategy: :one_for_one, name: YourApp.Supervisor]
@@ -43,7 +45,7 @@ defmodule Pigeon.FCM do
   end
   ```
 
-  If you skipped step two, include your configuration.
+  If preferred, you can include your configuration directly
 
   ```
   defmodule YourApp.Application do
@@ -54,6 +56,7 @@ defmodule Pigeon.FCM do
     @doc false
     def start(_type, _args) do
       children = [
+        {Goth, name: YourApp.Goth},
         {YourApp.FCM, fcm_opts()}
       ]
       opts = [strategy: :one_for_one, name: YourApp.Supervisor]
@@ -64,7 +67,7 @@ defmodule Pigeon.FCM do
       [
         adapter: Pigeon.FCM,
         project_id: "example-project-123",
-        service_account_json: File.read!("service-account.json")
+        token_fetcher: YourApp.Goth
       ]
     end
   end
@@ -75,63 +78,97 @@ defmodule Pigeon.FCM do
   ```
   n = Pigeon.FCM.Notification.new({:token, "reg ID"}, %{"body" => "test message"})
   ```
-   
-  5. Send the notification. 
 
-  On successful response, `:name` will be set to the name returned from the FCM 
-  API and `:response` will be `:success`. If there was an error, `:error` will 
+  5. Send the notification.
+
+  On successful response, `:name` will be set to the name returned from the FCM
+  API and `:response` will be `:success`. If there was an error, `:error` will
   contain a JSON map of the response and `:response` will be an atomized version
   of the error type.
 
   ```
   YourApp.FCM.push(n)
   ```
+
+  ## Customizable Goth Token Fetcher
+  If you need a customizable `:token_fetcher` that handles fetching its own configuration, here's
+  an example you can use to get started.
+
+  For other `:source` configurations of `YourApp.Goth`, check out the `goth` documentation for [`Goth.start_link/1`](https://hexdocs.pm/goth/Goth.html#start_link/1)
+
+  ```
+  # lib/your_app/goth.ex
+  defmodule YourApp.Goth
+
+    @spec child_spec(any()) :: Supervisor.child_spec()
+    def child_spec(_args) do
+      env_opts = Keyword.new(Application.get_env(:your_app, YourApp.Goth, []))
+      opts = Keyword.merge([name: YourApp.Goth], env_opts)
+
+      %{
+        :id => YourApp.Goth,
+        :start => {Goth, :start_link, [opts]}
+      }
+    end
+  end
+
+  # config.exs
+  config :your_app, YourApp.Goth, source: {:metadata, []}
+
+  # config/test.exs
+  config :your_app, YourApp.Goth,
+    source: {:metadata, []},
+    http_client: {&PigeonTest.GothHttpClient.Stub.access_token_response/1, []}
+
+  # application.exs
+  def start(_type, _args) do
+    children = [
+      # The `child_spec/1` handles fetching the proper config
+      YourApp.Goth,
+      YourApp.FCM
+    ]
+    opts = [strategy: :one_for_one, name: YourApp.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+  ```
+
   """
 
   @max_retries 3
 
   defstruct config: nil,
             queue: Pigeon.NotificationQueue.new(),
-            refresh_before: 5 * 60,
             retries: @max_retries,
             socket: nil,
-            stream_id: 1,
-            token: nil
+            stream_id: 1
 
   @behaviour Pigeon.Adapter
 
   alias Pigeon.{Configurable, NotificationQueue}
   alias Pigeon.Http2.{Client, Stream}
 
-  @refresh :"$refresh"
-  @retry_after 1000
-
-  @scopes [
-    "https://www.googleapis.com/auth/cloud-platform",
-    "https://www.googleapis.com/auth/firebase.messaging"
-  ]
-
-  @impl true
+  @impl Pigeon.Adapter
   def init(opts) do
     config = Pigeon.FCM.Config.new(opts)
+
     Configurable.validate!(config)
 
     state = %__MODULE__{config: config}
 
-    with {:ok, socket} <- connect_socket(config),
-         {:ok, token} <- fetch_token(config) do
-      Configurable.schedule_ping(config)
-      schedule_refresh(state, token)
-      {:ok, %{state | socket: socket, token: token}}
-    else
-      {:error, reason} -> {:stop, reason}
+    case connect_socket(config) do
+      {:ok, socket} ->
+        Configurable.schedule_ping(config)
+        {:ok, %{state | socket: socket}}
+
+      {:error, reason} ->
+        {:stop, reason}
     end
   end
 
-  @impl true
+  @impl Pigeon.Adapter
   def handle_push(notification, state) do
-    %{config: config, queue: queue, token: token} = state
-    headers = Configurable.push_headers(config, notification, token: token)
+    %{config: config, queue: queue} = state
+    headers = Configurable.push_headers(config, notification, [])
     payload = Configurable.push_payload(config, notification, [])
 
     Client.default().send_request(state.socket, headers, payload)
@@ -146,7 +183,7 @@ defmodule Pigeon.FCM do
     {:noreply, state}
   end
 
-  @impl true
+  @impl Pigeon.Adapter
   def handle_info(:ping, state) do
     Client.default().send_ping(state.socket)
     Configurable.schedule_ping(state.config)
@@ -171,22 +208,6 @@ defmodule Pigeon.FCM do
     end
   end
 
-  def handle_info(@refresh, %{config: config} = state) do
-    case fetch_token(config) do
-      {:ok, token} ->
-        schedule_refresh(state, token)
-        {:noreply, %{state | retries: @max_retries, token: token}}
-
-      {:error, exception} ->
-        if state.retries > 0 do
-          Process.send_after(self(), @refresh, @retry_after)
-          {:noreply, %{state | retries: state.retries - 1}}
-        else
-          raise "too many failed attempts to refresh, last error: #{inspect(exception)}"
-        end
-    end
-  end
-
   def handle_info(msg, state) do
     case Client.default().handle_end_stream(msg, state) do
       {:ok, %Stream{} = stream} -> process_end_stream(stream, state)
@@ -208,18 +229,6 @@ defmodule Pigeon.FCM do
           {:error, reason}
         end
     end
-  end
-
-  defp fetch_token(config) do
-    source = {:service_account, config.service_account_json, [scopes: @scopes]}
-    Goth.Token.fetch(%{source: source})
-  end
-
-  defp schedule_refresh(state, token) do
-    time_in_seconds =
-      max(token.expires - System.system_time(:second) - state.refresh_before, 0)
-
-    Process.send_after(self(), @refresh, time_in_seconds * 1000)
   end
 
   @doc false
