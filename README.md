@@ -3,8 +3,11 @@
 > HTTP2-compliant wrapper for sending iOS and Android push notifications.
 
 [![CI](https://github.com/codedge-llc/pigeon/actions/workflows/ci.yml/badge.svg)](https://github.com/codedge-llc/pigeon/actions/workflows/ci.yml)
-[![Hex.pm](http://img.shields.io/hexpm/v/pigeon.svg)](https://hex.pm/packages/pigeon)
-[![Hex.pm](http://img.shields.io/hexpm/dt/pigeon.svg)](https://hex.pm/packages/pigeon)
+[![Version](https://img.shields.io/hexpm/v/pigeon.svg)](https://hex.pm/packages/pigeon)
+[![Total Downloads](https://img.shields.io/hexpm/dt/pigeon.svg)](https://hex.pm/packages/pigeon)
+[![License](https://img.shields.io/hexpm/l/pigeon.svg)](https://github.com/codedge-llc/pigeon/blob/master/LICENSE)
+[![Last Updated](https://img.shields.io/github/last-commit/codedge-llc/pigeon.svg)](https://github.com/codedge-llc/pigeon/commits/master)
+[![Documentation](https://img.shields.io/badge/documentation-gray)](https://hexdocs.pm/pigeon/)
 
 _Pigeon v2.0 is in release candidate status. See [the latest stable 1.6 on Hex](https://hex.pm/packages/pigeon)
 or [the 1.6 branch on GitHub](https://github.com/codedge-llc/pigeon/tree/v1.6) for installation._
@@ -16,7 +19,7 @@ Add `:pigeon` and as a `mix.exs` dependency:
 ```elixir
 def deps do
   [
-    {:pigeon, "~> 2.0.0-rc.2"}
+    {:pigeon, "~> 2.0.0-rc.3"}
   ]
 end
 ```
