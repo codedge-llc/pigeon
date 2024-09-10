@@ -1,11 +1,20 @@
 # Changelog
 
-## Unreleased
+## v2.0.0-rc.3
+
+### Breaking Changes
+
+- `Pigeon.LegacyFCM` has been removed entirely and migrated to [pigeon_legacy_fcm](https://github.com/codedge-llc/pigeon-legacy-fcm) package.
+- FCM `service_account_json` config option has been removed and replaced with `:auth`, a [Goth](https://github.com/peburrows/goth) configuration.
+  See `Pigeon.FCM` documentation for setup and [#235](https://github.com/codedge-llc/pigeon/pull/235) for more details.
 
 **Changed**
 
 - Bump `goth` dependency to `~> 1.4.3`. ([#252](https://github.com/codedge-llc/pigeon/pull/252))
-- Fix `DispatcherWorker` missing a clause for `{:stop, reason}` in the handle_info function.
+
+**Fixed**
+
+- `DispatcherWorker` missing a clause for `{:stop, reason}` in the handle_info function.
 
 ## v2.0.0-rc.2
 

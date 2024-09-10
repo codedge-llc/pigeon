@@ -4,16 +4,19 @@ defmodule Pigeon.APNS do
 
   ## Getting Started
 
-  1. Create an `APNS` dispatcher.
+  ### Create a dispatcher.
 
   ```
-  # lib/apns.ex
+  # lib/your_app/apns.ex
+
   defmodule YourApp.APNS do
     use Pigeon.Dispatcher, otp_app: :your_app
   end
   ```
 
-  2. (Optional) Add configuration to your `config.exs`.
+  ### Configure your dispatcher.
+
+  Configure your `APNS` dispatcher and start it on application boot.
 
   ```
   # config.exs
@@ -23,11 +26,9 @@ defmodule Pigeon.APNS do
     cert: File.read!("cert.pem"),
     key: File.read!("key_unencrypted.pem"),
     mode: :dev
-  ```
 
-  Or use token based authentication:
+  # Or for token based authentication:
 
-  ```
   config :your_app, YourApp.APNS,
     adapter: Pigeon.APNS,
     key: File.read!("AuthKey.p8"),
@@ -36,7 +37,7 @@ defmodule Pigeon.APNS do
     team_id: "DEF8901234"
   ```
 
-  3. Start your dispatcher on application boot.
+  Add it to your supervision tree.
 
   ```
   defmodule YourApp.Application do
@@ -55,7 +56,7 @@ defmodule Pigeon.APNS do
   end
   ```
 
-  If you skipped step two, include your configuration.
+  If preferred, you can include your configuration directly.
 
   ```
   defmodule YourApp.Application do
@@ -83,14 +84,19 @@ defmodule Pigeon.APNS do
   end
   ```
 
-  4. Create a notification. **Note: Your push topic is generally the app's bundle identifier.**
+  ### Create a notification. 
 
   ```
   n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic")
   ```
+
+  > #### Note {: .info}
+  >
+  > Note: Your push topic is generally the app's bundle identifier.
    
-  5. Send the packet. Pushes are synchronous and return the notification with an
-   updated `:response` key.
+  ### Send the notification. 
+
+  Pushes are synchronous and return the notification with an updated `:response` key.
 
   ```
   YourApp.APNS.push(n)

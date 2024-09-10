@@ -2,7 +2,7 @@ defmodule Pigeon.Mixfile do
   use Mix.Project
 
   @source_url "https://github.com/codedge-llc/pigeon"
-  @version "2.0.0-rc.2"
+  @version "2.0.0-rc.3"
 
   def project do
     [
@@ -58,16 +58,23 @@ defmodule Pigeon.Mixfile do
 
   defp docs do
     [
+      extras: [
+        "CHANGELOG.md",
+        LICENSE: [title: "License"]
+      ],
       groups_for_modules: [
         "ADM - Amazon Android": [Pigeon.ADM, Pigeon.ADM.Notification],
         "APNS - Apple iOS": [Pigeon.APNS, Pigeon.APNS.Notification],
         "FCM - Firebase Cloud Messaging": [
           Pigeon.FCM,
-          Pigeon.FCM.Notification,
-          PigeonTest.GothHttpClient.Stub
+          Pigeon.FCM.Notification
         ]
       ],
-      main: "Pigeon"
+      formatters: ["html"],
+      main: "Pigeon",
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md"],
+      source_ref: "v#{@version}",
+      source_url: @source_url
     ]
   end
 
@@ -80,11 +87,12 @@ defmodule Pigeon.Mixfile do
 
   defp package do
     [
-      files: ["lib", "mix.exs", "README*", "LICENSE*"],
+      files: ["lib", "mix.exs", "README*", "LICENSE*", "CHANGELOG*"],
       licenses: ["MIT"],
       links: %{
         "Changelog" => "https://hexdocs.pm/pigeon/changelog.html",
-        "GitHub" => @source_url
+        "GitHub" => @source_url,
+        "Sponsor" => "https://github.com/sponsors/codedge-llc"
       },
       maintainers: ["Henry Popp", "Tyler Hurst"]
     ]

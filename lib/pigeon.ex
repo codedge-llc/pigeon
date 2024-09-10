@@ -9,7 +9,6 @@ defmodule Pigeon do
     - `Pigeon.ADM` - Amazon Android.
     - `Pigeon.APNS` - Apple iOS.
     - `Pigeon.FCM` - Firebase Cloud Messaging v1 API.
-    - `Pigeon.LegacyFCM` - Firebase Cloud Messaging Legacy API.
 
   ## Creating Dynamic Runtime Dispatchers
 
@@ -97,6 +96,9 @@ defmodule Pigeon do
           notification :: struct | no_return
   @spec push(pid | atom, notifications :: [notification, ...], push_opts) ::
           notifications :: [struct, ...] | no_return
+  @doc """
+  Sends a push notification with given options.
+  """
   def push(pid, notifications, opts \\ [])
 
   def push(pid, notifications, opts) when is_list(notifications) do

@@ -4,16 +4,19 @@ defmodule Pigeon.ADM do
 
   ## Getting Started
 
-  1. Create an ADM dispatcher.
+  ### Create a dispatcher.
 
   ```
-  # lib/adm.ex
+  # lib/your_app/adm.ex
+
   defmodule YourApp.ADM do
     use Pigeon.Dispatcher, otp_app: :your_app
   end
   ```
 
-  2. (Optional) Add configuration to your `config.exs`.
+  ### Configure your dispatcher.
+
+  Configure your `ADM` dispatcher and start it on application boot.
 
   ```
   # config.exs
@@ -24,7 +27,7 @@ defmodule Pigeon.ADM do
     client_secret: "your_oauth2_client_secret_here"
   ```
 
-  3. Start your dispatcher on application boot.
+  Add it to your supervision tree.
 
   ```
   defmodule YourApp.Application do
@@ -43,7 +46,7 @@ defmodule Pigeon.ADM do
   end
   ```
 
-  If you skipped step two, include your configuration.
+  If preferred, you can include your configuration directly.
 
   ```
   defmodule YourApp.Application do
@@ -70,14 +73,14 @@ defmodule Pigeon.ADM do
   end
   ```
 
-  4. Create a notification.
+  ### Create a notification.
 
   ```
   msg = %{ "body" => "your message" }
   n = Pigeon.ADM.Notification.new("your device registration ID", msg)
   ```
 
-  5. Send the notification.
+  ### Send the notification.
 
   ```
   YourApp.ADM.push(n)
