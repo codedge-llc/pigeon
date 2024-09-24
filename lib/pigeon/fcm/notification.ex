@@ -98,11 +98,12 @@ defmodule Pigeon.FCM.Notification do
       data: data
     }
   end
+
+  def set_apns(%Pigeon.FCM.Notification{} = notification, apns) do
+    %{notification | apns: apns}
+  end
 end
 
-def set_apns(%Pigeon.FCM.Notification{} = notification, apns) do
-  %{notification | apns: apns}
-end
 
 defimpl Pigeon.Encodable, for: Pigeon.FCM.Notification do
   def binary_payload(notif) do
