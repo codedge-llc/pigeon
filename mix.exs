@@ -61,7 +61,7 @@ defmodule Pigeon.Mixfile do
       extras: [
         "CHANGELOG.md",
         LICENSE: [title: "License"],
-        "docs/Migrating to v2-0-0.md": [title: "Upgrading to v2.0"]
+        "docs/Migrating-to-v2-0-0.md": [title: "Upgrading to v2.0"]
       ],
       groups_for_modules: [
         "ADM - Amazon Android": [Pigeon.ADM, Pigeon.ADM.Notification],
