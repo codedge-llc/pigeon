@@ -23,7 +23,7 @@ end
 
 ## Upgrading from v1.6
 
-See the [migration guide](./docs/Migrating to v2-0-0.md) for instructions.
+See the [migration guide](./docs/Migrating-to-v2-0-0.md) for instructions.
 
 ## Getting Started
 

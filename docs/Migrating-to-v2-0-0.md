@@ -120,7 +120,7 @@ No addtional changes required apart from the configuration above.
 ```elixir
 def deps do
   [
-    {:pigeon_legacy_fcm, "~> 0.1.0"}
+    {:pigeon_legacy_fcm, "~> 0.2.0"}
   ]
 end
 ```
