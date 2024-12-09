@@ -2,7 +2,7 @@
 
 ## Migrating from v2.0 RCs
 
-See the [CHANGELOG](./CHANGELOG.md) for specific breaking changes from each RC. If upgrading from RC3,
+See the [CHANGELOG](../CHANGELOG.md) for specific breaking changes from each RC. If upgrading from RC3,
 no additional changes are required.
 
 ## Migrating from v1.6
