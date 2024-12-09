@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.0.0
+
+No additional changes since v2.0.0-rc.3. Stable release.
+
 ## v2.0.0-rc.3
 
 ### Breaking Changes
