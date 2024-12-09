@@ -9,9 +9,6 @@
 [![Last Updated](https://img.shields.io/github/last-commit/codedge-llc/pigeon.svg)](https://github.com/codedge-llc/pigeon/commits/master)
 [![Documentation](https://img.shields.io/badge/documentation-gray)](https://hexdocs.pm/pigeon/)
 
-_Pigeon v2.0 is in release candidate status. See [the latest stable 1.6 on Hex](https://hex.pm/packages/pigeon)
-or [the 1.6 branch on GitHub](https://github.com/codedge-llc/pigeon/tree/v1.6) for installation._
-
 ## Installation
 
 Add `:pigeon` and as a `mix.exs` dependency:
@@ -19,31 +16,35 @@ Add `:pigeon` and as a `mix.exs` dependency:
 ```elixir
 def deps do
   [
-    {:pigeon, "~> 2.0.0-rc.3"}
+    {:pigeon, "~> 2.0"}
   ]
 end
 ```
+
+## Upgrading from v1.6
+
+See the [migration guide](./docs/Migrating to v2-0-0.md) for instructions.
 
 ## Getting Started
 
 Check the module documentation for your push notification service.
 
-- [Pigeon.ADM](https://hexdocs.pm/pigeon/2.0.0-rc.2/Pigeon.ADM.html) - Amazon Android.
-- [Pigeon.APNS](https://hexdocs.pm/pigeon/2.0.0-rc.2/Pigeon.APNS.html) - Apple iOS.
-- [Pigeon.FCM](https://hexdocs.pm/pigeon/2.0.0-rc.2/Pigeon.FCM.html) - Firebase Cloud Messaging v1 API.
+- [Pigeon.ADM](https://hexdocs.pm/pigeon/2.0.0/Pigeon.ADM.html) - Amazon Android.
+- [Pigeon.APNS](https://hexdocs.pm/pigeon/2.0.0/Pigeon.APNS.html) - Apple iOS.
+- [Pigeon.FCM](https://hexdocs.pm/pigeon/2.0.0/Pigeon.FCM.html) - Firebase Cloud Messaging v1 API.
 
 ### Creating Dynamic Runtime Dispatchers
 
 Pigeon can spin up dynamic dispatchers for a variety of advanced use-cases, such as
 supporting dozens of dispatcher configurations or custom connection pools.
 
-See [Pigeon.Dispatcher](https://hexdocs.pm/pigeon/2.0.0-rc.1/Pigeon.Dispatcher.html) for instructions.
+See [Pigeon.Dispatcher](https://hexdocs.pm/pigeon/2.0.0/Pigeon.Dispatcher.html) for instructions.
 
 ### Writing a Custom Dispatcher Adapter
 
 Want to write a Pigeon adapter for an unsupported push notification service?
 
-See [Pigeon.Adapter](https://hexdocs.pm/pigeon/2.0.0-rc.1/Pigeon.Adapter.html) for instructions.
+See [Pigeon.Adapter](https://hexdocs.pm/pigeon/2.0.0/Pigeon.Adapter.html) for instructions.
 
 ## Contributing
 
