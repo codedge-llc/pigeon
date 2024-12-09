@@ -2,17 +2,17 @@
 
 ## Migrating from v2.0 RCs
 
-See the CHANGELOG for specific breaking changes from each RC. If upgrading from RC3,
+See the [CHANGELOG](./CHANGELOG.md) for specific breaking changes from each RC. If upgrading from RC3,
 no additional changes are required.
 
 ## Migrating from v1.6
 
 1. Update your mix.exs dependencies.
 
-```diff
+```elixir
 [
-  + {:pigeon, "~> 2.0"} # Change this
-  - {:kadadbra, ~> 0.6.0} # Remove this
+  {:pigeon, "~> 2.0"} # Change this
+  {:kadadbra, ~> 0.6.0} # Remove this
 ]
 ```
 
@@ -23,7 +23,7 @@ Pigeon.
 
 Using APNS as an example, if you have a default push worker configured like this:
 
-```
+```elixir
 config :pigeon, :apns,
   apns_default: %{
     cert: "cert.pem",
@@ -34,7 +34,7 @@ config :pigeon, :apns,
 
 Remove the config and instead define a push worker like this:
 
-```
+```elixir
 # lib/your_app/apns.ex
 
 defmodule YourApp.APNS do
@@ -42,7 +42,7 @@ defmodule YourApp.APNS do
 end
 ```
 
-```
+```elixir
 # config.exs
 
 config :your_app, YourApp.APNS,
@@ -54,7 +54,7 @@ config :your_app, YourApp.APNS,
 
 And add it to your supervision tree.
 
-```
+```elixir
 defmodule YourApp.Application do
   @moduledoc false
 
@@ -73,7 +73,7 @@ end
 
 Configuration of the worker can now be passed directly if desired.
 
-```
+```elixir
 defmodule YourApp.Application do
   @moduledoc false
 
