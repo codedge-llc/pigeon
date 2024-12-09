@@ -2,7 +2,7 @@ defmodule Pigeon.Mixfile do
   use Mix.Project
 
   @source_url "https://github.com/codedge-llc/pigeon"
-  @version "2.0.0-rc.3"
+  @version "2.0.0"
 
   def project do
     [

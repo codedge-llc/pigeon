@@ -115,7 +115,7 @@ No addtional changes required apart from the configuration above.
 ### Breaking Changes for FCM
 
 1. FCM's legacy API, used by Pigeon v1.6, has been decommissioned. To upgrade, add the legacy
-   adapter to your mix.exs.
+   adapter to your mix.exs and follow worker setup instructions.
 
 ```elixir
 def deps do
