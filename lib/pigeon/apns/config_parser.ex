@@ -29,15 +29,15 @@ defmodule Pigeon.APNS.ConfigParser do
           reason: "configuration is invalid",
           config: opts
 
-      type ->
+      {:ok, type} ->
         type.new(opts)
     end
   end
 
-  @spec config_type(any) :: module | :error
+  @spec config_type(any) :: {:ok, module} | :error
   defp config_type(%{cert: _cert, key_identifier: _key_id}), do: :error
-  defp config_type(%{cert: _cert}), do: Config
-  defp config_type(%{key_identifier: _jwt_key}), do: JWTConfig
+  defp config_type(%{cert: _cert}), do: {:ok, Config}
+  defp config_type(%{key_identifier: _jwt_key}), do: {:ok, JWTConfig}
   defp config_type(_else), do: :error
 
   @doc false
