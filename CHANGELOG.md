@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+**Fixed**
+
+- Elixir 1.18 compilation warnings. ([#281](https://github.com/codedge-llc/pigeon/pull/281))
+
 ## v2.0.0
 
 No additional changes since v2.0.0-rc.3. Stable release.
