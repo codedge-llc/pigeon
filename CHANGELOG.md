@@ -1,16 +1,21 @@
 # Changelog
 
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
 ## Unreleased
 
 **Fixed**
 
 - Elixir 1.18 compilation warnings. ([#281](https://github.com/codedge-llc/pigeon/pull/281))
 
-## v2.0.0
+## v2.0.0 - 2024-12-09
 
 No additional changes since v2.0.0-rc.3. Stable release.
 
-## v2.0.0-rc.3
+## v2.0.0-rc.3 - 2024-09-10
 
 ### Breaking Changes
 
@@ -26,7 +31,7 @@ No additional changes since v2.0.0-rc.3. Stable release.
 
 - `DispatcherWorker` missing a clause for `{:stop, reason}` in the handle_info function.
 
-## v2.0.0-rc.2
+## v2.0.0-rc.2 - 2024-01-17
 
 **Fixed**
 
@@ -39,7 +44,7 @@ No additional changes since v2.0.0-rc.3. Stable release.
 - Add `ExpiredToken` as APNS error response. ([#240](https://github.com/codedge-llc/pigeon/pull/240))
 - Better handling of APNS token lifecycle between `:dev`/`:prod` environments with the same key identifier. ([#239](https://github.com/codedge-llc/pigeon/pull/239))
 
-## v2.0.0-rc.1
+## v2.0.0-rc.1 - 2022-06-30
 
 **Fixed**
 
@@ -50,7 +55,7 @@ No additional changes since v2.0.0-rc.3. Stable release.
 - Bump `goth` dependency to `~> 1.3.0`. ([#224](https://github.com/codedge-llc/pigeon/pull/224))
 - Bump minimum supported Elixir version to `1.7`.
 
-## v2.0.0-rc.0
+## v2.0.0-rc.0 - 2021-07-05
 
 **Changed**
 
@@ -75,7 +80,7 @@ No additional changes since v2.0.0-rc.3. Stable release.
   ([#183](https://github.com/codedge-llc/pigeon/pull/183))
 - `:debug_log` removed.
 
-## v1.6.0
+## v1.6.0 - 2021-01-09
 
 **Added**
 
@@ -90,12 +95,12 @@ No additional changes since v2.0.0-rc.3. Stable release.
 
 - Handle FCM single message_id's on topic pushes.
 
-## v1.5.1
+## v1.5.1 - 2020-05-25
 
 - Added APNS InvalidPushType error ([#172](https://github.com/codedge-llc/pigeon/pull/172)).
 - Fixed various typespecs ([#170](https://github.com/codedge-llc/pigeon/pull/170)).
 
-## v1.5.0
+## v1.5.0 - 2020-02-17
 
 - Bumped minimum Elixir version to 1.6
 - Raise `Pigeon.ConfigError` when booting invalid config structs.
@@ -115,83 +120,83 @@ Possible error values:
 - `{:error, {:invalid, value}}`
 - `{:error, {:nofile, value}}`
 
-## v1.4.0
+## v1.4.0 - 2019-10-13
 
 - `apns-push-type` header support for iOS 13. An additional `:push_type` key has been
   added to the `APNS.Notification` struct.
 
-## v1.3.2
+## v1.3.2 - 2019-08-17
 
 - Document workers configuration for run-time configuration of push workers.
 - Modify run-time configuration of push workers so that multiple (or no)
   workers may be returned by the startup configuration.
 
-## v1.3.1
+## v1.3.1 - 2019-06-06
 
 - Joken dependency bumped to 2.1
 
-## v1.3.0
+## v1.3.0 - 2019-03-14
 
 - Support for FCM `content_available`, `mutable_content`, and `condition` keys
 - Set `priority` of APNS notifications
 - Joken dependency bumped to 2.0.1
 
-## v1.2.4
+## v1.2.4 - 2018-10-15
 
 - Fixed ADM handling of connection timeouts
 
-## v1.2.3
+## v1.2.3 - 2018-09-17
 
 - Fixed APNS, FCM and ADM error response parse crashes. Error responses not
   listed in the documentation are returned as `:unknown_error`
 
-## v1.2.2
+## v1.2.2 - 2018-07-08
 
 - Fixed APNS handling of notification `expiration`
 - Added APNS support for `collapse_id`
 
-## v1.2.1
+## v1.2.1 - 2018-07-06
 
 - FCM notifications can now handle `time_to_live`, `collapse_key`, `restricted_package_name`
   and `dry_run` keys
 
-## v1.2.0
+## v1.2.0 - 2018-05-25
 
 - Support for APNS JWT configuration
 - Bump `kadabra` dependency to `v0.4.2`
 
-## v1.1.6
+## v1.1.6 - 2018-02-12
 
 - Relax `gen_stage` dependency to `~> 0.12`
 - Bump `kadabra` dependency to `v0.3.7`
 
-## v1.1.5
+## v1.1.5 - 2018-01-31
 
 - Fix: relax `httpoison` dependency to allow `0.x` or `1.0`
 
-## v1.1.4
+## v1.1.4 - 2018-01-03
 
 - Fix: `:on_response` callbacks spawned as supervised task instead of running
   in the `Worker` process
 - Fix: ADM token refresh failure returns updated notification instead of
   error tuple
 
-## v1.1.3
+## v1.1.3 - 2017-12-23
 
 - More robust FCM/APNS backpressure
 - Bumped minimum Kadabra version to `v0.3.6`
 
-## v1.1.2
+## v1.1.2 - 2017-12-04
 
 - Auto-restart connections if max stream ID is reached
 - FCM/APNS Workers now use GenStage to queue pending pushes
 - Bumped minimum Kadabra version to `v0.3.5`
 
-## v1.1.1
+## v1.1.1 - 2017-10-31
 
 - Bumped minimum Kadabra version to `v0.3.4`
 
-## v1.1.0
+## v1.1.0 - 2017-10-01
 
 - Minimum requirements now Elixir v1.4 and OTP 19.2 (Kadabra bumped
   to `v0.3.0`)
@@ -232,24 +237,24 @@ config :pigeon, workers: [
   the notification.
 - `ADM.start_connection/1` and `ADM.stop_connection/1` added
 
-## v1.0.4
+## v1.0.4 - 2017-09-06
 
 - Fix: removed connection pinging from FCM.Worker (`:ping_period` option
   left in FCM config to not break API)
 
-## v1.0.3
+## v1.0.3 - 2017-08-03
 
 - Fixed proper handling of large FCM push batches
 
-## v1.0.2
+## v1.0.2 - 2017-08-01
 
 - Fixed FCM infinite `GOAWAY session_timed_out` loop
 
-## v1.0.1
+## v1.0.1 - 2017-08-01
 
 - Configurable `:ping_period` for FCM connections
 
-## v1.0.0
+## v1.0.0 - 2017-07-30
 
 - GCM migrated to FCM API (http2)
 - `GCM` modules renamed to `FCM`
@@ -258,39 +263,39 @@ config :pigeon, workers: [
 - Disable auto-reconnect for APNS workers with `reconnect: false`
 - Removed Chatterbox http2 client adapter
 
-## v0.13.0
+## v0.13.0 - 2017-05-17
 
 - Configurable `:ping_period` for APNS connections
 
-## v0.12.1
+## v0.12.1 - 2017-04-02
 
 - Various `chatterbox` client adapter fixes
 
-## V0.12.0
+## V0.12.0 - 2017-04-01
 
 - Configurable `Pigeon.Http2.Client`. Currently supports `kadabra`
   and `chatterbox`
 - `kadabra` bumped to `v0.2.0`
 
-## v0.11.0
+## v0.11.0 - 2017-03-07
 
 - APNS workers can be started and referenced with pids and/or atom names
 - Fix: Push `:name` option renamed to `:to`
 - Fix: GCM/ADM async pushes now use `spawn/1` instead of `Task.async/1`
 
-## v0.10.3
+## v0.10.3 - 2017-01-06
 
 - Fix: cleaned up Elixir v1.4 warnings
 
-## v0.10.2
+## v0.10.2 - 2016-11-27
 
 - Fix: poison dependency version made optionally `~> 2.0 or ~> 3.0`
 
-## v0.10.1
+## v0.10.1 - 2016-11-21
 
 - Fix: kadabra not started
 
-## v0.10.0
+## v0.10.0 - 2017-11-13
 
 - Migrated HTTP/2 client from `chatterbox` to `kadabra`
 - Support for ADM (Amazon Android) push
@@ -305,26 +310,26 @@ config :pigeon, workers: [
 
 - Fixed GCM error response atom conversion
 
-## v0.9.1
+## v0.9.1 - 2016-09-01
 
 - Fixed :eaddrinuse error when restarting Pigeon too quickly with
   :apns_2197 enabled
 
-## v0.9.0
+## v0.9.0 - 2016-07-20
 
 - APNS topic made optional
 - APNS `put_mutable_content` helper function added
 - GCM can be configured on a per-push basis
 - Updated to use Macro.underscore
 
-## v0.8.0
+## v0.8.0 - 2016-06-23
 
 - Implemented Chatterbox as APNS HTTP2 client
 - APNS server responses now caught asynchronously
 - GCM support for `notification` and `data` payload keys
   (`Pigeon.GCM.Notification.new` API changes)
 
-## v0.7.0
+## v0.7.0 - 2016-06-02
 
 - APNS cert/key configs can now either be a file path, full-text string,
   or `{:your_app, "path/to/file.pem"}` (which looks in the `/priv` directory
@@ -332,7 +337,7 @@ config :pigeon, workers: [
 - Fixed APNSWorker crash on `:ssl.send/2` timeout
 - Better error-handling for invalid APNS configs
 
-## v0.6.0
+## v0.6.0 - 2016-05-20
 
 - `Pigeon.APNS.Notification.new/3` returns `%Pigeon.APNS.Notification{}` struct
 - Configure APNS to use SSL port 2197 with `apns_2197: true` in
@@ -341,16 +346,16 @@ config :pigeon, workers: [
 - APNS expiration values supported with `expiration` key in
   `%Pigeon.APNS.Notification{}`
 
-## v0.5.2
+## v0.5.2 - 2016-05-03
 
 - Fixed bug where APNSWorker would hang up if SSL connection failed. Now
   retries the connection twice more before gracefully shutting down.
 
-## v0.5.1
+## v0.5.1 - 2016-03-30
 
 - GCM error responses return proper chunk of regstration IDs
 
-## v0.5.0
+## v0.5.0 - 2016-03-30
 
 - `Pigeon.GCM.Notification.new/2` returns `%Pigeon.GCM.Notification{}` struct
 - Multiple registration IDs allowed in `Pigeon.GCM.push/2`
