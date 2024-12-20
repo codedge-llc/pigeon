@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Changed**
 
-- Moved older CHANGELOG release notes to their appropriate major version release branches. ([#285](https://github.com/codedge-llc/pigeon/pull/285))
+- Moved older CHANGELOG release notes to their appropriate major version release branches. ([#283](https://github.com/codedge-llc/pigeon/pull/283),
+  [#284](https://github.com/codedge-llc/pigeon/pull/284), [#285](https://github.com/codedge-llc/pigeon/pull/285))
 
 **Fixed**
 
