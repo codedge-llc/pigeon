@@ -1,6 +1,6 @@
 ![logo](https://raw.githubusercontent.com/codedge-llc/pigeon/master/docs/logo.png)
 
-> HTTP2-compliant wrapper for sending iOS and Android push notifications.
+> iOS (APNS), Android (FCM), and Amazon Android (ADM) push notifications for Elixir.
 
 [![CI](https://github.com/codedge-llc/pigeon/actions/workflows/ci.yml/badge.svg)](https://github.com/codedge-llc/pigeon/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/hexpm/v/pigeon.svg)](https://hex.pm/packages/pigeon)

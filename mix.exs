@@ -1,6 +1,8 @@
 defmodule Pigeon.Mixfile do
   use Mix.Project
 
+  @description "iOS (APNS), Android (FCM), and Amazon Android (ADM) push notifications for Elixir."
+  @name "Pigeon"
   @source_url "https://github.com/codedge-llc/pigeon"
   @version "2.0.1"
 
@@ -9,13 +11,13 @@ defmodule Pigeon.Mixfile do
       app: :pigeon,
       build_embedded: Mix.env() == :prod,
       deps: deps(),
-      description: description(),
+      description: @description,
       dialyzer: dialyzer(),
       docs: docs(),
       elixir: "~> 1.7",
       elixirc_options: [warnings_as_errors: true],
       elixirc_paths: elixirc_paths(Mix.env()),
-      name: "Pigeon",
+      name: @name,
       package: package(),
       preferred_cli_env: [
         coveralls: :test,
@@ -77,13 +79,6 @@ defmodule Pigeon.Mixfile do
       source_ref: "v#{@version}",
       source_url: @source_url
     ]
-  end
-
-  defp description do
-    """
-    HTTP2-compliant wrapper for sending iOS (APNS), Android (FCM),
-    and Amazon Android (ADM) push notifications.
-    """
   end
 
   defp package do
