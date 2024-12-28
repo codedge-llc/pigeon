@@ -1,6 +1,6 @@
 defmodule Pigeon do
   @moduledoc """
-  HTTP2-compliant wrapper for sending iOS and Android push notifications.
+  iOS (APNS), Android (FCM), and Amazon Android (ADM) push notifications for Elixir.
 
   ## Getting Started
 
