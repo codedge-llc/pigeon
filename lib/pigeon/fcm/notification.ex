@@ -95,7 +95,8 @@ defmodule Pigeon.FCM.Notification do
     %Pigeon.FCM.Notification{
       target: target,
       notification: notification,
-      data: data
+      data: data,
+      android: %{priority: :high}
     }
   end
 end
