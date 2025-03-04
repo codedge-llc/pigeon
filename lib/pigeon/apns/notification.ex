@@ -50,7 +50,7 @@ defmodule Pigeon.APNS.Notification do
 
   - nil - Push has not been sent yet.
   - `:success` - Push was successfully sent.
-  - `t:Pigeon.APNS.Error.error_response/0` - Push attempted but
+  - `t:Pigeon.APNS.Notification.error_response/0` - Push attempted but
      server responded with error.
   - `:timeout` - Internal error. Push did not reach APNS servers.
   """
