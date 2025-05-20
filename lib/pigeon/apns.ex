@@ -156,16 +156,19 @@ defmodule Pigeon.APNS do
   8. `cert.pem` and `key_unencrypted.pem` can now be used in your configuration.
   """
 
-  defstruct queue: Pigeon.NotificationQueue.new(),
-            stream_id: 1,
-            socket: nil,
-            config: nil
+  defstruct config: nil,
+            queue: Pigeon.HTTP.RequestQueue.new(),
+            socket: nil
 
   @behaviour Pigeon.Adapter
 
-  alias Pigeon.{Configurable, NotificationQueue}
-  alias Pigeon.APNS.ConfigParser
-  alias Pigeon.Http2.{Client, Stream}
+  import Pigeon.Tasks, only: [process_on_response: 1]
+
+  alias Pigeon.Configurable
+  alias Pigeon.APNS.{ConfigParser, Error}
+  alias Pigeon.HTTP.RequestQueue
+
+  require Logger
 
   @impl true
   def init(opts) do
@@ -174,7 +177,7 @@ defmodule Pigeon.APNS do
 
     state = %__MODULE__{config: config}
 
-    case connect_socket(config) do
+    case Configurable.connect(config) do
       {:ok, socket} ->
         Configurable.schedule_ping(config)
         {:ok, %{state | socket: socket}}
@@ -185,87 +188,92 @@ defmodule Pigeon.APNS do
   end
 
   @impl true
-  def handle_push(notification, %{config: config, queue: queue} = state) do
+  def handle_push(notification, state) do
+    %{config: config, queue: queue, socket: socket} = state
+
     headers = Configurable.push_headers(config, notification, [])
     payload = Configurable.push_payload(config, notification, [])
+    method = "POST"
+    path = "/3/device/#{notification.device_token}"
 
-    Client.default().send_request(state.socket, headers, payload)
+    {:ok, socket, ref} =
+      Mint.HTTP.request(socket, method, path, headers, payload)
 
-    new_q = NotificationQueue.add(queue, state.stream_id, notification)
+    new_q = RequestQueue.add(queue, ref, notification)
 
     state =
       state
-      |> inc_stream_id()
+      |> Map.put(:socket, socket)
       |> Map.put(:queue, new_q)
 
     {:noreply, state}
   end
 
-  def handle_info(:ping, state) do
-    Client.default().send_ping(state.socket)
+  @impl true
+  def handle_info(:ping, %{socket: socket} = state) do
+    {:ok, socket, _ref} = Mint.HTTP2.ping(socket)
     Configurable.schedule_ping(state.config)
 
-    {:noreply, state}
+    {:noreply, %{state | socket: socket}}
   end
 
   def handle_info({:closed, _}, %{config: config} = state) do
-    case connect_socket(config) do
+    case Configurable.connect(config) do
       {:ok, socket} ->
         Configurable.schedule_ping(config)
-
-        state =
-          state
-          |> reset_stream_id()
-          |> Map.put(:socket, socket)
-
-        {:noreply, state}
+        {:noreply, %{state | socket: socket}}
 
       {:error, reason} ->
         {:stop, reason}
     end
   end
 
-  @impl true
   def handle_info(msg, state) do
-    case Client.default().handle_end_stream(msg, state) do
-      {:ok, %Stream{} = stream} -> process_end_stream(stream, state)
-      _else -> {:noreply, state}
+    %{queue: queue, socket: socket} = state
+
+    case Mint.HTTP.stream(socket, msg) do
+      :unknown ->
+        {:noreply, state}
+
+      {:ok, socket, responses} ->
+        {done, new_q} =
+          responses
+          |> RequestQueue.process(queue)
+          |> RequestQueue.pop_done()
+
+        for {_ref, request} <- done do
+          handle_response(request)
+        end
+
+        {:noreply, %{state | queue: new_q, socket: socket}}
+
+      {:error, socket, error, _responses} ->
+        error |> inspect(pretty: true) |> Logger.error()
+        {:noreply, %{state | socket: socket}}
     end
   end
 
-  defp connect_socket(config), do: connect_socket(config, 0)
+  def handle_response(%{status: 200} = request) do
+    %{headers: headers, notification: notification} = request
 
-  defp connect_socket(_config, 3), do: {:error, :timeout}
+    notification
+    |> Map.put(:id, get_header(headers, "apns-id"))
+    |> Map.put(:response, :success)
+    |> process_on_response()
+  end
 
-  defp connect_socket(config, tries) do
-    case Configurable.connect(config) do
-      {:ok, socket} -> {:ok, socket}
-      {:error, _reason} -> connect_socket(config, tries + 1)
+  def handle_response(request) do
+    %{body: body, notification: notification} = request
+
+    notification
+    |> Map.put(:response, Error.parse(body))
+    |> process_on_response()
+  end
+
+  def get_header(headers, key) do
+    case Enum.find(headers, fn {k, _val} -> k == key end) do
+      {^key, val} -> val
+      nil -> nil
     end
-  end
-
-  @doc false
-  def process_end_stream(%Stream{id: stream_id} = stream, state) do
-    %{queue: queue, config: config} = state
-
-    case NotificationQueue.pop(queue, stream_id) do
-      {nil, new_queue} ->
-        # Do nothing if no queued item for stream
-        {:noreply, %{state | queue: new_queue}}
-
-      {notif, new_queue} ->
-        Configurable.handle_end_stream(config, stream, notif)
-        {:noreply, %{state | queue: new_queue}}
-    end
-  end
-
-  @doc false
-  def inc_stream_id(%{stream_id: stream_id} = state) do
-    %{state | stream_id: stream_id + 2}
-  end
-
-  @doc false
-  def reset_stream_id(state) do
-    %{state | stream_id: 1}
   end
 end

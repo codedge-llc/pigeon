@@ -3,12 +3,9 @@ defmodule Pigeon.Application do
 
   use Application
   alias Pigeon.APNS
-  alias Pigeon.Http2.Client
 
   @doc false
   def start(_type, _args) do
-    Client.default().start()
-
     children = [
       Pigeon.Registry,
       {APNS.Token, %{}},

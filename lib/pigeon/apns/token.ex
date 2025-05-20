@@ -24,7 +24,7 @@ defmodule Pigeon.APNS.Token do
     }
   end
 
-  @spec get(JWTConfig.t()) :: t
+  @spec get(JWTConfig.t()) :: String.t()
   def get(%JWTConfig{} = config) do
     token_storage_key =
       config.key_identifier <> ":" <> config.team_id <> ":" <> config.uri
@@ -44,7 +44,7 @@ defmodule Pigeon.APNS.Token do
     end)
   end
 
-  @spec generate_apns_jwt(JWTConfig.t()) :: binary
+  @spec generate_apns_jwt(JWTConfig.t()) :: String.t()
   defp generate_apns_jwt(config) do
     key = %{"pem" => config.key}
     now = :os.system_time(:seconds)

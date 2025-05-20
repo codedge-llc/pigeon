@@ -117,18 +117,23 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
     Shared
   }
 
-  @type headers :: [{binary, binary}]
-  @type sock :: {:sslsocket, any, pid | {any, any}}
-  @type socket_opts :: maybe_improper_list(atom, integer | boolean)
+  @type headers :: [{String.t(), String.t()}]
 
   # Configurable Callbacks
 
-  @spec connect(any) :: {:ok, sock} | {:error, binary}
-  def connect(%{uri: uri} = config) do
-    uri = to_charlist(uri)
-
+  @spec connect(any) :: {:ok, Mint.HTTP2.t()} | {:error, Exception.t()}
+  def connect(%{uri: uri, port: port} = config) do
     options = connect_socket_options(config)
-    Pigeon.Http2.Client.default().connect(uri, :https, options)
+
+    client_settings = [
+      initial_window_size: round(:math.pow(2, 31) - 1),
+      max_frame_size: round(:math.pow(2, 24) - 1)
+    ]
+
+    Mint.HTTP2.connect(:https, uri, port,
+      client_settings: client_settings,
+      transport_opts: options
+    )
   end
 
   @spec push_headers(JWTConfig.t(), Notification.t(), Keyword.t()) ::
@@ -140,8 +145,6 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
   end
 
   defdelegate push_payload(config, notification, opts), to: Shared
-
-  defdelegate handle_end_stream(config, stream, notification), to: Shared
 
   defdelegate schedule_ping(any), to: Shared
 
@@ -170,21 +173,18 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
     :ok
   end
 
-  @spec connect_socket_options(JWTConfig.t()) :: socket_opts
-  def connect_socket_options(%{key: _jwt_key} = config) do
+  @spec connect_socket_options(JWTConfig.t()) :: Keyword.t()
+  def connect_socket_options(%@for{key: _jwt_key}) do
     [
       {:packet, 0},
       {:reuseaddr, true},
-      {:active, true},
-      :binary
+      {:active, true}
     ]
-    |> Shared.add_port(config)
   end
 
-  @spec put_bearer_token(headers, JWTConfig.t()) :: headers
+  @spec put_bearer_token(headers(), JWTConfig.t()) :: headers
   defp put_bearer_token(headers, %JWTConfig{} = config) when is_list(headers) do
     token = Pigeon.APNS.Token.get(config)
-
     [{"authorization", "bearer " <> token} | headers]
   end
 end

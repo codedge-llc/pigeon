@@ -1,16 +1,16 @@
 defprotocol Pigeon.Configurable do
   @moduledoc false
 
-  @type sock :: {:sslsocket, any, pid | {any, any}}
-
-  @spec connect(any) :: {:ok, sock} | {:error, String.t()}
+  @spec connect(any) :: {:ok, Mint.HTTP2.t()} | {:error, Exception.t()}
   def connect(config)
 
   def push_headers(config, notification, opts)
 
   def push_payload(config, notification, opts)
 
-  def handle_end_stream(config, stream, notification)
+  # def handle_end_stream(config, stream, notification)
+
+  # def handle_response(config, request)
 
   @doc ~S"""
   Schedules connection ping if necessary.
