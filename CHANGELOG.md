@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Changed**
 
 - Use Mint for all HTTP/1 and HTTP/2 connections. This replaces the use of `:httpoison`
-  and `:kadabra`.([#296](https://github.com/codedge-llc/pigeon/pull/296))
+  and `:kadabra`. ([#296](https://github.com/codedge-llc/pigeon/pull/296))
 
 **Fixed**
 
