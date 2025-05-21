@@ -148,7 +148,6 @@ defmodule Pigeon.ADM do
   alias Pigeon.HTTP.RequestQueue
   require Logger
 
-  # @token_refresh_uri "https://api.amazon.com/auth/O2/token"
   @token_refresh_early_seconds 5
 
   @impl true
@@ -189,14 +188,6 @@ defmodule Pigeon.ADM do
         {:noreply, state}
     end
   end
-
-  # def handle_info({_from, {:ok, %HTTPoison.Response{status_code: 200}}}, state) do
-  #   {:noreply, state}
-  # end
-
-  # def handle_info(_msg, state) do
-  #   {:noreply, state}
-  # end
 
   @impl true
   def handle_info(msg, state) do
@@ -266,7 +257,6 @@ defmodule Pigeon.ADM do
   end
 
   defp refresh_access_token(state) do
-    # {:ok, socket} = Mint.HTTP.connect(:https, "api.amazon.com", 443)
     headers = token_refresh_headers()
     body = token_refresh_body(state)
     method = "POST"
@@ -339,7 +329,7 @@ defmodule Pigeon.ADM do
     headers = adm_headers(state)
     body = encode_payload(notification)
     method = "POST"
-    path = adm_uri(notification.registration_id)
+    path = adm_path(notification.registration_id)
 
     {:ok, socket, ref} =
       Mint.HTTP.request(socket, method, path, headers, body)
@@ -349,28 +339,8 @@ defmodule Pigeon.ADM do
     {:ok, %{state | queue: new_q, socket: socket}}
   end
 
-  # defp do_push(notification, state) do
-  #   request = {notification.registration_id, encode_payload(notification)}
-
-  #   response = fn {reg_id, payload} ->
-  #     case HTTPoison.post(adm_uri(reg_id), payload, adm_headers(state)) do
-  #       {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
-  #         notification = %{notification | registration_id: reg_id}
-  #         process_response(status, body, notification)
-
-  #       {:error, %HTTPoison.Error{reason: :connect_timeout}} ->
-  #         notification
-  #         |> Map.put(:response, :timeout)
-  #         |> process_on_response()
-  #     end
-  #   end
-
-  #   Task.Supervisor.start_child(Pigeon.Tasks, fn -> response.(request) end)
-  #   :ok
-  # end
-
-  defp adm_uri(reg_id) do
-    # "https://api.amazon.com/messaging/registrations/#{reg_id}/messages"
+  @spec adm_path(String.t()) :: String.t()
+  defp adm_path(reg_id) do
     "/messaging/registrations/#{reg_id}/messages"
   end
 
@@ -425,7 +395,7 @@ defmodule Pigeon.ADM do
         |> ResultParser.parse(result_json)
         |> process_on_response()
 
-      {:error, error} ->
+      {:error, _error} ->
         notification
         |> Map.put(:response, generic_error_reason(status))
         |> process_on_response()
