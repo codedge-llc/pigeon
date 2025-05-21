@@ -144,11 +144,9 @@ defmodule Pigeon.ADM do
   @behaviour Pigeon.Adapter
 
   import Pigeon.Tasks, only: [process_on_response: 1]
-  alias Pigeon.ADM.{Config, ResultParser}
+  alias Pigeon.ADM.{Config, ResultParser, Token}
   alias Pigeon.HTTP.RequestQueue
   require Logger
-
-  @token_refresh_early_seconds 5
 
   @impl true
   def init(opts) do
@@ -235,7 +233,7 @@ defmodule Pigeon.ADM do
       is_nil(access_token) ->
         refresh_access_token(state)
 
-      access_token_expired?(access_ref_dt_erl, access_ref_exp_secs) ->
+      Token.expired?(access_ref_dt_erl, access_ref_exp_secs) ->
         refresh_access_token(state)
 
       true ->
@@ -243,29 +241,9 @@ defmodule Pigeon.ADM do
     end
   end
 
-  defp access_token_expired?(_refreshed_datetime_erl, 0), do: true
-
-  defp access_token_expired?(refreshed_datetime_erl, expiration_seconds) do
-    seconds_since(refreshed_datetime_erl) >=
-      expiration_seconds - @token_refresh_early_seconds
-  end
-
-  defp seconds_since(datetime_erl) do
-    gregorian_seconds =
-      datetime_erl
-      |> :calendar.datetime_to_gregorian_seconds()
-
-    now_gregorian_seconds =
-      :os.timestamp()
-      |> :calendar.now_to_universal_time()
-      |> :calendar.datetime_to_gregorian_seconds()
-
-    now_gregorian_seconds - gregorian_seconds
-  end
-
-  defp refresh_access_token(state) do
-    headers = token_refresh_headers()
-    body = token_refresh_body(state)
+  defp refresh_access_token(%{config: config} = state) do
+    headers = Token.refresh_headers()
+    body = Token.refresh_body(config.client_id, config.client_secret)
     method = "POST"
     path = "/auth/O2/token"
 
@@ -314,22 +292,6 @@ defmodule Pigeon.ADM do
         Logger.error("Refresh token response: #{inspect(response_json)}")
         {:error, response_json["reason"]}
     end
-  end
-
-  defp token_refresh_body(%{
-         config: %{client_id: client_id, client_secret: client_secret}
-       }) do
-    %{
-      "grant_type" => "client_credentials",
-      "scope" => "messaging:push",
-      "client_id" => client_id,
-      "client_secret" => client_secret
-    }
-    |> URI.encode_query()
-  end
-
-  defp token_refresh_headers do
-    [{"Content-Type", "application/x-www-form-urlencoded;charset=UTF-8"}]
   end
 
   defp do_push(notification, %{queue: queue, socket: socket} = state) do
