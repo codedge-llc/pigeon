@@ -84,7 +84,7 @@ defmodule Pigeon.APNS do
   end
   ```
 
-  ### Create a notification. 
+  ### Create a notification.
 
   ```
   n = Pigeon.APNS.Notification.new("your message", "your device token", "your push topic")
@@ -93,8 +93,8 @@ defmodule Pigeon.APNS do
   > #### Note {: .info}
   >
   > Note: Your push topic is generally the app's bundle identifier.
-   
-  ### Send the notification. 
+
+  ### Send the notification.
 
   Pushes are synchronous and return the notification with an updated `:response` key.
 
@@ -139,8 +139,8 @@ defmodule Pigeon.APNS do
   openssl pkcs12 -legacy -clcerts -nokeys -out cert.pem -in cert.p12
   ```
 
-  6. Convert the key. Be sure to set a PEM pass phrase here. The pass phrase must be 4 or 
-     more characters in length or this will not work. You will need that pass phrase added 
+  6. Convert the key. Be sure to set a PEM pass phrase here. The pass phrase must be 4 or
+     more characters in length or this will not work. You will need that pass phrase added
      here in order to remove it in the next step.
 
   ```
@@ -166,7 +166,7 @@ defmodule Pigeon.APNS do
 
   alias Pigeon.Configurable
   alias Pigeon.APNS.{ConfigParser, Error}
-  alias Pigeon.HTTP.RequestQueue
+  alias Pigeon.HTTP.{Request, RequestQueue}
 
   require Logger
 
@@ -229,30 +229,10 @@ defmodule Pigeon.APNS do
   end
 
   def handle_info(msg, state) do
-    %{queue: queue, socket: socket} = state
-
-    case Mint.HTTP.stream(socket, msg) do
-      :unknown ->
-        {:noreply, state}
-
-      {:ok, socket, responses} ->
-        {done, new_q} =
-          responses
-          |> RequestQueue.process(queue)
-          |> RequestQueue.pop_done()
-
-        for {_ref, request} <- done do
-          handle_response(request)
-        end
-
-        {:noreply, %{state | queue: new_q, socket: socket}}
-
-      {:error, socket, error, _responses} ->
-        error |> inspect(pretty: true) |> Logger.error()
-        {:noreply, %{state | socket: socket}}
-    end
+    Pigeon.HTTP.handle_info(msg, state, &handle_response/1)
   end
 
+  @spec handle_response(Request.t()) :: :ok
   def handle_response(%{status: 200} = request) do
     %{headers: headers, notification: notification} = request
 
@@ -270,6 +250,7 @@ defmodule Pigeon.APNS do
     |> process_on_response()
   end
 
+  @spec get_header([{String.t(), String.t()}], String.t()) :: String.t() | nil
   def get_header(headers, key) do
     case Enum.find(headers, fn {k, _val} -> k == key end) do
       {^key, val} -> val

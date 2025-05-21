@@ -191,31 +191,38 @@ defmodule Pigeon.ADM do
 
   @impl true
   def handle_info(msg, state) do
-    %{queue: queue, socket: socket} = state
+    Pigeon.HTTP.handle_info(msg, state, &process_response/1)
+  end
 
-    case Mint.HTTP.stream(socket, msg) do
-      :unknown ->
-        {:noreply, state}
+  defp process_response(%{status: 200} = request) do
+    %{body: body, notification: notification} = request
+    {:ok, json} = Pigeon.json_library().decode(body)
 
-      {:ok, socket, responses} ->
-        {done, new_q} =
-          responses
-          |> RequestQueue.process(queue)
-          |> RequestQueue.pop_done()
+    notification
+    |> ResultParser.parse(json)
+    |> process_on_response()
+  end
 
-        for {_ref, request} <- done do
-          if request.notification do
-            process_response(request.status, request.body, request.notification)
-          end
-        end
+  defp process_response(request) do
+    %{status: status, body: body, notification: notification} = request
 
-        {:noreply, %{state | queue: new_q, socket: socket}}
+    case Pigeon.json_library().decode(body) do
+      {:ok, %{"reason" => _reason} = result_json} ->
+        notification
+        |> ResultParser.parse(result_json)
+        |> process_on_response()
 
-      {:error, socket, error, _responses} ->
-        error |> inspect(pretty: true) |> Logger.error()
-        {:noreply, %{state | socket: socket}}
+      {:error, _error} ->
+        notification
+        |> Map.put(:response, generic_error_reason(status))
+        |> process_on_response()
     end
   end
+
+  defp generic_error_reason(400), do: :invalid_json
+  defp generic_error_reason(401), do: :authentication_error
+  defp generic_error_reason(500), do: :internal_server_error
+  defp generic_error_reason(_), do: :unknown_error
 
   defp refresh_access_token_if_needed(state) do
     %{
@@ -379,31 +386,4 @@ defmodule Pigeon.ADM do
   defp put_md5(payload, md5) do
     payload |> Map.put("md5", md5)
   end
-
-  defp process_response(200, body, notification) do
-    {:ok, json} = Pigeon.json_library().decode(body)
-
-    notification
-    |> ResultParser.parse(json)
-    |> process_on_response()
-  end
-
-  defp process_response(status, body, notification) do
-    case Pigeon.json_library().decode(body) do
-      {:ok, %{"reason" => _reason} = result_json} ->
-        notification
-        |> ResultParser.parse(result_json)
-        |> process_on_response()
-
-      {:error, _error} ->
-        notification
-        |> Map.put(:response, generic_error_reason(status))
-        |> process_on_response()
-    end
-  end
-
-  defp generic_error_reason(400), do: :invalid_json
-  defp generic_error_reason(401), do: :authentication_error
-  defp generic_error_reason(500), do: :internal_server_error
-  defp generic_error_reason(_), do: :unknown_error
 end

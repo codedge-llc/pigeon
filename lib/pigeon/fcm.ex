@@ -99,8 +99,8 @@ defmodule Pigeon.FCM do
 
   ## Customizing Goth
 
-  You can use any of the configuration options (e.g. `:source`) for Goth. Check out the 
-  documentation of [`Goth.start_link/1`](https://hexdocs.pm/goth/Goth.html#start_link/1) 
+  You can use any of the configuration options (e.g. `:source`) for Goth. Check out the
+  documentation of [`Goth.start_link/1`](https://hexdocs.pm/goth/Goth.html#start_link/1)
   for more details.
   """
 
@@ -116,8 +116,8 @@ defmodule Pigeon.FCM do
   import Pigeon.Tasks, only: [process_on_response: 1]
 
   alias Pigeon.Configurable
-  alias Pigeon.FCM.Error
-  alias Pigeon.HTTP.RequestQueue
+  alias Pigeon.FCM.{Config, Error}
+  alias Pigeon.HTTP.{Request, RequestQueue}
 
   require Logger
 
@@ -180,30 +180,10 @@ defmodule Pigeon.FCM do
   end
 
   def handle_info(msg, state) do
-    %{queue: queue, socket: socket} = state
-
-    case Mint.HTTP.stream(socket, msg) do
-      :unknown ->
-        {:noreply, state}
-
-      {:ok, socket, responses} ->
-        {done, new_q} =
-          responses
-          |> RequestQueue.process(queue)
-          |> RequestQueue.pop_done()
-
-        for {_ref, request} <- done do
-          handle_response(request)
-        end
-
-        {:noreply, %{state | queue: new_q, socket: socket}}
-
-      {:error, socket, error, _responses} ->
-        error |> inspect(pretty: true) |> Logger.error()
-        {:noreply, %{state | socket: socket}}
-    end
+    Pigeon.HTTP.handle_info(msg, state, &handle_response/1)
   end
 
+  @spec handle_response(Request.t()) :: :ok
   def handle_response(%{body: body, notification: notif}) do
     body
     |> Pigeon.json_library().decode!()
@@ -222,6 +202,7 @@ defmodule Pigeon.FCM do
     end
   end
 
+  @spec connect_socket(Config.t()) :: {:ok, Mint.HTTP2.t()} | {:error, term()}
   defp connect_socket(config), do: connect_socket(config, @max_retries)
 
   defp connect_socket(config, tries) do
