@@ -4,10 +4,13 @@ defmodule Pigeon.APNS.Token do
 
   alias Pigeon.APNS.JWTConfig
 
+  require Logger
+
   # seconds - 10 seconds short of one hour
   @token_max_age 3_590
 
-  @type t :: {non_neg_integer(), binary() | nil}
+  # 5 seconds
+  @shutdown_timeout 5_000
 
   @spec start_link((-> any())) :: Agent.on_start()
   def start_link(_) do
@@ -20,14 +23,13 @@ defmodule Pigeon.APNS.Token do
       start: {__MODULE__, :start_link, [opts]},
       type: :worker,
       restart: :permanent,
-      shutdown: 5_000
+      shutdown: @shutdown_timeout
     }
   end
 
-  @spec get(JWTConfig.t()) :: t
+  @spec get(JWTConfig.t()) :: String.t()
   def get(%JWTConfig{} = config) do
-    token_storage_key =
-      config.key_identifier <> ":" <> config.team_id <> ":" <> config.uri
+    token_storage_key = storage_key(config)
 
     Agent.get_and_update(__MODULE__, fn map ->
       {timestamp, saved_token} = Map.get(map, token_storage_key, {0, nil})
@@ -44,18 +46,23 @@ defmodule Pigeon.APNS.Token do
     end)
   end
 
-  @spec generate_apns_jwt(JWTConfig.t()) :: binary
+  @spec storage_key(JWTConfig.t()) :: String.t()
+  defp storage_key(config) do
+    "#{config.key_identifier}:#{config.team_id}:#{config.uri}"
+  end
+
+  @spec generate_apns_jwt(JWTConfig.t()) :: String.t()
   defp generate_apns_jwt(config) do
-    key = %{"pem" => config.key}
+    %{key: key, key_identifier: key_identifier, team_id: team_id} = config
+
+    key = %{"pem" => key}
     now = :os.system_time(:seconds)
 
     signer =
-      Joken.Signer.create("ES256", key, %{"kid" => config.key_identifier})
+      Joken.Signer.create("ES256", key, %{"kid" => key_identifier})
 
-    {:ok, token, _claims} =
-      default_claims(iss: config.team_id, iat: now)
-      |> Joken.generate_and_sign(%{}, signer)
-
-    token
+    [iss: team_id, iat: now]
+    |> default_claims()
+    |> Joken.generate_and_sign!(%{}, signer)
   end
 end

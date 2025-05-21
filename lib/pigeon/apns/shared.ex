@@ -1,9 +1,7 @@
 defmodule Pigeon.APNS.Shared do
   @moduledoc false
 
-  import Pigeon.Tasks, only: [process_on_response: 1]
-
-  alias Pigeon.APNS.{Config, Error, JWTConfig, Notification}
+  alias Pigeon.APNS.{Config, JWTConfig, Notification}
 
   @type config :: Config.t() | JWTConfig.t()
 
@@ -21,11 +19,7 @@ defmodule Pigeon.APNS.Shared do
   def push_headers(_config, notification, _opts) do
     json = Pigeon.json_library().encode!(notification.payload)
 
-    [
-      {":method", "POST"},
-      {":path", "/3/device/#{notification.device_token}"},
-      {"content-length", "#{byte_size(json)}"}
-    ]
+    [{"content-length", "#{byte_size(json)}"}]
     |> put_header(@apns_id, notification.id)
     |> put_header(@apns_topic, notification.topic)
     |> put_header(@apns_priority, notification.priority)
@@ -37,23 +31,6 @@ defmodule Pigeon.APNS.Shared do
   @spec push_payload(config, Notification.t(), opts) :: iodata | no_return
   def push_payload(_config, notification, _opts) do
     Pigeon.json_library().encode!(notification.payload)
-  end
-
-  def handle_end_stream(_config, stream, notification) do
-    %{headers: headers, body: body, status: status} = stream
-
-    case status do
-      200 ->
-        notification
-        |> Map.put(:id, get_header(headers, @apns_id))
-        |> Map.put(:response, :success)
-        |> process_on_response()
-
-      _error ->
-        notification
-        |> Map.put(:response, Error.parse(body))
-        |> process_on_response()
-    end
   end
 
   @spec schedule_ping(any) :: no_return
@@ -80,7 +57,4 @@ defmodule Pigeon.APNS.Shared do
       nil -> nil
     end
   end
-
-  def add_port(opts, %{port: 443}), do: opts
-  def add_port(opts, %{port: port}), do: [{:port, port} | opts]
 end

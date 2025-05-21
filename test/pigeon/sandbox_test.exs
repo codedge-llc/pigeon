@@ -25,4 +25,8 @@ defmodule Pigeon.SandboxTest do
     PigeonTest.Sandbox.push([n, n], on_response: nil)
     # Didn't crash, nothing to test.
   end
+
+  test "handle_info/2 handles unexpected messages" do
+    assert Pigeon.Sandbox.handle_info(:unexpected, %{}) == {:noreply, %{}}
+  end
 end

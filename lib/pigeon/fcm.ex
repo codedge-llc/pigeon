@@ -99,23 +99,27 @@ defmodule Pigeon.FCM do
 
   ## Customizing Goth
 
-  You can use any of the configuration options (e.g. `:source`) for Goth. Check out the 
-  documentation of [`Goth.start_link/1`](https://hexdocs.pm/goth/Goth.html#start_link/1) 
+  You can use any of the configuration options (e.g. `:source`) for Goth. Check out the
+  documentation of [`Goth.start_link/1`](https://hexdocs.pm/goth/Goth.html#start_link/1)
   for more details.
   """
 
   @max_retries 3
 
   defstruct config: nil,
-            queue: Pigeon.NotificationQueue.new(),
+            queue: Pigeon.HTTP.RequestQueue.new(),
             retries: @max_retries,
-            socket: nil,
-            stream_id: 1
+            socket: nil
 
   @behaviour Pigeon.Adapter
 
-  alias Pigeon.{Configurable, NotificationQueue}
-  alias Pigeon.Http2.{Client, Stream}
+  import Pigeon.Tasks, only: [process_on_response: 1]
+
+  alias Pigeon.Configurable
+  alias Pigeon.FCM.{Config, Error}
+  alias Pigeon.HTTP.{Request, RequestQueue}
+
+  require Logger
 
   @impl Pigeon.Adapter
   def init(opts) do
@@ -137,41 +141,38 @@ defmodule Pigeon.FCM do
 
   @impl Pigeon.Adapter
   def handle_push(notification, state) do
-    %{config: config, queue: queue} = state
+    %{config: config, queue: queue, socket: socket} = state
     headers = Configurable.push_headers(config, notification, [])
     payload = Configurable.push_payload(config, notification, [])
+    method = "POST"
+    path = "/v1/projects/#{config.project_id}/messages:send"
 
-    Client.default().send_request(state.socket, headers, payload)
+    {:ok, socket, ref} =
+      Mint.HTTP.request(socket, method, path, headers, payload)
 
-    new_q = NotificationQueue.add(queue, state.stream_id, notification)
+    new_q = RequestQueue.add(queue, ref, notification)
 
     state =
       state
-      |> inc_stream_id()
+      |> Map.put(:socket, socket)
       |> Map.put(:queue, new_q)
 
     {:noreply, state}
   end
 
   @impl Pigeon.Adapter
-  def handle_info(:ping, state) do
-    Client.default().send_ping(state.socket)
-    Configurable.schedule_ping(state.config)
+  def handle_info(:ping, %{config: config, socket: socket} = state) do
+    {:ok, socket, _ref} = Mint.HTTP2.ping(socket)
+    Configurable.schedule_ping(config)
 
-    {:noreply, state}
+    {:noreply, %{state | socket: socket}}
   end
 
   def handle_info({:closed, _}, %{config: config} = state) do
     case connect_socket(config) do
       {:ok, socket} ->
         Configurable.schedule_ping(config)
-
-        state =
-          state
-          |> reset_stream_id()
-          |> Map.put(:socket, socket)
-
-        {:noreply, state}
+        {:noreply, %{state | socket: socket}}
 
       {:error, reason} ->
         {:stop, reason}
@@ -179,12 +180,29 @@ defmodule Pigeon.FCM do
   end
 
   def handle_info(msg, state) do
-    case Client.default().handle_end_stream(msg, state) do
-      {:ok, %Stream{} = stream} -> process_end_stream(stream, state)
-      _else -> {:noreply, state}
+    Pigeon.HTTP.handle_info(msg, state, &handle_response/1)
+  end
+
+  @spec handle_response(Request.t()) :: :ok
+  def handle_response(%{body: body, notification: notif}) do
+    body
+    |> Pigeon.json_library().decode!()
+    |> case do
+      %{"name" => name} ->
+        notif
+        |> Map.put(:name, name)
+        |> Map.put(:response, :success)
+        |> process_on_response()
+
+      %{"error" => error} ->
+        notif
+        |> Map.put(:error, error)
+        |> Map.put(:response, Error.parse(error))
+        |> process_on_response()
     end
   end
 
+  @spec connect_socket(Config.t()) :: {:ok, Mint.HTTP2.t()} | {:error, term()}
   defp connect_socket(config), do: connect_socket(config, @max_retries)
 
   defp connect_socket(config, tries) do
@@ -199,30 +217,5 @@ defmodule Pigeon.FCM do
           {:error, reason}
         end
     end
-  end
-
-  @doc false
-  def process_end_stream(%Stream{id: stream_id} = stream, state) do
-    %{queue: queue, config: config} = state
-
-    case NotificationQueue.pop(queue, stream_id) do
-      {nil, new_queue} ->
-        # Do nothing if no queued item for stream
-        {:noreply, %{state | queue: new_queue}}
-
-      {notif, new_queue} ->
-        Configurable.handle_end_stream(config, stream, notif)
-        {:noreply, %{state | queue: new_queue}}
-    end
-  end
-
-  @doc false
-  def inc_stream_id(%{stream_id: stream_id} = state) do
-    %{state | stream_id: stream_id + 2}
-  end
-
-  @doc false
-  def reset_stream_id(state) do
-    %{state | stream_id: 1}
   end
 end
