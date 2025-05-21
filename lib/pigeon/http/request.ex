@@ -8,6 +8,15 @@ defmodule Pigeon.HTTP.Request do
             notification: nil,
             status: nil
 
+  @type t :: %__MODULE__{
+          body: String.t(),
+          done?: boolean(),
+          headers: [{String.t(), String.t()}],
+          error: any(),
+          notification: any(),
+          status: non_neg_integer() | nil
+        }
+
   def new(notification) do
     %__MODULE__{notification: notification}
   end

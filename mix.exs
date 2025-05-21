@@ -51,7 +51,6 @@ defmodule Pigeon.Mixfile do
       {:excoveralls, "~> 0.5", only: :test, runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:goth, "~> 1.4.3"},
-      {:httpoison, "~> 1.0 or ~> 2.0"},
       {:jason, "~> 1.0", optional: true},
       {:joken, "~> 2.1"},
       {:mint, "~> 1.0"}

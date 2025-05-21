@@ -145,9 +145,10 @@ defmodule Pigeon.ADM do
 
   import Pigeon.Tasks, only: [process_on_response: 1]
   alias Pigeon.ADM.{Config, ResultParser}
+  alias Pigeon.HTTP.RequestQueue
   require Logger
 
-  @token_refresh_uri "https://api.amazon.com/auth/O2/token"
+  # @token_refresh_uri "https://api.amazon.com/auth/O2/token"
   @token_refresh_early_seconds 5
 
   @impl true
@@ -159,13 +160,17 @@ defmodule Pigeon.ADM do
 
     Config.validate!(config)
 
+    {:ok, socket} = Mint.HTTP.connect(:https, "api.amazon.com", 443)
+
     {:ok,
      %{
        config: config,
        access_token: nil,
        access_token_refreshed_datetime_erl: {{0, 0, 0}, {0, 0, 0}},
        access_token_expiration_seconds: 0,
-       access_token_type: nil
+       access_token_type: nil,
+       socket: socket,
+       queue: RequestQueue.new()
      }}
   end
 
@@ -173,7 +178,7 @@ defmodule Pigeon.ADM do
   def handle_push(notification, state) do
     case refresh_access_token_if_needed(state) do
       {:ok, state} ->
-        :ok = do_push(notification, state)
+        {:ok, state} = do_push(notification, state)
         {:noreply, state}
 
       {:error, reason} ->
@@ -185,13 +190,40 @@ defmodule Pigeon.ADM do
     end
   end
 
-  @impl true
-  def handle_info({_from, {:ok, %HTTPoison.Response{status_code: 200}}}, state) do
-    {:noreply, state}
-  end
+  # def handle_info({_from, {:ok, %HTTPoison.Response{status_code: 200}}}, state) do
+  #   {:noreply, state}
+  # end
 
-  def handle_info(_msg, state) do
-    {:noreply, state}
+  # def handle_info(_msg, state) do
+  #   {:noreply, state}
+  # end
+
+  @impl true
+  def handle_info(msg, state) do
+    %{queue: queue, socket: socket} = state
+
+    case Mint.HTTP.stream(socket, msg) do
+      :unknown ->
+        {:noreply, state}
+
+      {:ok, socket, responses} ->
+        {done, new_q} =
+          responses
+          |> RequestQueue.process(queue)
+          |> RequestQueue.pop_done()
+
+        for {_ref, request} <- done do
+          if request.notification do
+            process_response(request.status, request.body, request.notification)
+          end
+        end
+
+        {:noreply, %{state | queue: new_q, socket: socket}}
+
+      {:error, socket, error, _responses} ->
+        error |> inspect(pretty: true) |> Logger.error()
+        {:noreply, %{state | socket: socket}}
+    end
   end
 
   defp refresh_access_token_if_needed(state) do
@@ -234,15 +266,30 @@ defmodule Pigeon.ADM do
   end
 
   defp refresh_access_token(state) do
-    post =
-      HTTPoison.post(
-        @token_refresh_uri,
-        token_refresh_body(state),
-        token_refresh_headers()
-      )
+    # {:ok, socket} = Mint.HTTP.connect(:https, "api.amazon.com", 443)
+    headers = token_refresh_headers()
+    body = token_refresh_body(state)
+    method = "POST"
+    path = "/auth/O2/token"
 
-    case post do
-      {:ok, %{status_code: 200, body: response_body}} ->
+    {:ok, socket, ref} =
+      Mint.HTTP.request(state.socket, method, path, headers, body)
+
+    new_q = RequestQueue.add(state.queue, ref, nil)
+
+    {:ok, socket, responses} =
+      receive do
+        message ->
+          Mint.HTTP.stream(socket, message)
+      end
+
+    {request, new_q} =
+      responses
+      |> RequestQueue.process(new_q)
+      |> RequestQueue.pop(ref)
+
+    case request do
+      %{status: 200, body: response_body} ->
         {:ok, response_json} = Pigeon.json_library().decode(response_body)
 
         %{
@@ -260,10 +307,12 @@ defmodule Pigeon.ADM do
            | access_token: access_token,
              access_token_refreshed_datetime_erl: now_datetime_erl,
              access_token_expiration_seconds: expiration_seconds,
-             access_token_type: token_type
+             access_token_type: token_type,
+             queue: new_q,
+             socket: socket
          }}
 
-      {:ok, %{body: response_body}} ->
+      %{body: response_body} ->
         {:ok, response_json} = Pigeon.json_library().decode(response_body)
         Logger.error("Refresh token response: #{inspect(response_json)}")
         {:error, response_json["reason"]}
@@ -286,28 +335,43 @@ defmodule Pigeon.ADM do
     [{"Content-Type", "application/x-www-form-urlencoded;charset=UTF-8"}]
   end
 
-  defp do_push(notification, state) do
-    request = {notification.registration_id, encode_payload(notification)}
+  defp do_push(notification, %{queue: queue, socket: socket} = state) do
+    headers = adm_headers(state)
+    body = encode_payload(notification)
+    method = "POST"
+    path = adm_uri(notification.registration_id)
 
-    response = fn {reg_id, payload} ->
-      case HTTPoison.post(adm_uri(reg_id), payload, adm_headers(state)) do
-        {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
-          notification = %{notification | registration_id: reg_id}
-          process_response(status, body, notification)
+    {:ok, socket, ref} =
+      Mint.HTTP.request(socket, method, path, headers, body)
 
-        {:error, %HTTPoison.Error{reason: :connect_timeout}} ->
-          notification
-          |> Map.put(:response, :timeout)
-          |> process_on_response()
-      end
-    end
+    new_q = RequestQueue.add(queue, ref, notification)
 
-    Task.Supervisor.start_child(Pigeon.Tasks, fn -> response.(request) end)
-    :ok
+    {:ok, %{state | queue: new_q, socket: socket}}
   end
 
+  # defp do_push(notification, state) do
+  #   request = {notification.registration_id, encode_payload(notification)}
+
+  #   response = fn {reg_id, payload} ->
+  #     case HTTPoison.post(adm_uri(reg_id), payload, adm_headers(state)) do
+  #       {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
+  #         notification = %{notification | registration_id: reg_id}
+  #         process_response(status, body, notification)
+
+  #       {:error, %HTTPoison.Error{reason: :connect_timeout}} ->
+  #         notification
+  #         |> Map.put(:response, :timeout)
+  #         |> process_on_response()
+  #     end
+  #   end
+
+  #   Task.Supervisor.start_child(Pigeon.Tasks, fn -> response.(request) end)
+  #   :ok
+  # end
+
   defp adm_uri(reg_id) do
-    "https://api.amazon.com/messaging/registrations/#{reg_id}/messages"
+    # "https://api.amazon.com/messaging/registrations/#{reg_id}/messages"
+    "/messaging/registrations/#{reg_id}/messages"
   end
 
   defp adm_headers(%{access_token: access_token, access_token_type: token_type}) do
@@ -346,13 +410,7 @@ defmodule Pigeon.ADM do
     payload |> Map.put("md5", md5)
   end
 
-  defp process_response(200, body, notification),
-    do: handle_200_status(body, notification)
-
-  defp process_response(status, body, notification),
-    do: handle_error_status_code(status, body, notification)
-
-  defp handle_200_status(body, notification) do
+  defp process_response(200, body, notification) do
     {:ok, json} = Pigeon.json_library().decode(body)
 
     notification
@@ -360,14 +418,14 @@ defmodule Pigeon.ADM do
     |> process_on_response()
   end
 
-  defp handle_error_status_code(status, body, notification) do
+  defp process_response(status, body, notification) do
     case Pigeon.json_library().decode(body) do
       {:ok, %{"reason" => _reason} = result_json} ->
         notification
         |> ResultParser.parse(result_json)
         |> process_on_response()
 
-      {:error, _} ->
+      {:error, error} ->
         notification
         |> Map.put(:response, generic_error_reason(status))
         |> process_on_response()
