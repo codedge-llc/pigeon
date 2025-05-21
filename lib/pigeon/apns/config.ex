@@ -114,24 +114,26 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
     Shared
   }
 
-  @type sock :: {:sslsocket, any, pid | {any, any}}
-  @type socket_opts :: maybe_improper_list(atom, integer | boolean)
-
   # Configurable Callbacks
 
-  @spec connect(any) :: {:ok, sock} | {:error, String.t()}
-  def connect(%{uri: uri} = config) do
-    uri = to_charlist(uri)
+  @spec connect(any) :: {:ok, Mint.HTTP2.t()} | {:error, Exception.t()}
+  def connect(%{uri: uri, port: port} = config) do
     options = connect_socket_options(config)
 
-    Pigeon.Http2.Client.default().connect(uri, :https, options)
+    client_settings = [
+      initial_window_size: round(:math.pow(2, 31) - 1),
+      max_frame_size: round(:math.pow(2, 24) - 1)
+    ]
+
+    Mint.HTTP2.connect(:https, uri, port,
+      client_settings: client_settings,
+      transport_opts: options
+    )
   end
 
   defdelegate push_headers(config, notification, opts), to: Shared
 
   defdelegate push_payload(config, notification, opts), to: Shared
-
-  defdelegate handle_end_stream(config, stream, notification), to: Shared
 
   defdelegate schedule_ping(any), to: Shared
 
@@ -154,17 +156,14 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.Config do
     :ok
   end
 
-  @spec connect_socket_options(Config.t()) :: socket_opts
-  def connect_socket_options(%{cert: cert, key: key} = config) do
+  @spec connect_socket_options(Config.t()) :: Keyword.t()
+  def connect_socket_options(%{cert: cert, key: key}) do
     [
       {:cert, cert},
       {:key, key},
       {:password, ~c""},
       {:packet, 0},
-      {:reuseaddr, true},
-      {:active, true},
-      :binary
+      {:reuseaddr, true}
     ]
-    |> Shared.add_port(config)
   end
 end

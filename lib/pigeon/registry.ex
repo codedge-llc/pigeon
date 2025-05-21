@@ -9,14 +9,17 @@ defmodule Pigeon.Registry do
     }
   end
 
+  @spec register(pid()) :: {:ok, pid()} | {:error, term()}
   def register(pid) do
     Registry.register(__MODULE__, pid, nil)
   end
 
+  @spec unregister(pid()) :: :ok | {:error, term()}
   def unregister(pid) do
     Registry.unregister(__MODULE__, pid)
   end
 
+  @spec next(pid()) :: pid() | nil
   def next(pid) do
     __MODULE__
     |> Registry.lookup(pid)

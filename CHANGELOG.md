@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**Changed**
+
+- Use Mint for all HTTP/1 and HTTP/2 connections. This replaces the use of `:httpoison`
+  and `:kadabra`. ([#296](https://github.com/codedge-llc/pigeon/pull/296))
+
 **Fixed**
 
 - Return `:permission_denied` FCM error response if missing privileges. ([#290](https://github.com/codedge-llc/pigeon/pull/290))
+- Minor documentation fixes. ([#294](https://github.com/codedge-llc/pigeon/pull/294))
 
 ## v2.0.1 - 2024-12-28
 

@@ -1,6 +1,7 @@
 defmodule Pigeon.Tasks do
   @moduledoc false
 
+  @spec process_on_response(Pigeon.notification()) :: :ok
   def process_on_response(%{__meta__: %{on_response: nil}}), do: :ok
 
   def process_on_response(%{__meta__: %{on_response: {m, f}}} = notif) do

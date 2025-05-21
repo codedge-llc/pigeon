@@ -4,7 +4,7 @@ defmodule Pigeon.Mixfile do
   @description "iOS (APNS), Android (FCM), and Amazon Android (ADM) push notifications for Elixir."
   @name "Pigeon"
   @source_url "https://github.com/codedge-llc/pigeon"
-  @version "2.0.1"
+  @version "2.1.0"
 
   def project do
     [
@@ -51,10 +51,9 @@ defmodule Pigeon.Mixfile do
       {:excoveralls, "~> 0.5", only: :test, runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:goth, "~> 1.4.3"},
-      {:httpoison, "~> 1.0 or ~> 2.0"},
       {:jason, "~> 1.0", optional: true},
       {:joken, "~> 2.1"},
-      {:kadabra, "~> 0.6.0"}
+      {:mint, "~> 1.0"}
     ]
   end
 

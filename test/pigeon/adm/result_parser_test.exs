@@ -16,4 +16,9 @@ defmodule Pigeon.ADM.ResultParserTest do
     Pigeon.ADM.ResultParser.parse(n, %{"reason" => "MessageTooLarge"})
     Pigeon.ADM.ResultParser.parse(n, %{"reason" => "MaxRateExceeded"})
   end
+
+  test "handles unknown reasons" do
+    n = Pigeon.ADM.Notification.new("test")
+    Pigeon.ADM.ResultParser.parse(n, %{"reason" => "NotReal"})
+  end
 end

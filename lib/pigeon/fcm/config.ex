@@ -56,16 +56,21 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   alias Pigeon.Encodable
   alias Pigeon.FCM.Error
 
-  @type sock :: {:sslsocket, any, pid | {any, any}}
-
   # Configurable Callbacks
 
-  @spec connect(any) :: {:ok, sock} | {:error, String.t()}
-  def connect(%@for{uri: uri} = config) do
-    case connect_socket_options(config) do
-      {:ok, options} ->
-        Pigeon.Http2.Client.default().connect(uri, :https, options)
-    end
+  @spec connect(any) :: {:ok, Mint.HTTP2.t()} | {:error, Exception.t()}
+  def connect(%@for{uri: uri, port: port} = config) do
+    {:ok, options} = connect_socket_options(config)
+
+    client_settings = [
+      initial_window_size: round(:math.pow(2, 31) - 1),
+      max_frame_size: round(:math.pow(2, 24) - 1)
+    ]
+
+    Mint.HTTP2.connect(:https, to_string(uri), port,
+      transport_opts: options,
+      client_settings: client_settings
+    )
   end
 
   def connect_socket_options(config) do
@@ -74,8 +79,7 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
         {:active, :once},
         {:packet, :raw},
         {:reuseaddr, true},
-        {:alpn_advertised_protocols, [<<"h2">>]},
-        :binary
+        {:alpn_advertised_protocols, [<<"h2">>]}
       ]
       |> add_port(config)
 
@@ -93,11 +97,9 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
     token = Goth.fetch!(config.auth)
 
     [
-      {":method", "POST"},
-      {":path", "/v1/projects/#{config.project_id}/messages:send"},
+      {"accept", "application/json"},
       {"authorization", "#{token.type} #{token.token}"},
-      {"content-type", "application/json"},
-      {"accept", "application/json"}
+      {"content-type", "application/json"}
     ]
   end
 
