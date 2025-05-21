@@ -1,6 +1,8 @@
 defmodule Pigeon.ADM.Token do
   @moduledoc false
 
+  # We expire the token slightly sooner than the actual expiration
+  # to account for network latency and other factors.
   @token_refresh_early_seconds 5
 
   def expired?(_refreshed_datetime_erl, 0), do: true
