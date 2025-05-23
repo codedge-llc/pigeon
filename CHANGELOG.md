@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Return `:permission_denied` FCM error response if missing privileges. ([#290](https://github.com/codedge-llc/pigeon/pull/290))
 - Better handling of FCM errors with multiple details. ([#293](https://github.com/codedge-llc/pigeon/pull/293))
-- Minor documentation fixes. ([#294](https://github.com/codedge-llc/pigeon/pull/294))
+- Minor documentation and typespec fixes. ([#294](https://github.com/codedge-llc/pigeon/pull/294), [#297](https://github.com/codedge-llc/pigeon/pull/297))
 
 ## v2.0.1 - 2024-12-28
 
