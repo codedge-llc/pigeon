@@ -95,7 +95,7 @@ defmodule Pigeon do
   end
 
   @spec push(pid() | atom(), notification() | [notification()], push_opts()) ::
-          notification() | :ok
+          notification() | [notification()] | :ok | [:ok]
   @doc """
   Sends a push notification with given options.
   """
