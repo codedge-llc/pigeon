@@ -66,36 +66,36 @@ defmodule Pigeon do
   - `:timeout` - Push timeout. Defaults to 5000ms.
   """
   @type push_opts :: [
-          on_response: on_response | nil,
-          timeout: non_neg_integer
+          on_response: on_response() | nil,
+          timeout: non_neg_integer()
         ]
 
   @doc """
   Returns the configured default pool size for Pigeon dispatchers.
+
   To customize this value, include the following in your config/config.exs:
 
       config :pigeon, :default_pool_size, 5
   """
-  @spec default_pool_size :: pos_integer
+  @spec default_pool_size :: pos_integer()
   def default_pool_size() do
     Application.get_env(:pigeon, :default_pool_size, 5)
   end
 
   @doc """
   Returns the configured JSON encoding library for Pigeon.
+
   To customize the JSON library, include the following in your config/config.exs:
 
       config :pigeon, :json_library, Jason
   """
-  @spec json_library :: module
+  @spec json_library :: module()
   def json_library do
     Application.get_env(:pigeon, :json_library, Jason)
   end
 
-  @spec push(pid | atom, notification :: notification, push_opts) ::
-          notification :: struct | no_return
-  @spec push(pid | atom, notifications :: [notification, ...], push_opts) ::
-          notifications :: [struct, ...] | no_return
+  @spec push(pid() | atom(), notification() | [notification()], push_opts()) ::
+          notification() | :ok
   @doc """
   Sends a push notification with given options.
   """
