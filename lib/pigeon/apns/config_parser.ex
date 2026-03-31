@@ -50,6 +50,7 @@ defmodule Pigeon.APNS.ConfigParser do
       case Map.get(acc, key) do
         bin when is_binary(bin) -> Map.put(acc, key, @filtered)
         {:RSAPrivateKey, _bin} -> Map.put(acc, key, @filtered)
+        {:PrivateKeyInfo, _bin} -> Map.put(acc, key, @filtered)
         _ -> acc
       end
     end)
