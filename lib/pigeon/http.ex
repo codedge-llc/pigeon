@@ -20,15 +20,19 @@ defmodule Pigeon.HTTP do
           |> RequestQueue.process(queue)
           |> RequestQueue.pop_done()
 
-        for {_ref, request} <- done do
-          if request.notification, do: handler.(request)
-        end
+        handle_request_notifications(done, handler)
 
         {:noreply, %{state | queue: queue, socket: socket}}
 
       {:error, socket, error, _responses} ->
         error |> inspect(pretty: true) |> Logger.error()
         {:noreply, %{state | socket: socket}}
+    end
+  end
+
+  defp handle_request_notifications(finished_requests, handler) do
+    for {_ref, request} <- finished_requests do
+      if request.notification, do: handler.(request)
     end
   end
 end
