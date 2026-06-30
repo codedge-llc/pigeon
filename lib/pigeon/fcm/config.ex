@@ -79,6 +79,12 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
         {:active, :once},
         {:packet, :raw},
         {:reuseaddr, true},
+        # HACK fcm.googleapis.com gives back a cert with '*.googleapis.com', but by
+        # default, :ssl.connect does not accept wildcards here. Provising
+        # server_name_indication does not produce another cert
+        {:customize_hostname_check, [
+            match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
+          ]},
         {:alpn_advertised_protocols, [<<"h2">>]}
       ]
       |> add_port(config)
