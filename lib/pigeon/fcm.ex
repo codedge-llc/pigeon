@@ -147,17 +147,48 @@ defmodule Pigeon.FCM do
     method = "POST"
     path = "/v1/projects/#{config.project_id}/messages:send"
 
-    {:ok, socket, ref} =
-      Mint.HTTP.request(socket, method, path, headers, payload)
+    case Mint.HTTP.request(socket, method, path, headers, payload) do
+      {:ok, socket, ref} ->
+        new_q = RequestQueue.add(queue, ref, notification)
 
-    new_q = RequestQueue.add(queue, ref, notification)
+        state =
+          state
+          |> Map.put(:socket, socket)
+          |> Map.put(:queue, new_q)
 
-    state =
-      state
-      |> Map.put(:socket, socket)
-      |> Map.put(:queue, new_q)
+        {:noreply, state}
 
-    {:noreply, state}
+      {:error, _socket, %Mint.HTTPError{reason: :closed}} ->
+        Logger.warning("FCM connection closed. Reconnecting...")
+
+        case connect_socket(config) do
+          {:ok, socket} ->
+            Configurable.schedule_ping(config)
+
+            case Mint.HTTP.request(socket, method, path, headers, payload) do
+              {:ok, socket, ref} ->
+                new_q = RequestQueue.add(queue, ref, notification)
+
+                state =
+                  state
+                  |> Map.put(:socket, socket)
+                  |> Map.put(:queue, new_q)
+
+                {:noreply, state}
+
+              {:error, socket, reason} ->
+                Logger.error("Retry failed: #{inspect(reason)}")
+                {:noreply, %{state | socket: socket}}
+            end
+
+          {:error, reason} ->
+            {:stop, reason}
+        end
+
+      {:error, socket, reason} ->
+        Logger.error("FCM request failed: #{inspect(reason)}")
+        {:noreply, %{state | socket: socket}}
+    end
   end
 
   @impl Pigeon.Adapter
