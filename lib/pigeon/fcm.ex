@@ -178,25 +178,46 @@ defmodule Pigeon.FCM do
 
               {:error, socket, reason} ->
                 Logger.error("Retry failed: #{inspect(reason)}")
+                fail_notification(notification, reason)
                 {:noreply, %{state | socket: socket}}
             end
 
           {:error, reason} ->
+            fail_notification(notification, reason)
             {:stop, reason}
         end
 
       {:error, socket, reason} ->
         Logger.error("FCM request failed: #{inspect(reason)}")
+        fail_notification(notification, reason)
         {:noreply, %{state | socket: socket}}
     end
   end
 
   @impl Pigeon.Adapter
   def handle_info(:ping, %{config: config, socket: socket} = state) do
-    {:ok, socket, _ref} = Mint.HTTP2.ping(socket)
-    Configurable.schedule_ping(config)
+    case Mint.HTTP2.ping(socket) do
+      {:ok, socket, _ref} ->
+        Configurable.schedule_ping(config)
+        {:noreply, %{state | socket: socket}}
 
-    {:noreply, %{state | socket: socket}}
+      {:error, _socket, %Mint.HTTPError{reason: :closed}} ->
+        Logger.warning("FCM ping found closed connection. Reconnecting...")
+
+        case connect_socket(config) do
+          {:ok, socket} ->
+            Configurable.schedule_ping(config)
+            {:noreply, %{state | socket: socket}}
+
+          {:error, reason} ->
+            {:stop, reason}
+        end
+
+      {:error, socket, reason} ->
+        Logger.error("FCM ping failed: #{inspect(reason)}")
+        Configurable.schedule_ping(config)
+        {:noreply, %{state | socket: socket}}
+    end
   end
 
   def handle_info({:closed, _}, %{config: config} = state) do
@@ -231,6 +252,16 @@ defmodule Pigeon.FCM do
         |> Map.put(:response, Error.parse(error))
         |> process_on_response()
     end
+  end
+
+  # Ensures a notification that never made it onto the wire still invokes
+  # the caller's on_response callback, instead of silently vanishing.
+  @spec fail_notification(term(), term()) :: :ok
+  defp fail_notification(notification, reason) do
+    notification
+    |> Map.put(:error, reason)
+    |> Map.put(:response, :network_error)
+    |> process_on_response()
   end
 
   @spec connect_socket(Config.t()) :: {:ok, Mint.HTTP2.t()} | {:error, term()}
