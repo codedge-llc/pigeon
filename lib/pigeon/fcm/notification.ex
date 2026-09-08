@@ -25,22 +25,52 @@ defmodule Pigeon.FCM.Notification do
           fcm_options: map | nil,
           name: binary | nil,
           notification: map | nil,
-          response: atom | nil,
+          response: response,
           target: target,
           validate_only: boolean | nil,
           webpush: map | nil
         }
 
+  @typedoc ~S"""
+  FCM push response
+
+  - `t:error_response/0` - Push attempted but server responded with error.
+    See `:error` for details.
+  - nil - Push has not been sent yet.
+  - `:not_connected` - Dispatcher had no live connection to FCM. Push
+    was not sent.
+  - `:not_started` - Dispatcher is not running. Push was not sent.
+  - `:success` - Push was successfully sent.
+  - `:timeout` - Push was sent but the connection dropped before FCM
+    responded. Delivery is unknown.
+  """
+  @type response ::
+          error_response
+          | nil
+          | :not_connected
+          | :not_started
+          | :success
+          | :timeout
+
+  @typedoc ~S"""
+  FCM error response
+
+  Most map to the `errorCode` in the FCM v1 error details. `:permission_denied`
+  and `:unauthenticated` come from the gRPC `status` when FCM rejects the
+  service account itself. `:unknown_error` covers anything unrecognized.
+  """
   @type error_response ::
-          :unspecified_error
+          :internal
           | :invalid_argument
-          | :unregistered
-          | :sender_id_mismatch
+          | :permission_denied
           | :quota_exceeded
-          | :unavailable
-          | :internal
+          | :sender_id_mismatch
           | :third_party_auth_error
+          | :unauthenticated
+          | :unavailable
           | :unknown_error
+          | :unregistered
+          | :unspecified_error
 
   @typedoc ~S"""
   FCM notification target. Must be one of the following:

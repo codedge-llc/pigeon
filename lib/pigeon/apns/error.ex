@@ -1,8 +1,6 @@
 defmodule Pigeon.APNS.Error do
   @moduledoc false
 
-  require Logger
-
   alias Pigeon.APNS.Notification
 
   @doc false
@@ -22,6 +20,9 @@ defmodule Pigeon.APNS.Error do
   defp parse_response("BadCollapseId"), do: :bad_collapse_id
 
   defp parse_response("BadDeviceToken"), do: :bad_device_token
+
+  defp parse_response("BadEnvironmentKeyIdInToken"),
+    do: :bad_environment_key_id_in_token
 
   defp parse_response("BadExpirationDate"), do: :bad_expiration_date
 
@@ -75,6 +76,9 @@ defmodule Pigeon.APNS.Error do
   defp parse_response("TopicDisallowed"), do: :topic_disallowed
 
   defp parse_response("Unregistered"), do: :unregistered
+
+  defp parse_response("UnrelatedKeyIdInToken"),
+    do: :unrelated_key_id_in_token
 
   defp parse_response(_), do: :unknown_error
 end

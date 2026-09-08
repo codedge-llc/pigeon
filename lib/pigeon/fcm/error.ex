@@ -23,6 +23,7 @@ defmodule Pigeon.FCM.Error do
   defp parse_response("QUOTA_EXCEEDED"), do: :quota_exceeded
   defp parse_response("SENDER_ID_MISMATCH"), do: :sender_id_mismatch
   defp parse_response("THIRD_PARTY_AUTH_ERROR"), do: :third_party_auth_error
+  defp parse_response("UNAUTHENTICATED"), do: :unauthenticated
   defp parse_response("UNAVAILABLE"), do: :unavailable
   defp parse_response("UNREGISTERED"), do: :unregistered
   defp parse_response("UNSPECIFIED_ERROR"), do: :unspecified_error

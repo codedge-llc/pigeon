@@ -122,6 +122,11 @@ defmodule Pigeon.ADM do
   Pigeon.ADM.push(n, on_response: on_response_handler)
   ```
 
+  If the dispatcher has no live connection to ADM, or the access token refresh fails,
+  `:response` is `:not_connected` and the push was not sent, so it is safe to resend.
+  If the connection is lost after the push was sent, `:response` is `:timeout` and
+  delivery is unknown.
+
   ## Error Responses
 
   *Taken from [Amazon Device Messaging docs](https://developer.amazon.com/public/apis/engage/device-messaging/tech-docs/06-sending-a-message)*
@@ -145,7 +150,7 @@ defmodule Pigeon.ADM do
 
   import Pigeon.Tasks, only: [process_on_response: 1]
   alias Pigeon.ADM.{Config, ResultParser, Token}
-  alias Pigeon.HTTP.RequestQueue
+  alias Pigeon.HTTP.Connection
   require Logger
 
   @impl true
@@ -157,7 +162,10 @@ defmodule Pigeon.ADM do
 
     Config.validate!(config)
 
-    {:ok, socket} = Mint.HTTP.connect(:https, "api.amazon.com", 443)
+    conn =
+      Connection.new(__MODULE__, fn ->
+        Mint.HTTP.connect(:https, "api.amazon.com", 443)
+      end)
 
     {:ok,
      %{
@@ -166,30 +174,29 @@ defmodule Pigeon.ADM do
        access_token_refreshed_datetime_erl: {{0, 0, 0}, {0, 0, 0}},
        access_token_expiration_seconds: 0,
        access_token_type: nil,
-       socket: socket,
-       queue: RequestQueue.new()
+       conn: conn
      }}
   end
 
   @impl true
   def handle_push(notification, state) do
     case refresh_access_token_if_needed(state) do
-      {:ok, state} ->
-        {:ok, state} = do_push(notification, state)
-        {:noreply, state}
-
-      {:error, reason} ->
-        notification
-        |> Map.put(:response, reason)
-        |> process_on_response()
-
-        {:noreply, state}
+      {:ok, state} -> {:noreply, do_push(notification, state)}
+      {:error, state, reason} -> fail_push(notification, state, reason)
     end
   end
 
+  defp fail_push(notification, state, reason) do
+    notification |> Map.put(:response, reason) |> process_on_response()
+    {:noreply, state}
+  end
+
   @impl true
-  def handle_info(msg, state) do
-    Pigeon.HTTP.handle_info(msg, state, &process_response/1)
+  def handle_info(msg, %{conn: conn} = state) do
+    case Connection.handle_message(conn, msg, &process_response/1) do
+      {:ok, conn} -> {:noreply, %{state | conn: conn}}
+      :unknown -> {:noreply, state}
+    end
   end
 
   defp process_response(%{status: 200} = request) do
@@ -241,30 +248,13 @@ defmodule Pigeon.ADM do
     end
   end
 
-  defp refresh_access_token(%{config: config} = state) do
+  defp refresh_access_token(%{config: config, conn: conn} = state) do
     headers = Token.refresh_headers()
     body = Token.refresh_body(config.client_id, config.client_secret)
-    method = "POST"
     path = "/auth/O2/token"
 
-    {:ok, socket, ref} =
-      Mint.HTTP.request(state.socket, method, path, headers, body)
-
-    new_q = RequestQueue.add(state.queue, ref, nil)
-
-    {:ok, socket, responses} =
-      receive do
-        message ->
-          Mint.HTTP.stream(socket, message)
-      end
-
-    {request, new_q} =
-      responses
-      |> RequestQueue.process(new_q)
-      |> RequestQueue.pop(ref)
-
-    case request do
-      %{status: 200, body: response_body} ->
+    case Connection.request_sync(conn, "POST", path, headers, body) do
+      {:ok, conn, %{status: 200, body: response_body}} ->
         {:ok, response_json} = Pigeon.json_library().decode(response_body)
 
         %{
@@ -283,29 +273,29 @@ defmodule Pigeon.ADM do
              access_token_refreshed_datetime_erl: now_datetime_erl,
              access_token_expiration_seconds: expiration_seconds,
              access_token_type: token_type,
-             queue: new_q,
-             socket: socket
+             conn: conn
          }}
 
-      %{body: response_body} ->
+      {:ok, conn, %{body: response_body}} ->
         {:ok, response_json} = Pigeon.json_library().decode(response_body)
         Logger.error("Refresh token response: #{inspect(response_json)}")
-        {:error, response_json["reason"]}
+        {:error, %{state | conn: conn}, response_json["reason"]}
+
+      {:error, conn, _reason} ->
+        {:error, %{state | conn: conn}, :not_connected}
     end
   end
 
-  defp do_push(notification, %{queue: queue, socket: socket} = state) do
+  defp do_push(notification, %{conn: conn} = state) do
     headers = adm_headers(state)
     body = encode_payload(notification)
-    method = "POST"
     path = adm_path(notification.registration_id)
 
-    {:ok, socket, ref} =
-      Mint.HTTP.request(socket, method, path, headers, body)
-
-    new_q = RequestQueue.add(queue, ref, notification)
-
-    {:ok, %{state | queue: new_q, socket: socket}}
+    %{
+      state
+      | conn:
+          Connection.request(conn, "POST", path, headers, body, notification)
+    }
   end
 
   @spec adm_path(String.t()) :: String.t()

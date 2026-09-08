@@ -50,6 +50,26 @@ defmodule Pigeon.HTTP.RequestQueue do
     {done, %{queue | requests: Enum.into(not_done, %{})}}
   end
 
+  @doc ~S"""
+  Removes every request from the queue.
+
+  ## Examples
+
+      iex> queue = Pigeon.HTTP.RequestQueue.new()
+      iex> ref = :erlang.make_ref()
+      iex> queue = Pigeon.HTTP.RequestQueue.add(queue, ref, :notif)
+      iex> {[request], queue} = Pigeon.HTTP.RequestQueue.drain(queue)
+      iex> {request.notification, queue}
+      {:notif, %Pigeon.HTTP.RequestQueue{requests: %{}}}
+  """
+  @spec drain(t()) :: {[Pigeon.HTTP.Request.t()], t()}
+  def drain(queue) do
+    {Map.values(queue.requests), %{queue | requests: %{}}}
+  end
+
+  @spec empty?(t()) :: boolean()
+  def empty?(queue), do: map_size(queue.requests) == 0
+
   @spec process([Mint.Types.response()] | Mint.Types.response(), t()) :: t()
   def process([], queue), do: queue
 
@@ -73,19 +93,28 @@ defmodule Pigeon.HTTP.RequestQueue do
     merge_result(queue, request_ref, %{done?: true})
   end
 
+  # Mint sends no further responses for a request after an error, so the
+  # request is complete.
   def process({:error, request_ref, reason}, queue) do
-    merge_result(queue, request_ref, %{error: reason})
+    merge_result(queue, request_ref, %{error: reason, done?: true})
   end
 
   def process(_other, queue), do: queue
 
+  # Responses for a ref the queue does not track are dropped. This happens
+  # when a reply arrives after the request was already popped, such as a
+  # synchronous request that timed out.
   @spec merge_result(t(), reference(), map()) :: t()
   defp merge_result(%{requests: requests} = queue, ref, params) do
-    request = requests[ref] || %Request{}
+    case requests do
+      %{^ref => request} ->
+        %{
+          queue
+          | requests: Map.put(requests, ref, Request.merge(request, params))
+        }
 
-    new_requests =
-      Map.put(requests, ref, Request.merge(request, params))
-
-    %{queue | requests: new_requests}
+      _unknown ->
+        queue
+    end
   end
 end

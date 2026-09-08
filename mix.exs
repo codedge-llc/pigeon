@@ -9,26 +9,30 @@ defmodule Pigeon.Mixfile do
   def project do
     [
       app: :pigeon,
-      build_embedded: Mix.env() == :prod,
       deps: deps(),
       description: @description,
       dialyzer: dialyzer(),
       docs: docs(),
-      elixir: "~> 1.7",
+      elixir: "~> 1.16",
       elixirc_options: [warnings_as_errors: true],
       elixirc_paths: elixirc_paths(Mix.env()),
       name: @name,
       package: package(),
-      preferred_cli_env: [
-        coveralls: :test,
-        "coveralls.detail": :test,
-        "coveralls.post": :test,
-        "coveralls.html": :test
-      ],
       source_url: @source_url,
       start_permanent: Mix.env() == :prod,
       test_coverage: [tool: ExCoveralls],
       version: @version
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.html": :test,
+        "coveralls.post": :test
+      ]
     ]
   end
 
@@ -45,15 +49,16 @@ defmodule Pigeon.Mixfile do
 
   defp deps do
     [
+      {:bandit, "~> 1.0", only: [:dev, :test]},
       {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
-      {:earmark, "~> 1.0", only: :dev, runtime: false},
       {:excoveralls, "~> 0.5", only: :test, runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:goth, "~> 1.4.3"},
       {:jason, "~> 1.0", optional: true},
       {:joken, "~> 2.1"},
-      {:mint, "~> 1.0"}
+      {:mint, "~> 1.0"},
+      {:plug, "~> 1.14", only: [:dev, :test]}
     ]
   end
 

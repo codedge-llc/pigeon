@@ -5,7 +5,6 @@ defmodule Pigeon.FCMTest do
   doctest Pigeon.FCM.Notification, import: true
 
   alias Pigeon.FCM.Notification
-  require Logger
 
   @data %{"message" => "Test push"}
   @invalid_project_msg ~r/^attempted to start without valid :project_id/
@@ -28,6 +27,23 @@ defmodule Pigeon.FCMTest do
         [project_id: "example", auth: nil]
         |> Pigeon.FCM.init()
       end)
+    end
+
+    test "starts without a reachable server and fails pushes fast" do
+      {:ok, dispatcher} =
+        Pigeon.Dispatcher.start_link(
+          adapter: Pigeon.FCM,
+          auth: PigeonTest.Goth,
+          project_id: "example",
+          uri: "localhost",
+          port: PigeonTest.Server.closed_port()
+        )
+
+      n = Notification.new({:token, "bad_reg_id"}, %{}, @data)
+      pid = self()
+      Pigeon.push(dispatcher, n, on_response: fn x -> send(pid, x) end)
+
+      assert_receive %Notification{response: :not_connected}, 1_000
     end
   end
 
