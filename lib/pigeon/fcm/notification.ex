@@ -52,16 +52,25 @@ defmodule Pigeon.FCM.Notification do
           | :success
           | :timeout
 
+  @typedoc ~S"""
+  FCM error response
+
+  Most map to the `errorCode` in the FCM v1 error details. `:permission_denied`
+  and `:unauthenticated` come from the gRPC `status` when FCM rejects the
+  service account itself. `:unknown_error` covers anything unrecognized.
+  """
   @type error_response ::
-          :unspecified_error
+          :internal
           | :invalid_argument
-          | :unregistered
-          | :sender_id_mismatch
+          | :permission_denied
           | :quota_exceeded
-          | :unavailable
-          | :internal
+          | :sender_id_mismatch
           | :third_party_auth_error
+          | :unauthenticated
+          | :unavailable
           | :unknown_error
+          | :unregistered
+          | :unspecified_error
 
   @typedoc ~S"""
   FCM notification target. Must be one of the following:

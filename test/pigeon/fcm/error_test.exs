@@ -161,6 +161,18 @@ defmodule Pigeon.FCM.ErrorTest do
       assert Error.parse(error) == :invalid_argument
     end
 
+    test "returns :unauthenticated when 'status' is 'UNAUTHENTICATED'" do
+      error = %{
+        "code" => 401,
+        "status" => "UNAUTHENTICATED",
+        "message" =>
+          "Request had invalid authentication credentials. Expected OAuth 2 " <>
+            "access token, login cookie or other valid authentication credential."
+      }
+
+      assert Error.parse(error) == :unauthenticated
+    end
+
     test "returns :unknown_error when 'status' is not found" do
       error = %{
         "code" => 500,

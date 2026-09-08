@@ -66,38 +66,48 @@ defmodule Pigeon.APNS.Notification do
           | :success
           | :timeout
 
+  @typedoc ~S"""
+  APNS error response
+
+  Each atom is the snake_case form of the `reason` in the APNS response body.
+  See [Handling notification responses from APNs](https://developer.apple.com/documentation/usernotifications/handling-notification-responses-from-apns)
+  for the meaning of each one. `:unknown_error` covers any reason Pigeon does
+  not recognize.
+  """
   @type error_response ::
-          :bad_collapse_id
+          :bad_certificate
+          | :bad_certificate_environment
+          | :bad_collapse_id
           | :bad_device_token
+          | :bad_environment_key_id_in_token
           | :bad_expiration_date
           | :bad_message_id
+          | :bad_path
           | :bad_priority
           | :bad_topic
           | :device_token_not_for_topic
           | :duplicate_headers
+          | :expired_provider_token
+          | :expired_token
+          | :forbidden
           | :idle_timeout
+          | :internal_server_error
+          | :invalid_provider_token
           | :invalid_push_type
+          | :method_not_allowed
           | :missing_device_token
+          | :missing_provider_token
           | :missing_topic
           | :payload_empty
-          | :topic_disallowed
-          | :bad_certificate
-          | :bad_certificate_environment
-          | :expired_provider_token
-          | :forbidden
-          | :invalid_provider_token
-          | :missing_provider_token
-          | :bad_path
-          | :method_not_allowed
-          | :expired_token
-          | :unregistered
           | :payload_too_large
-          | :too_many_provider_token_updates
-          | :too_many_requests
-          | :internal_server_error
           | :service_unavailable
           | :shutdown
+          | :too_many_provider_token_updates
+          | :too_many_requests
+          | :topic_disallowed
           | :unknown_error
+          | :unregistered
+          | :unrelated_key_id_in_token
 
   @doc """
   Returns an `APNS.Notification` struct with given message, device token, and

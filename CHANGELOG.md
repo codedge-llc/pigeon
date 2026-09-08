@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   came back. ([#311](https://github.com/codedge-llc/pigeon/pull/311))
 - FCM connections stay alive with periodic pings, the same way APNS connections
   already did. Tune it with the new `:ping_period` option. ([#311](https://github.com/codedge-llc/pigeon/pull/311))
+- `:unauthenticated` FCM error response when FCM rejects the service account itself.
+  Before, a bad or expired service account came back as `:unknown_error`. ([#312](https://github.com/codedge-llc/pigeon/pull/312))
+- `:bad_environment_key_id_in_token` and `:unrelated_key_id_in_token` APNS error
+  responses, matching the two token authentication reasons Apple added. ([#312](https://github.com/codedge-llc/pigeon/pull/312))
 
 **Changed**
 

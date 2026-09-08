@@ -7,6 +7,7 @@ defmodule Pigeon.APNS.ErrorTest do
       {"BadCertificateEnvironment", :bad_certificate_environment},
       {"BadCollapseId", :bad_collapse_id},
       {"BadDeviceToken", :bad_device_token},
+      {"BadEnvironmentKeyIdInToken", :bad_environment_key_id_in_token},
       {"BadExpirationDate", :bad_expiration_date},
       {"BadMessageId", :bad_message_id},
       {"BadPath", :bad_path},
@@ -32,7 +33,8 @@ defmodule Pigeon.APNS.ErrorTest do
       {"TooManyProviderTokenUpdates", :too_many_provider_token_updates},
       {"TooManyRequests", :too_many_requests},
       {"TopicDisallowed", :topic_disallowed},
-      {"Unregistered", :unregistered}
+      {"Unregistered", :unregistered},
+      {"UnrelatedKeyIdInToken", :unrelated_key_id_in_token}
     ]
 
     for {actual, expected} <- reasons do
