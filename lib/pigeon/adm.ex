@@ -187,10 +187,7 @@ defmodule Pigeon.ADM do
   end
 
   defp fail_push(notification, state, reason) do
-    notification
-    |> Map.put(:response, reason)
-    |> process_on_response()
-
+    notification |> Map.put(:response, reason) |> process_on_response()
     {:noreply, state}
   end
 

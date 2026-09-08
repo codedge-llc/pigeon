@@ -317,7 +317,11 @@ defmodule Pigeon.HTTP.ConnectionTest do
   end
 
   defp pump_until(conn, done?) do
-    if done?.(conn), do: conn, else: conn |> pump() |> pump_until(done?)
+    if done?.(conn) do
+      conn
+    else
+      conn |> pump() |> pump_until(done?)
+    end
   end
 
   # Pretends the server sent a frame by handing it to the connection as if it

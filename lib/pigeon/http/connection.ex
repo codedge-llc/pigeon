@@ -346,17 +346,17 @@ defmodule Pigeon.HTTP.Connection do
   defp check_writable(conn), do: conn
 
   defp handle_goaway(conn) do
-    if RequestQueue.empty?(conn.queue),
-      do: drop_socket(conn),
-      else: %{conn | status: :draining}
+    if RequestQueue.empty?(conn.queue) do
+      drop_socket(conn)
+    else
+      %{conn | status: :draining}
+    end
   end
 
   defp fail_request(%Request{notification: nil}, _response), do: :ok
 
   defp fail_request(%Request{notification: notification}, response) do
-    notification
-    |> Map.put(:response, response)
-    |> Tasks.process_on_response()
+    notification |> Map.put(:response, response) |> Tasks.process_on_response()
   end
 
   defp schedule_ping(%{ping_period: nil} = conn), do: conn
@@ -384,6 +384,5 @@ defmodule Pigeon.HTTP.Connection do
   defp format(reason) when is_exception(reason),
     do: Exception.format(:error, reason)
 
-  defp format(reason) when is_binary(reason), do: reason
   defp format(reason), do: inspect(reason)
 end
