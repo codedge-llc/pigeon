@@ -57,17 +57,18 @@ defmodule Pigeon.HTTP.ConnectionTest do
   end
 
   describe "request/6" do
-    test "returns not_connected while disconnected" do
+    test "fails the notification with not_connected while disconnected" do
       conn = Connection.new(__MODULE__, fn -> :unused end)
 
-      {:error, ^conn, :not_connected} =
-        Connection.request(conn, "GET", "/ok", [], "", notification(:a))
+      ^conn = Connection.request(conn, "GET", "/ok", [], "", notification(:a))
+
+      assert_receive {:response, %{tag: :a, response: :not_connected}}
     end
 
     test "delivers completed responses to the handler", %{port: port} do
       conn = connected(port)
 
-      {:ok, conn} =
+      conn =
         Connection.request(conn, "GET", "/ok", [], "", notification(:a))
 
       pump_until(conn, fn conn ->
@@ -122,7 +123,7 @@ defmodule Pigeon.HTTP.ConnectionTest do
       conn = connected(port)
       headers = [Server.reply_to(self())]
 
-      {:ok, conn} =
+      conn =
         Connection.request(
           conn,
           "GET",
@@ -159,7 +160,7 @@ defmodule Pigeon.HTTP.ConnectionTest do
       conn = connected(port)
       headers = [Server.reply_to(self())]
 
-      {:ok, conn} =
+      conn =
         Connection.request(
           conn,
           "GET",
@@ -174,8 +175,10 @@ defmodule Pigeon.HTTP.ConnectionTest do
       conn = inject(conn, goaway(last_stream_id: 0x7FFFFFFF))
       assert conn.status == :draining
 
-      {:error, ^conn, :not_connected} =
+      ^conn =
         Connection.request(conn, "GET", "/ok", [], "", notification(:refused))
+
+      assert_receive {:response, %{tag: :refused, response: :not_connected}}
 
       send(plug, :release)
 
@@ -195,11 +198,11 @@ defmodule Pigeon.HTTP.ConnectionTest do
       assert_received :connect
     end
 
-    test "fails unprocessed requests with :connection_error", %{port: port} do
+    test "fails unprocessed requests with :not_connected", %{port: port} do
       conn = connected(port)
       headers = [Server.reply_to(self())]
 
-      {:ok, conn} =
+      conn =
         Connection.request(
           conn,
           "GET",
@@ -213,7 +216,7 @@ defmodule Pigeon.HTTP.ConnectionTest do
 
       {conn, log} = with_log(fn -> inject(conn, goaway(last_stream_id: 0)) end)
 
-      assert_receive {:response, %{tag: :held, response: :connection_error}}
+      assert_receive {:response, %{tag: :held, response: :not_connected}}
       assert conn.status == :disconnected
       assert log =~ "GOAWAY"
       assert_received :connect

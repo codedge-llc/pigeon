@@ -123,7 +123,7 @@ defmodule Pigeon.ADM do
   ```
 
   If the dispatcher has no live connection to ADM, or the access token refresh fails,
-  `:response` is `:connection_error` and the push was not sent, so it is safe to resend.
+  `:response` is `:not_connected` and the push was not sent, so it is safe to resend.
   If the connection is lost after the push was sent, `:response` is `:timeout` and
   delivery is unknown.
 
@@ -181,14 +181,8 @@ defmodule Pigeon.ADM do
   @impl true
   def handle_push(notification, state) do
     case refresh_access_token_if_needed(state) do
-      {:ok, state} ->
-        case do_push(notification, state) do
-          {:ok, state} -> {:noreply, state}
-          {:error, state, reason} -> fail_push(notification, state, reason)
-        end
-
-      {:error, state, reason} ->
-        fail_push(notification, state, reason)
+      {:ok, state} -> {:noreply, do_push(notification, state)}
+      {:error, state, reason} -> fail_push(notification, state, reason)
     end
   end
 
@@ -291,7 +285,7 @@ defmodule Pigeon.ADM do
         {:error, %{state | conn: conn}, response_json["reason"]}
 
       {:error, conn, _reason} ->
-        {:error, %{state | conn: conn}, :connection_error}
+        {:error, %{state | conn: conn}, :not_connected}
     end
   end
 
@@ -300,13 +294,11 @@ defmodule Pigeon.ADM do
     body = encode_payload(notification)
     path = adm_path(notification.registration_id)
 
-    case Connection.request(conn, "POST", path, headers, body, notification) do
-      {:ok, conn} ->
-        {:ok, %{state | conn: conn}}
-
-      {:error, conn, _reason} ->
-        {:error, %{state | conn: conn}, :connection_error}
-    end
+    %{
+      state
+      | conn:
+          Connection.request(conn, "POST", path, headers, body, notification)
+    }
   end
 
   @spec adm_path(String.t()) :: String.t()

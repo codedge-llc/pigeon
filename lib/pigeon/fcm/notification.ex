@@ -34,20 +34,20 @@ defmodule Pigeon.FCM.Notification do
   @typedoc ~S"""
   FCM push response
 
-  - `:connection_error` - Dispatcher had no live connection to FCM. Push
-    was not sent.
   - `t:error_response/0` - Push attempted but server responded with error.
     See `:error` for details.
   - nil - Push has not been sent yet.
+  - `:not_connected` - Dispatcher had no live connection to FCM. Push
+    was not sent.
   - `:not_started` - Dispatcher is not running. Push was not sent.
   - `:success` - Push was successfully sent.
   - `:timeout` - Push was sent but the connection dropped before FCM
     responded. Delivery is unknown.
   """
   @type response ::
-          :connection_error
-          | error_response
+          error_response
           | nil
+          | :not_connected
           | :not_started
           | :success
           | :timeout

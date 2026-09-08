@@ -117,9 +117,9 @@ defmodule Pigeon.HTTP.Connection do
 
   # Sends a request and tracks it in the queue.
   #
-  # Returns `{:error, conn, reason}` without sending anything when there is no
-  # live connection or the request is rejected. A rejection that means the
-  # socket is dead also disconnects.
+  # When there is no live connection or the request is rejected, nothing is
+  # sent and the notification is completed with `:not_connected`. A rejection
+  # that means the socket is dead also disconnects.
   @spec request(
           t(),
           String.t(),
@@ -127,12 +127,15 @@ defmodule Pigeon.HTTP.Connection do
           Mint.Types.headers(),
           iodata(),
           term()
-        ) ::
-          {:ok, t()} | {:error, t(), term()}
+        ) :: t()
   def request(conn, method, path, headers, body, notification) do
     case do_request(conn, method, path, headers, body, notification) do
-      {:ok, conn, _ref} -> {:ok, conn}
-      {:error, conn, reason} -> {:error, conn, reason}
+      {:ok, conn, _ref} ->
+        conn
+
+      {:error, conn, _reason} ->
+        fail_request(Request.new(notification), :not_connected)
+        conn
     end
   end
 
@@ -327,7 +330,7 @@ defmodule Pigeon.HTTP.Connection do
   # The server refused the stream before processing it (RFC 9113 GOAWAY), so
   # the push was never sent. Any other stream error leaves delivery unknown.
   defp stream_error_response(%Mint.HTTPError{reason: :unprocessed}),
-    do: :connection_error
+    do: :not_connected
 
   defp stream_error_response(_error), do: :timeout
 

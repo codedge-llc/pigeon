@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Support for Elixir 1.20 and Erlang/OTP 29. ([#310](https://github.com/codedge-llc/pigeon/pull/310))
 - Dispatchers reconnect on their own when a connection drops. ([#299](https://github.com/codedge-llc/pigeon/issues/299), [#300](https://github.com/codedge-llc/pigeon/pull/300), [#311](https://github.com/codedge-llc/pigeon/pull/311))
-- `:connection_error` push response. You get it when the dispatcher has no connection
+- `:not_connected` push response. You get it when the dispatcher has no connection
   at the moment you push. The push was never sent, so it is safe to send again.
   `:timeout` still means the push went out but the connection dropped before a reply
   came back. ([#311](https://github.com/codedge-llc/pigeon/pull/311))
@@ -41,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Better handling of FCM errors with multiple details. ([#293](https://github.com/codedge-llc/pigeon/pull/293))
 - Minor documentation and typespec fixes. ([#294](https://github.com/codedge-llc/pigeon/pull/294), [#297](https://github.com/codedge-llc/pigeon/pull/297))
 - ADM no longer crashes the dispatcher when it cannot refresh its access token. The
-  push gets a `:connection_error` response instead. ([#311](https://github.com/codedge-llc/pigeon/pull/311))
+  push gets a `:not_connected` response instead. ([#311](https://github.com/codedge-llc/pigeon/pull/311))
 
 ## v2.0.1 - 2024-12-28
 

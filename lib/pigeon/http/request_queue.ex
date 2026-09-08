@@ -101,13 +101,20 @@ defmodule Pigeon.HTTP.RequestQueue do
 
   def process(_other, queue), do: queue
 
+  # Responses for a ref the queue does not track are dropped. This happens
+  # when a reply arrives after the request was already popped, such as a
+  # synchronous request that timed out.
   @spec merge_result(t(), reference(), map()) :: t()
   defp merge_result(%{requests: requests} = queue, ref, params) do
-    request = requests[ref] || %Request{}
+    case requests do
+      %{^ref => request} ->
+        %{
+          queue
+          | requests: Map.put(requests, ref, Request.merge(request, params))
+        }
 
-    new_requests =
-      Map.put(requests, ref, Request.merge(request, params))
-
-    %{queue | requests: new_requests}
+      _unknown ->
+        queue
+    end
   end
 end

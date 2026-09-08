@@ -48,20 +48,20 @@ defmodule Pigeon.APNS.Notification do
   @typedoc ~S"""
   APNS push response
 
-  - `:connection_error` - Dispatcher had no live connection to APNS. Push
-    was not sent.
   - `t:Pigeon.APNS.Notification.error_response/0` - Push attempted but
      server responded with error.
   - nil - Push has not been sent yet.
+  - `:not_connected` - Dispatcher had no live connection to APNS. Push
+    was not sent.
   - `:not_started` - Dispatcher is not running. Push was not sent.
   - `:success` - Push was successfully sent.
   - `:timeout` - Push was sent but the connection dropped before APNS
     responded. Delivery is unknown.
   """
   @type response ::
-          :connection_error
-          | error_response
+          error_response
           | nil
+          | :not_connected
           | :not_started
           | :success
           | :timeout

@@ -93,7 +93,7 @@ defmodule Pigeon.FCM do
   contain a JSON map of the response and `:response` will be an atomized version
   of the error type.
 
-  If the dispatcher has no live connection to FCM, `:response` is `:connection_error`
+  If the dispatcher has no live connection to FCM, `:response` is `:not_connected`
   and the push was not sent, so it is safe to resend. If the connection is lost after
   the push was sent, `:response` is `:timeout` and delivery is unknown.
 
@@ -151,17 +151,10 @@ defmodule Pigeon.FCM do
     payload = Configurable.push_payload(config, notification, [])
     path = "/v1/projects/#{config.project_id}/messages:send"
 
-    case Connection.request(conn, "POST", path, headers, payload, notification) do
-      {:ok, conn} ->
-        {:noreply, %{state | conn: conn}}
+    conn =
+      Connection.request(conn, "POST", path, headers, payload, notification)
 
-      {:error, conn, _reason} ->
-        notification
-        |> Map.put(:response, :connection_error)
-        |> process_on_response()
-
-        {:noreply, %{state | conn: conn}}
-    end
+    {:noreply, %{state | conn: conn}}
   end
 
   @impl Pigeon.Adapter

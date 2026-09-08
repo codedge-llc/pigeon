@@ -43,7 +43,7 @@ defmodule Pigeon.FCMTest do
       pid = self()
       Pigeon.push(dispatcher, n, on_response: fn x -> send(pid, x) end)
 
-      assert_receive %Notification{response: :connection_error}, 1_000
+      assert_receive %Notification{response: :not_connected}, 1_000
     end
   end
 

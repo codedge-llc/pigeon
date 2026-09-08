@@ -70,7 +70,7 @@ defmodule Pigeon.APNSTest do
       pid = self()
       Pigeon.push(dispatcher, n, on_response: fn x -> send(pid, x) end)
 
-      assert_receive %Pigeon.APNS.Notification{response: :connection_error},
+      assert_receive %Pigeon.APNS.Notification{response: :not_connected},
                      1_000
     end
   end

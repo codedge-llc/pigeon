@@ -40,6 +40,11 @@ defmodule Pigeon.HTTP.RequestQueueTest do
       result = RequestQueue.process([{:not_real, :erlang.make_ref()}], queue)
       assert result == queue
     end
+
+    test "ignores responses for unknown refs", %{queue: queue} do
+      result = RequestQueue.process([{:status, :erlang.make_ref(), 200}], queue)
+      assert result == queue
+    end
   end
 
   describe "drain/1" do
