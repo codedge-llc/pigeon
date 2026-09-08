@@ -75,13 +75,18 @@ defmodule Pigeon.FCM.Notification do
   @typedoc ~S"""
   FCM notification target. Must be one of the following:
 
-  - `{:token, "string"}` - Registration token to send a message to.
+  - `{:token, "string"}` - Registration token to send a message to. Being deprecated by Firebase in favour of fid.
+  - `{:fid, "string"}` - Firebase Installation ID to send a message to.
   - `{:topic, "string"}` - Topic name to send a message to, e.g. "weather".
     Note: "/topics/" prefix should not be provided.
   - `{:condition, "string"}` - Condition to send a message to, e.g. "'foo'
     in topics && 'bar' in topics".
   """
-  @type target :: {:token, binary} | {:topic, binary} | {:condition, binary}
+  @type target ::
+          {:token, binary}
+          | {:fid, binary}
+          | {:topic, binary}
+          | {:condition, binary}
 
   @doc """
   Creates `FCM.Notification` struct with given target and optional
@@ -121,7 +126,7 @@ defmodule Pigeon.FCM.Notification do
   def new(target, notification \\ nil, data \\ nil)
 
   def new({type, _} = target, notification, data)
-      when type in [:token, :topic, :condition] do
+      when type in [:token, :fid, :topic, :condition] do
     %Pigeon.FCM.Notification{
       target: target,
       notification: notification,
