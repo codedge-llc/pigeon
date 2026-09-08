@@ -25,11 +25,32 @@ defmodule Pigeon.FCM.Notification do
           fcm_options: map | nil,
           name: binary | nil,
           notification: map | nil,
-          response: atom | nil,
+          response: response,
           target: target,
           validate_only: boolean | nil,
           webpush: map | nil
         }
+
+  @typedoc ~S"""
+  FCM push response
+
+  - `:connection_error` - Dispatcher had no live connection to FCM. Push
+    was not sent.
+  - `t:error_response/0` - Push attempted but server responded with error.
+    See `:error` for details.
+  - nil - Push has not been sent yet.
+  - `:not_started` - Dispatcher is not running. Push was not sent.
+  - `:success` - Push was successfully sent.
+  - `:timeout` - Push was sent but the connection dropped before FCM
+    responded. Delivery is unknown.
+  """
+  @type response ::
+          :connection_error
+          | error_response
+          | nil
+          | :not_started
+          | :success
+          | :timeout
 
   @type error_response ::
           :unspecified_error
@@ -46,9 +67,9 @@ defmodule Pigeon.FCM.Notification do
   FCM notification target. Must be one of the following:
 
   - `{:token, "string"}` - Registration token to send a message to.
-  - `{:topic, "string"}` - Topic name to send a message to, e.g. "weather". 
+  - `{:topic, "string"}` - Topic name to send a message to, e.g. "weather".
     Note: "/topics/" prefix should not be provided.
-  - `{:condition, "string"}` - Condition to send a message to, e.g. "'foo' 
+  - `{:condition, "string"}` - Condition to send a message to, e.g. "'foo'
     in topics && 'bar' in topics".
   """
   @type target :: {:token, binary} | {:topic, binary} | {:condition, binary}

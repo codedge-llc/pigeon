@@ -9,28 +9,18 @@ defprotocol Pigeon.Configurable do
   def push_payload(config, notification, opts)
 
   @doc ~S"""
-  Schedules connection ping if necessary.
+  Interval between keepalive pings in milliseconds, or `nil` for none.
 
   ## Examples
 
-      iex> schedule_ping(%Pigeon.APNS.Config{ping_period: 2})
-      iex> receive do
-      ...>   :ping -> "Got ping!"
-      ...> after
-      ...>   5000 -> "No ping received."
-      ...> end
-      "Got ping!"
+      iex> ping_period(%Pigeon.APNS.Config{ping_period: 2})
+      2
 
-      iex> schedule_ping(%Pigeon.FCM.Config{})
-      iex> receive do
-      ...>   :ping -> "Got ping!"
-      ...> after
-      ...>   5000 -> "No ping received."
-      ...> end
-      "No ping received."
+      iex> ping_period(%Pigeon.FCM.Config{})
+      600_000
   """
-  @spec schedule_ping(any) :: no_return
-  def schedule_ping(config)
+  @spec ping_period(any) :: pos_integer | nil
+  def ping_period(config)
 
   def close(config)
 

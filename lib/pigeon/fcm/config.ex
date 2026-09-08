@@ -2,6 +2,7 @@ defmodule Pigeon.FCM.Config do
   @moduledoc false
 
   defstruct auth: nil,
+            ping_period: 600_000,
             project_id: nil,
             uri: ~c"fcm.googleapis.com",
             port: 443
@@ -15,6 +16,7 @@ defmodule Pigeon.FCM.Config do
 
   @type t :: %__MODULE__{
           auth: nil | auth(),
+          ping_period: pos_integer(),
           project_id: nil | String.t(),
           uri: String.t(),
           port: pos_integer()
@@ -31,6 +33,7 @@ defmodule Pigeon.FCM.Config do
       ...> )
       %Pigeon.FCM.Config{
         auth: YourApp.Goth,
+        ping_period: 600_000,
         port: 443,
         project_id: "example-project",
         uri: ~c"fcm.googleapis.com"
@@ -41,6 +44,7 @@ defmodule Pigeon.FCM.Config do
 
     %__MODULE__{
       auth: opts[:auth],
+      ping_period: Map.get(opts, :ping_period, 600_000),
       port: Map.get(opts, :port, 443),
       project_id: opts[:project_id],
       uri: Map.get(opts, :uri, ~c"fcm.googleapis.com")
@@ -104,7 +108,7 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
     Encodable.binary_payload(notification)
   end
 
-  def schedule_ping(_config), do: :ok
+  def ping_period(%@for{ping_period: period}), do: period
 
   def close(_config) do
   end
@@ -125,6 +129,13 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   defp do_validate!({:project_id, value}, config) when not is_binary(value) do
     raise Pigeon.ConfigError,
       reason: "attempted to start without valid :project_id",
+      config: config
+  end
+
+  defp do_validate!({:ping_period, value}, config)
+       when not is_integer(value) or value <= 0 do
+    raise Pigeon.ConfigError,
+      reason: "attempted to start without valid :ping_period",
       config: config
   end
 

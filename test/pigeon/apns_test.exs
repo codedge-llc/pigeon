@@ -55,6 +55,24 @@ defmodule Pigeon.APNSTest do
         |> Pigeon.APNS.init()
       end)
     end
+
+    test "starts without a reachable server and fails pushes fast" do
+      {:ok, dispatcher} =
+        Pigeon.Dispatcher.start_link(
+          adapter: Pigeon.APNS,
+          cert: File.read!("test/support/FakeAPNSCert.pem"),
+          key: File.read!("test/support/FakeAPNSKey.pem"),
+          uri: "localhost",
+          port: PigeonTest.Server.closed_port()
+        )
+
+      n = Pigeon.APNS.Notification.new("hello", bad_token(), "com.example.app")
+      pid = self()
+      Pigeon.push(dispatcher, n, on_response: fn x -> send(pid, x) end)
+
+      assert_receive %Pigeon.APNS.Notification{response: :connection_error},
+                     1_000
+    end
   end
 
   describe "init/1 (JWT)" do
