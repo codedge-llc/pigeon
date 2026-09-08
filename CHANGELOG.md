@@ -5,11 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## v2.1.0 - 2026-09-08
 
 **Added**
 
-- Support for Elixir 1.20 and Erlang/OTP 29. ([#310](https://github.com/codedge-llc/pigeon/pull/310))
 - Dispatchers reconnect on their own when a connection drops. ([#299](https://github.com/codedge-llc/pigeon/issues/299), [#300](https://github.com/codedge-llc/pigeon/pull/300), [#311](https://github.com/codedge-llc/pigeon/pull/311))
 - `:not_connected` push response. You get it when the dispatcher has no connection
   at the moment you push. The push was never sent, so it is safe to send again.
@@ -17,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   came back. ([#311](https://github.com/codedge-llc/pigeon/pull/311))
 - FCM connections stay alive with periodic pings, the same way APNS connections
   already did. Tune it with the new `:ping_period` option. ([#311](https://github.com/codedge-llc/pigeon/pull/311))
+- `{:fid, "..."}` FCM target for Firebase Installation IDs. Google has deprecated
+  registration tokens in favor of FIDs. ([#304](https://github.com/codedge-llc/pigeon/pull/304))
 - `:unauthenticated` FCM error response when FCM rejects the service account itself.
   Before, a bad or expired service account came back as `:unknown_error`. ([#312](https://github.com/codedge-llc/pigeon/pull/312))
 - `:bad_environment_key_id_in_token` and `:unrelated_key_id_in_token` APNS error
@@ -26,12 +27,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Use Mint for all HTTP/1 and HTTP/2 connections. This replaces the use of `:httpoison`
   and `:kadabra`. ([#296](https://github.com/codedge-llc/pigeon/pull/296))
-- Minimum supported Elixir version is now `1.16`. Pigeon supports every Elixir version
-  that still receives security patches, and the minimum moves forward as Elixir drops
-  older branches. ([#310](https://github.com/codedge-llc/pigeon/pull/310))
 - Dispatchers now connect in the background after they start. If the push service is
   unreachable, the dispatcher logs an error and keeps retrying instead of taking your
   app down with it. ([#295](https://github.com/codedge-llc/pigeon/issues/295), [#309](https://github.com/codedge-llc/pigeon/pull/309), [#311](https://github.com/codedge-llc/pigeon/pull/311))
+- Minimum supported Elixir version is now `1.16`. Pigeon supports every Elixir version
+  that still receives security patches, and the minimum moves forward as Elixir drops
+  older branches. ([#310](https://github.com/codedge-llc/pigeon/pull/310))
 
 **Removed**
 
@@ -41,11 +42,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Fixed**
 
+- ADM no longer crashes the dispatcher when it cannot refresh its access token. The
+  push gets a `:not_connected` response instead. ([#311](https://github.com/codedge-llc/pigeon/pull/311))
+- Redact PKCS#8 private keys in APNS config errors. ([#301](https://github.com/codedge-llc/pigeon/pull/301))
 - Return `:permission_denied` FCM error response if missing privileges. ([#290](https://github.com/codedge-llc/pigeon/pull/290))
 - Better handling of FCM errors with multiple details. ([#293](https://github.com/codedge-llc/pigeon/pull/293))
 - Minor documentation and typespec fixes. ([#294](https://github.com/codedge-llc/pigeon/pull/294), [#297](https://github.com/codedge-llc/pigeon/pull/297))
-- ADM no longer crashes the dispatcher when it cannot refresh its access token. The
-  push gets a `:not_connected` response instead. ([#311](https://github.com/codedge-llc/pigeon/pull/311))
 
 ## v2.0.1 - 2024-12-28
 

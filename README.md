@@ -16,7 +16,7 @@ Add `:pigeon` as a `mix.exs` dependency:
 ```elixir
 def deps do
   [
-    {:pigeon, "~> 2.0"}
+    {:pigeon, "~> 2.1"}
   ]
 end
 ```
