@@ -1,8 +1,6 @@
 defmodule Pigeon.APNS.Error do
   @moduledoc false
 
-  require Logger
-
   alias Pigeon.APNS.Notification
 
   @doc false

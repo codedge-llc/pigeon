@@ -168,8 +168,6 @@ defmodule Pigeon.APNS do
   alias Pigeon.APNS.{ConfigParser, Error}
   alias Pigeon.HTTP.{Request, RequestQueue}
 
-  require Logger
-
   @impl true
   def init(opts) do
     config = ConfigParser.parse(opts)
@@ -232,6 +230,7 @@ defmodule Pigeon.APNS do
     Pigeon.HTTP.handle_info(msg, state, &handle_response/1)
   end
 
+  @doc false
   @spec handle_response(Request.t()) :: :ok
   def handle_response(%{status: 200} = request) do
     %{headers: headers, notification: notification} = request
@@ -250,6 +249,7 @@ defmodule Pigeon.APNS do
     |> process_on_response()
   end
 
+  @doc false
   @spec get_header([{String.t(), String.t()}], String.t()) :: String.t() | nil
   def get_header(headers, key) do
     case Enum.find(headers, fn {k, _val} -> k == key end) do

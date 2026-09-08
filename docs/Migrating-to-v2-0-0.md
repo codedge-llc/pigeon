@@ -11,8 +11,8 @@ no additional changes are required.
 
 ```elixir
 [
-  {:pigeon, "~> 2.0"} # Change this
-  {:kadadbra, ~> 0.6.0} # Remove this
+  {:pigeon, "~> 2.0"}, # Change this
+  {:kadabra, "~> 0.6.0"} # Remove this
 ]
 ```
 

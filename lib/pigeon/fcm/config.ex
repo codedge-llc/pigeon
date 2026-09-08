@@ -51,10 +51,7 @@ end
 defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
   @moduledoc false
 
-  import Pigeon.Tasks, only: [process_on_response: 1]
-
   alias Pigeon.Encodable
-  alias Pigeon.FCM.Error
 
   # Configurable Callbacks
 
@@ -107,24 +104,6 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
     Encodable.binary_payload(notification)
   end
 
-  def handle_end_stream(_config, %{error: nil} = stream, notif) do
-    stream.body
-    |> Pigeon.json_library().decode!()
-    |> case do
-      %{"name" => name} ->
-        notif
-        |> Map.put(:name, name)
-        |> Map.put(:response, :success)
-        |> process_on_response()
-
-      %{"error" => error} ->
-        notif
-        |> Map.put(:error, error)
-        |> Map.put(:response, Error.parse(error))
-        |> process_on_response()
-    end
-  end
-
   def schedule_ping(_config), do: :ok
 
   def close(_config) do
@@ -140,25 +119,14 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
        when not is_atom(mod) or is_nil(mod) do
     raise Pigeon.ConfigError,
       reason: "attempted to start without valid :auth module",
-      config: redact(config)
+      config: config
   end
 
   defp do_validate!({:project_id, value}, config) when not is_binary(value) do
     raise Pigeon.ConfigError,
       reason: "attempted to start without valid :project_id",
-      config: redact(config)
+      config: config
   end
 
   defp do_validate!({_key, _value}, _config), do: :ok
-
-  @doc false
-  def redact(config) when is_map(config) do
-    [:service_account_json]
-    |> Enum.reduce(config, fn key, acc ->
-      case Map.get(acc, key) do
-        val when is_map(val) -> Map.put(acc, key, "[FILTERED]")
-        _ -> acc
-      end
-    end)
-  end
 end

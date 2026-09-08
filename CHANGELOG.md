@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Use Mint for all HTTP/1 and HTTP/2 connections. This replaces the use of `:httpoison`
   and `:kadabra`. ([#296](https://github.com/codedge-llc/pigeon/pull/296))
+- Minimum supported Elixir version is now `1.16`. Pigeon supports every Elixir version
+  that still receives security patches, and the minimum moves forward as Elixir drops
+  older branches. ([#310](https://github.com/codedge-llc/pigeon/pull/310))
+- Support Elixir 1.20 and Erlang/OTP 29. ([#310](https://github.com/codedge-llc/pigeon/pull/310))
+- Prune stale `:httpoison` and `:kadabra` entries from `mix.lock`. ([#305](https://github.com/codedge-llc/pigeon/pull/305))
+
+**Removed**
+
+- Unpublished v1 guides in `docs/`. The `Pigeon.ADM`, `Pigeon.APNS`, and `Pigeon.FCM`
+  module docs cover v2 setup. The v1 guides remain on the `v1.6` branch. ([#310](https://github.com/codedge-llc/pigeon/pull/310))
 
 **Fixed**
 

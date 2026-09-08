@@ -4,8 +4,6 @@ defmodule Pigeon.APNS.Token do
 
   alias Pigeon.APNS.JWTConfig
 
-  require Logger
-
   # seconds - 10 seconds short of one hour
   @token_max_age 3_590
 
