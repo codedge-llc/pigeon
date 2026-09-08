@@ -12,11 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-      - name: Use Node.js 22.x
-        uses: actions/setup-node@v4
+        uses: actions/checkout@v5
+      - name: Use Node.js 24.x
+        uses: actions/setup-node@v6
         with:
-          node-version: 22.x
+          node-version: 24.x
       - name: Install Prettier
         run: npm install --global prettier
       - name: Run Prettier
@@ -25,7 +25,7 @@ jobs:
     name: Format/Credo
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
@@ -50,7 +50,7 @@ jobs:
       ELIXIR_VERSION: "1.20"
       OTP_VERSION: "29"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
@@ -84,7 +84,7 @@ jobs:
           - elixir: "1.20"
             otp: "29"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:

@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that still receives security patches, and the minimum moves forward as Elixir drops
   older branches. ([#310](https://github.com/codedge-llc/pigeon/pull/310))
 - Support Elixir 1.20 and Erlang/OTP 29. ([#310](https://github.com/codedge-llc/pigeon/pull/310))
+- Prune stale `:httpoison` and `:kadabra` entries from `mix.lock`. ([#305](https://github.com/codedge-llc/pigeon/pull/305))
 
 **Removed**
 
