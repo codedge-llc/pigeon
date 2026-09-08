@@ -98,6 +98,10 @@ defmodule Pigeon.APNS do
 
   Pushes are synchronous and return the notification with an updated `:response` key.
 
+  If the dispatcher has no live connection to APNS, `:response` is `:not_connected`
+  and the push was not sent, so it is safe to resend. If the connection is lost after
+  the push was sent, `:response` is `:timeout` and delivery is unknown.
+
   ```
   YourApp.APNS.push(n)
   ```
@@ -157,77 +161,49 @@ defmodule Pigeon.APNS do
   """
 
   defstruct config: nil,
-            queue: Pigeon.HTTP.RequestQueue.new(),
-            socket: nil
+            conn: nil
 
   @behaviour Pigeon.Adapter
 
   import Pigeon.Tasks, only: [process_on_response: 1]
 
-  alias Pigeon.Configurable
   alias Pigeon.APNS.{ConfigParser, Error}
-  alias Pigeon.HTTP.{Request, RequestQueue}
+  alias Pigeon.Configurable
+  alias Pigeon.HTTP.{Connection, Request}
 
   @impl true
   def init(opts) do
     config = ConfigParser.parse(opts)
     Configurable.validate!(config)
 
-    state = %__MODULE__{config: config}
+    conn =
+      Connection.new(
+        __MODULE__,
+        fn -> Configurable.connect(config) end,
+        Configurable.ping_period(config)
+      )
 
-    case Configurable.connect(config) do
-      {:ok, socket} ->
-        Configurable.schedule_ping(config)
-        {:ok, %{state | socket: socket}}
-
-      {:error, reason} ->
-        {:stop, reason}
-    end
+    {:ok, %__MODULE__{config: config, conn: conn}}
   end
 
   @impl true
-  def handle_push(notification, state) do
-    %{config: config, queue: queue, socket: socket} = state
-
+  def handle_push(notification, %{config: config, conn: conn} = state) do
     headers = Configurable.push_headers(config, notification, [])
     payload = Configurable.push_payload(config, notification, [])
-    method = "POST"
     path = "/3/device/#{notification.device_token}"
 
-    {:ok, socket, ref} =
-      Mint.HTTP.request(socket, method, path, headers, payload)
+    conn =
+      Connection.request(conn, "POST", path, headers, payload, notification)
 
-    new_q = RequestQueue.add(queue, ref, notification)
-
-    state =
-      state
-      |> Map.put(:socket, socket)
-      |> Map.put(:queue, new_q)
-
-    {:noreply, state}
+    {:noreply, %{state | conn: conn}}
   end
 
   @impl true
-  def handle_info(:ping, %{socket: socket} = state) do
-    {:ok, socket, _ref} = Mint.HTTP2.ping(socket)
-    Configurable.schedule_ping(state.config)
-
-    {:noreply, %{state | socket: socket}}
-  end
-
-  def handle_info({:closed, _}, %{config: config} = state) do
-    case Configurable.connect(config) do
-      {:ok, socket} ->
-        Configurable.schedule_ping(config)
-        {:noreply, %{state | socket: socket}}
-
-      {:error, reason} ->
-        {:stop, reason}
+  def handle_info(msg, %{conn: conn} = state) do
+    case Connection.handle_message(conn, msg, &handle_response/1) do
+      {:ok, conn} -> {:noreply, %{state | conn: conn}}
+      :unknown -> {:noreply, state}
     end
-  end
-
-  def handle_info(msg, state) do
-    Pigeon.HTTP.handle_info(msg, state, &handle_response/1)
   end
 
   @doc false

@@ -93,9 +93,23 @@ defmodule Pigeon.FCM do
   contain a JSON map of the response and `:response` will be an atomized version
   of the error type.
 
+  If the dispatcher has no live connection to FCM, `:response` is `:not_connected`
+  and the push was not sent, so it is safe to resend. If the connection is lost after
+  the push was sent, `:response` is `:timeout` and delivery is unknown.
+
   ```
   YourApp.FCM.push(n)
   ```
+
+  ## Configuration Options
+
+  - `:auth` - Your Goth worker name or module. Required.
+  - `:project_id` - Your Firebase project ID. Required.
+  - `:ping_period` - Interval between server pings in milliseconds. Keeps idle
+    connections alive. Defaults to 10 minutes.
+  - `:port` - Push server port. Defaults to `443`.
+  - `:uri` - Push server uri. Defaults to `fcm.googleapis.com`. Useful for test
+    environments.
 
   ## Customizing Goth
 
@@ -104,20 +118,16 @@ defmodule Pigeon.FCM do
   for more details.
   """
 
-  @max_retries 3
-
   defstruct config: nil,
-            queue: Pigeon.HTTP.RequestQueue.new(),
-            retries: @max_retries,
-            socket: nil
+            conn: nil
 
   @behaviour Pigeon.Adapter
 
   import Pigeon.Tasks, only: [process_on_response: 1]
 
   alias Pigeon.Configurable
-  alias Pigeon.FCM.{Config, Error}
-  alias Pigeon.HTTP.{Request, RequestQueue}
+  alias Pigeon.FCM.Error
+  alias Pigeon.HTTP.{Connection, Request}
 
   @impl Pigeon.Adapter
   def init(opts) do
@@ -125,60 +135,34 @@ defmodule Pigeon.FCM do
 
     Configurable.validate!(config)
 
-    state = %__MODULE__{config: config}
+    conn =
+      Connection.new(
+        __MODULE__,
+        fn -> Configurable.connect(config) end,
+        Configurable.ping_period(config)
+      )
 
-    case connect_socket(config) do
-      {:ok, socket} ->
-        Configurable.schedule_ping(config)
-        {:ok, %{state | socket: socket}}
-
-      {:error, reason} ->
-        {:stop, reason}
-    end
+    {:ok, %__MODULE__{config: config, conn: conn}}
   end
 
   @impl Pigeon.Adapter
-  def handle_push(notification, state) do
-    %{config: config, queue: queue, socket: socket} = state
+  def handle_push(notification, %{config: config, conn: conn} = state) do
     headers = Configurable.push_headers(config, notification, [])
     payload = Configurable.push_payload(config, notification, [])
-    method = "POST"
     path = "/v1/projects/#{config.project_id}/messages:send"
 
-    {:ok, socket, ref} =
-      Mint.HTTP.request(socket, method, path, headers, payload)
+    conn =
+      Connection.request(conn, "POST", path, headers, payload, notification)
 
-    new_q = RequestQueue.add(queue, ref, notification)
-
-    state =
-      state
-      |> Map.put(:socket, socket)
-      |> Map.put(:queue, new_q)
-
-    {:noreply, state}
+    {:noreply, %{state | conn: conn}}
   end
 
   @impl Pigeon.Adapter
-  def handle_info(:ping, %{config: config, socket: socket} = state) do
-    {:ok, socket, _ref} = Mint.HTTP2.ping(socket)
-    Configurable.schedule_ping(config)
-
-    {:noreply, %{state | socket: socket}}
-  end
-
-  def handle_info({:closed, _}, %{config: config} = state) do
-    case connect_socket(config) do
-      {:ok, socket} ->
-        Configurable.schedule_ping(config)
-        {:noreply, %{state | socket: socket}}
-
-      {:error, reason} ->
-        {:stop, reason}
+  def handle_info(msg, %{conn: conn} = state) do
+    case Connection.handle_message(conn, msg, &handle_response/1) do
+      {:ok, conn} -> {:noreply, %{state | conn: conn}}
+      :unknown -> {:noreply, state}
     end
-  end
-
-  def handle_info(msg, state) do
-    Pigeon.HTTP.handle_info(msg, state, &handle_response/1)
   end
 
   @doc false
@@ -198,23 +182,6 @@ defmodule Pigeon.FCM do
         |> Map.put(:error, error)
         |> Map.put(:response, Error.parse(error))
         |> process_on_response()
-    end
-  end
-
-  @spec connect_socket(Config.t()) :: {:ok, Mint.HTTP2.t()} | {:error, term()}
-  defp connect_socket(config), do: connect_socket(config, @max_retries)
-
-  defp connect_socket(config, tries) do
-    case Configurable.connect(config) do
-      {:ok, socket} ->
-        {:ok, socket}
-
-      {:error, reason} ->
-        if tries > 0 do
-          connect_socket(config, tries - 1)
-        else
-          {:error, reason}
-        end
     end
   end
 end

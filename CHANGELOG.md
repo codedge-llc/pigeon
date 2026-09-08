@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**Added**
+
+- Support for Elixir 1.20 and Erlang/OTP 29. ([#310](https://github.com/codedge-llc/pigeon/pull/310))
+- Dispatchers reconnect on their own when a connection drops. ([#299](https://github.com/codedge-llc/pigeon/issues/299), [#300](https://github.com/codedge-llc/pigeon/pull/300), [#311](https://github.com/codedge-llc/pigeon/pull/311))
+- `:not_connected` push response. You get it when the dispatcher has no connection
+  at the moment you push. The push was never sent, so it is safe to send again.
+  `:timeout` still means the push went out but the connection dropped before a reply
+  came back. ([#311](https://github.com/codedge-llc/pigeon/pull/311))
+- FCM connections stay alive with periodic pings, the same way APNS connections
+  already did. Tune it with the new `:ping_period` option. ([#311](https://github.com/codedge-llc/pigeon/pull/311))
+
 **Changed**
 
 - Use Mint for all HTTP/1 and HTTP/2 connections. This replaces the use of `:httpoison`
@@ -14,19 +25,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Minimum supported Elixir version is now `1.16`. Pigeon supports every Elixir version
   that still receives security patches, and the minimum moves forward as Elixir drops
   older branches. ([#310](https://github.com/codedge-llc/pigeon/pull/310))
-- Support Elixir 1.20 and Erlang/OTP 29. ([#310](https://github.com/codedge-llc/pigeon/pull/310))
-- Prune stale `:httpoison` and `:kadabra` entries from `mix.lock`. ([#305](https://github.com/codedge-llc/pigeon/pull/305))
+- Dispatchers now connect in the background after they start. If the push service is
+  unreachable, the dispatcher logs an error and keeps retrying instead of taking your
+  app down with it. ([#295](https://github.com/codedge-llc/pigeon/issues/295), [#309](https://github.com/codedge-llc/pigeon/pull/309), [#311](https://github.com/codedge-llc/pigeon/pull/311))
 
 **Removed**
 
 - Unpublished v1 guides in `docs/`. The `Pigeon.ADM`, `Pigeon.APNS`, and `Pigeon.FCM`
   module docs cover v2 setup. The v1 guides remain on the `v1.6` branch. ([#310](https://github.com/codedge-llc/pigeon/pull/310))
+- Stale `:httpoison` and `:kadabra` entries in `mix.lock`. ([#305](https://github.com/codedge-llc/pigeon/pull/305))
 
 **Fixed**
 
 - Return `:permission_denied` FCM error response if missing privileges. ([#290](https://github.com/codedge-llc/pigeon/pull/290))
 - Better handling of FCM errors with multiple details. ([#293](https://github.com/codedge-llc/pigeon/pull/293))
 - Minor documentation and typespec fixes. ([#294](https://github.com/codedge-llc/pigeon/pull/294), [#297](https://github.com/codedge-llc/pigeon/pull/297))
+- ADM no longer crashes the dispatcher when it cannot refresh its access token. The
+  push gets a `:not_connected` response instead. ([#311](https://github.com/codedge-llc/pigeon/pull/311))
 
 ## v2.0.1 - 2024-12-28
 

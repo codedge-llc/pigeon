@@ -33,10 +33,8 @@ defmodule Pigeon.APNS.Shared do
     Pigeon.json_library().encode!(notification.payload)
   end
 
-  @spec schedule_ping(any) :: no_return
-  def schedule_ping(%{ping_period: ping}) do
-    Process.send_after(self(), :ping, ping)
-  end
+  @spec ping_period(config) :: pos_integer
+  def ping_period(%{ping_period: period}), do: period
 
   def close(_config) do
   end

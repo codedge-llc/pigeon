@@ -23,8 +23,8 @@ defmodule Pigeon.ADMTest do
 
       assert init.access_token_refreshed_datetime_erl == {{0, 0, 0}, {0, 0, 0}}
       assert init.access_token_expiration_seconds == 0
-      assert init.queue == %Pigeon.HTTP.RequestQueue{requests: %{}}
-      assert init.socket
+      %Pigeon.HTTP.Connection{status: :disconnected, socket: nil} = init.conn
+      assert_received :connect
     end
 
     test "raises if configured with invalid client id" do

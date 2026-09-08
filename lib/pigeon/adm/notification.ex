@@ -43,13 +43,23 @@ defmodule Pigeon.ADM.Notification do
   @typedoc ~S"""
   ADM push response
 
-  - nil - Push has not been sent yet
-  - `:success` - Push was successfully sent
   - `t:error_response/0` - Push attempted but server responded
     with error
-  - `:timeout` - Internal error. Push did not reach ADM servers
+  - nil - Push has not been sent yet
+  - `:not_connected` - Dispatcher had no live connection to ADM, or the
+    access token refresh failed. Push was not sent
+  - `:not_started` - Dispatcher is not running. Push was not sent
+  - `:success` - Push was successfully sent
+  - `:timeout` - Push was sent but the connection dropped before ADM
+    responded. Delivery is unknown
   """
-  @type response :: nil | :success | error_response | :timeout
+  @type response ::
+          error_response
+          | nil
+          | :not_connected
+          | :not_started
+          | :success
+          | :timeout
 
   @typedoc ~S"""
   ADM error responses

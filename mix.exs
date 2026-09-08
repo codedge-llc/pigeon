@@ -49,6 +49,7 @@ defmodule Pigeon.Mixfile do
 
   defp deps do
     [
+      {:bandit, "~> 1.0", only: [:dev, :test]},
       {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
       {:excoveralls, "~> 0.5", only: :test, runtime: false},
@@ -56,7 +57,8 @@ defmodule Pigeon.Mixfile do
       {:goth, "~> 1.4.3"},
       {:jason, "~> 1.0", optional: true},
       {:joken, "~> 2.1"},
-      {:mint, "~> 1.0"}
+      {:mint, "~> 1.0"},
+      {:plug, "~> 1.14", only: [:dev, :test]}
     ]
   end
 

@@ -146,7 +146,7 @@ defimpl Pigeon.Configurable, for: Pigeon.APNS.JWTConfig do
 
   defdelegate push_payload(config, notification, opts), to: Shared
 
-  defdelegate schedule_ping(any), to: Shared
+  defdelegate ping_period(config), to: Shared
 
   defdelegate close(config), to: Shared
 
