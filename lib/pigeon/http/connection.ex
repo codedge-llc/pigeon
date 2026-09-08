@@ -26,8 +26,7 @@ defmodule Pigeon.HTTP.Connection do
             queue: RequestQueue.new(),
             status: :disconnected,
             attempt: 0,
-            ping_timer: nil,
-            reconnecting?: false
+            ping_timer: nil
 
   @type status :: :disconnected | :connected | :draining
   @type connect_fun :: (-> {:ok, Mint.HTTP.t()} | {:error, term()})
@@ -41,8 +40,7 @@ defmodule Pigeon.HTTP.Connection do
           queue: RequestQueue.t(),
           status: status(),
           attempt: non_neg_integer(),
-          ping_timer: reference() | nil,
-          reconnecting?: boolean()
+          ping_timer: reference() | nil
         }
 
   # Builds a disconnected connection and queues the first `:connect` message.
@@ -94,16 +92,7 @@ defmodule Pigeon.HTTP.Connection do
   def connect(%__MODULE__{status: :disconnected} = conn) do
     case conn.connect.() do
       {:ok, socket} ->
-        if conn.reconnecting?, do: Logger.info("#{prefix(conn)} reconnected")
-
-        %{
-          conn
-          | socket: socket,
-            status: :connected,
-            attempt: 0,
-            reconnecting?: false
-        }
-        |> schedule_ping()
+        schedule_ping(%{conn | socket: socket, status: :connected, attempt: 0})
 
       {:error, reason} ->
         Logger.error("#{prefix(conn)} failed to connect: #{format(reason)}")
@@ -210,7 +199,22 @@ defmodule Pigeon.HTTP.Connection do
   @spec disconnect(t(), term()) :: t()
   def disconnect(%__MODULE__{} = conn, reason) do
     Logger.error("#{prefix(conn)} disconnected: #{format(reason)}")
+    drop_socket(conn)
+  end
 
+  # Private
+
+  # A GOAWAY with NO_ERROR. FCM sends one to every connection after a few
+  # minutes, so this is routine and logs at `:debug`. Mint surfaces a GOAWAY
+  # with any other code as a stream error, which reaches `disconnect/2` and
+  # logs at `:error`. By the time this runs, in-flight requests have drained,
+  # so nothing is failed.
+  defp goaway(conn) do
+    Logger.debug("#{prefix(conn)} server closed the connection (GOAWAY)")
+    drop_socket(conn)
+  end
+
+  defp drop_socket(conn) do
     close_socket(conn.socket)
     cancel_ping(conn.ping_timer)
 
@@ -225,12 +229,9 @@ defmodule Pigeon.HTTP.Connection do
         queue: queue,
         status: :disconnected,
         attempt: 0,
-        ping_timer: nil,
-        reconnecting?: true
+        ping_timer: nil
     }
   end
-
-  # Private
 
   defp do_request(
          %{status: :connected} = conn,
@@ -351,11 +352,9 @@ defmodule Pigeon.HTTP.Connection do
   defp check_writable(conn), do: conn
 
   defp handle_goaway(conn) do
-    if RequestQueue.empty?(conn.queue) do
-      disconnect(conn, "server closed the connection (GOAWAY)")
-    else
-      %{conn | status: :draining}
-    end
+    if RequestQueue.empty?(conn.queue),
+      do: goaway(conn),
+      else: %{conn | status: :draining}
   end
 
   defp fail_request(%Request{notification: nil}, _response), do: :ok

@@ -151,7 +151,7 @@ defmodule Pigeon.HTTP.ConnectionTest do
       {conn, log} = with_log(fn -> Connection.connect(conn) end)
 
       assert Connection.connected?(conn)
-      assert log =~ "reconnected"
+      assert log == ""
     end
   end
 
@@ -194,7 +194,8 @@ defmodule Pigeon.HTTP.ConnectionTest do
                          notification: %{tag: :held}
                        }}
 
-      assert log =~ "GOAWAY"
+      refute log =~ "[info]"
+      refute log =~ "[error]"
       assert_received :connect
     end
 
@@ -218,10 +219,25 @@ defmodule Pigeon.HTTP.ConnectionTest do
 
       assert_receive {:response, %{tag: :held, response: :not_connected}}
       assert conn.status == :disconnected
-      assert log =~ "GOAWAY"
+      refute log =~ "[info]"
+      refute log =~ "[error]"
       assert_received :connect
 
       send(plug, :release)
+    end
+
+    test "logs a GOAWAY that carries an error code", %{port: port} do
+      conn = connected(port)
+
+      {conn, log} =
+        with_log(fn ->
+          inject(conn, goaway(last_stream_id: 0, error_code: 0xB))
+        end)
+
+      assert conn.status == :disconnected
+      assert log =~ "[error]"
+      assert log =~ "enhance_your_calm"
+      assert_received :connect
     end
   end
 
@@ -314,8 +330,12 @@ defmodule Pigeon.HTTP.ConnectionTest do
     conn
   end
 
-  # RFC 9113 section 6.8. Stream 0, NO_ERROR, no debug data.
-  defp goaway(last_stream_id: last_stream_id) do
-    <<8::24, 0x7::8, 0::8, 0::1, 0::31, 0::1, last_stream_id::31, 0::32>>
+  # RFC 9113 section 6.8. Stream 0, no debug data. Defaults to NO_ERROR.
+  defp goaway(opts) do
+    last_stream_id = Keyword.fetch!(opts, :last_stream_id)
+    error_code = Keyword.get(opts, :error_code, 0)
+
+    <<8::24, 0x7::8, 0::8, 0::1, 0::31, 0::1, last_stream_id::31,
+      error_code::32>>
   end
 end

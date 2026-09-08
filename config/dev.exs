@@ -15,5 +15,4 @@ config :pigeon, PigeonTest.APNS,
 config :pigeon, PigeonTest.FCM,
   adapter: Pigeon.FCM,
   auth: PigeonTest.Goth,
-  project_id: System.get_env("FCM_PROJECT"),
-  ping_period: 60_000
+  project_id: System.get_env("FCM_PROJECT")
