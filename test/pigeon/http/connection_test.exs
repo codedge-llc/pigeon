@@ -194,8 +194,7 @@ defmodule Pigeon.HTTP.ConnectionTest do
                          notification: %{tag: :held}
                        }}
 
-      refute log =~ "[info]"
-      refute log =~ "[error]"
+      assert log == ""
       assert_received :connect
     end
 
@@ -219,8 +218,7 @@ defmodule Pigeon.HTTP.ConnectionTest do
 
       assert_receive {:response, %{tag: :held, response: :not_connected}}
       assert conn.status == :disconnected
-      refute log =~ "[info]"
-      refute log =~ "[error]"
+      assert log == ""
       assert_received :connect
 
       send(plug, :release)

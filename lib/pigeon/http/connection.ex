@@ -204,16 +204,10 @@ defmodule Pigeon.HTTP.Connection do
 
   # Private
 
-  # A GOAWAY with NO_ERROR. FCM sends one to every connection after a few
-  # minutes, so this is routine and logs at `:debug`. Mint surfaces a GOAWAY
-  # with any other code as a stream error, which reaches `disconnect/2` and
-  # logs at `:error`. By the time this runs, in-flight requests have drained,
-  # so nothing is failed.
-  defp goaway(conn) do
-    Logger.debug("#{prefix(conn)} server closed the connection (GOAWAY)")
-    drop_socket(conn)
-  end
-
+  # Shared by `disconnect/2` and the GOAWAY path. A GOAWAY with NO_ERROR is
+  # routine, FCM sends one to every connection after a few minutes, so it is
+  # not logged at all. Mint surfaces a GOAWAY with any other code as a stream
+  # error, which reaches `disconnect/2` and logs at `:error`.
   defp drop_socket(conn) do
     close_socket(conn.socket)
     cancel_ping(conn.ping_timer)
@@ -353,7 +347,7 @@ defmodule Pigeon.HTTP.Connection do
 
   defp handle_goaway(conn) do
     if RequestQueue.empty?(conn.queue),
-      do: goaway(conn),
+      do: drop_socket(conn),
       else: %{conn | status: :draining}
   end
 
