@@ -3,6 +3,8 @@ defmodule Pigeon.FCM.Error do
 
   alias Pigeon.FCM.Notification
 
+  require Logger
+
   @doc false
   @spec parse(map) :: Notification.error_response()
   def parse(%{"details" => details} = error), do: parse_details(details, error)
@@ -15,7 +17,11 @@ defmodule Pigeon.FCM.Error do
   defp parse_details([], error), do: parse_status(error)
 
   defp parse_status(%{"status" => status}), do: parse_response(status)
-  defp parse_status(_), do: :unknown_error
+
+  defp parse_status(unknown_status) do
+    Logger.error("Unknown FCM status: #{inspect(unknown_status)}")
+    :unknown_error
+  end
 
   defp parse_response("INTERNAL"), do: :internal
   defp parse_response("INVALID_ARGUMENT"), do: :invalid_argument
@@ -27,5 +33,9 @@ defmodule Pigeon.FCM.Error do
   defp parse_response("UNAVAILABLE"), do: :unavailable
   defp parse_response("UNREGISTERED"), do: :unregistered
   defp parse_response("UNSPECIFIED_ERROR"), do: :unspecified_error
-  defp parse_response(_other), do: :unknown_error
+
+  defp parse_response(unknown_error) do
+    Logger.error("Unknown FCM error: #{inspect(unknown_error)}")
+    :unknown_error
+  end
 end
