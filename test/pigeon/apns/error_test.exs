@@ -36,13 +36,13 @@ defmodule Pigeon.APNS.ErrorTest do
     ]
 
     for {actual, expected} <- reasons do
-      payload = JSON.encode!(%{"reason" => actual})
+      payload = Jason.encode!(%{"reason" => actual})
       assert Pigeon.APNS.Error.parse(payload) == expected
     end
   end
 
   test "parse/1 handles unknown error reasons" do
-    payload = JSON.encode!(%{"reason" => "UnknownReason"})
+    payload = Jason.encode!(%{"reason" => "UnknownReason"})
     assert Pigeon.APNS.Error.parse(payload) == :unknown_error
   end
 end

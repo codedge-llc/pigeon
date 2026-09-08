@@ -16,7 +16,7 @@ defmodule Pigeon.FCM do
 
   ### Install and configure Goth.
 
-  Install and configure [`goth`](https://hexdocs.pm/goth/1.4.3/readme.html#installation)
+  Install and configure [`goth`](https://hexdocs.pm/goth/readme.html#installation)
   if you haven't already. `Pigeon.FCM` requires it for token authentication.
 
   ### Configure your dispatcher.
@@ -119,8 +119,6 @@ defmodule Pigeon.FCM do
   alias Pigeon.FCM.{Config, Error}
   alias Pigeon.HTTP.{Request, RequestQueue}
 
-  require Logger
-
   @impl Pigeon.Adapter
   def init(opts) do
     config = Pigeon.FCM.Config.new(opts)
@@ -183,6 +181,7 @@ defmodule Pigeon.FCM do
     Pigeon.HTTP.handle_info(msg, state, &handle_response/1)
   end
 
+  @doc false
   @spec handle_response(Request.t()) :: :ok
   def handle_response(%{body: body, notification: notif}) do
     body

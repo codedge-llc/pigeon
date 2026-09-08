@@ -20,9 +20,7 @@ defmodule Pigeon.HTTP do
           |> RequestQueue.process(queue)
           |> RequestQueue.pop_done()
 
-        for {_ref, request} <- done do
-          if request.notification, do: handler.(request)
-        end
+        Enum.each(done, &handle_done(&1, handler))
 
         {:noreply, %{state | queue: queue, socket: socket}}
 
@@ -31,4 +29,7 @@ defmodule Pigeon.HTTP do
         {:noreply, %{state | socket: socket}}
     end
   end
+
+  defp handle_done({_ref, %{notification: nil}}, _handler), do: :ok
+  defp handle_done({_ref, request}, handler), do: handler.(request)
 end

@@ -5,7 +5,6 @@ defmodule Pigeon.FCMTest do
   doctest Pigeon.FCM.Notification, import: true
 
   alias Pigeon.FCM.Notification
-  require Logger
 
   @data %{"message" => "Test push"}
   @invalid_project_msg ~r/^attempted to start without valid :project_id/
